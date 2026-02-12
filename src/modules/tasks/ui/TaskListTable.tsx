@@ -5,6 +5,62 @@ import { formatDurationHHMM } from "@/modules/tasks/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Calendar, User, FolderKanban, Clock, FileText } from "lucide-react";
 
+/* Parse description into structured steps */
+function FormattedDescription({ text }: { text?: string }) {
+  if (!text || text === "Sem descrição") {
+    return <p className="text-xs text-[hsl(var(--task-text-muted))] italic">Sem descrição disponível</p>;
+  }
+
+  // Try to detect numbered steps like "1. xxx 2. xxx" or "- xxx"
+  const lines = text
+    .split(/(?=\d+\.\s)|(?:\n)|(?:(?<=\.\s)(?=-))/g)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // If it splits into multiple meaningful chunks, render as structured list
+  if (lines.length > 1) {
+    return (
+      <div className="space-y-1.5">
+        {lines.map((line, i) => {
+          const stepMatch = line.match(/^(\d+)\.\s*(.*)/);
+          if (stepMatch) {
+            return (
+              <div key={i} className="flex items-start gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[hsl(var(--task-yellow)/0.12)] text-[9px] font-bold text-[hsl(var(--task-yellow))]">
+                  {stepMatch[1]}
+                </span>
+                <p className="text-xs text-[hsl(var(--task-text))] leading-relaxed">{stepMatch[2]}</p>
+              </div>
+            );
+          }
+          const bulletMatch = line.match(/^[-•]\s*(.*)/);
+          if (bulletMatch) {
+            return (
+              <div key={i} className="flex items-start gap-2 pl-1">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--task-purple))]" />
+                <p className="text-xs text-[hsl(var(--task-text))] leading-relaxed">{bulletMatch[1]}</p>
+              </div>
+            );
+          }
+          // Label-like lines (e.g., "Observações: ...")
+          const labelMatch = line.match(/^([A-ZÀ-Ú][a-zà-ú]*(?:\s[a-zà-ú]+)*):\s*(.*)/);
+          if (labelMatch) {
+            return (
+              <div key={i}>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--task-yellow))]">{labelMatch[1]}</span>
+                <p className="text-xs text-[hsl(var(--task-text))] leading-relaxed mt-0.5">{labelMatch[2]}</p>
+              </div>
+            );
+          }
+          return <p key={i} className="text-xs text-[hsl(var(--task-text))] leading-relaxed">{line}</p>;
+        })}
+      </div>
+    );
+  }
+
+  return <p className="text-xs text-[hsl(var(--task-text))] leading-relaxed whitespace-pre-wrap">{text}</p>;
+}
+
 type TaskListTableProps = {
   tasks: TaskView[];
 };
@@ -117,14 +173,12 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                     className="overflow-hidden"
                   >
                     <div className="px-6 py-4 bg-[hsl(var(--task-bg))] border-t border-[hsl(var(--task-border)/0.3)]">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="flex items-start gap-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-5">
+                        <div className="flex items-start gap-2.5 sm:col-span-2 lg:col-span-4">
                           <FileText className="h-4 w-4 mt-0.5 shrink-0 text-[hsl(var(--task-yellow))]" />
-                          <div className="min-w-0">
-                            <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] mb-0.5">Descrição</p>
-                            <p className="text-xs text-[hsl(var(--task-text))] leading-relaxed">
-                              {task.description || "Sem descrição disponível"}
-                            </p>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] mb-1.5">Descrição</p>
+                            <FormattedDescription text={task.description} />
                           </div>
                         </div>
                         <div className="flex items-start gap-2.5">

@@ -151,11 +151,16 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
         <Info className="h-4 w-4" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto">
+        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto animate-scale-in">
           <DialogHeader className="text-center items-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--task-yellow)/0.15)]">
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--task-yellow)/0.15)]"
+            >
               <Info className="h-5 w-5 text-[hsl(var(--task-yellow))]" />
-            </div>
+            </motion.div>
             <DialogTitle className="text-[hsl(var(--task-text))] text-center text-lg">{title}</DialogTitle>
             <DialogDescription className="text-[hsl(var(--task-text-muted))] text-sm leading-relaxed mt-2 text-center">
               {description}
