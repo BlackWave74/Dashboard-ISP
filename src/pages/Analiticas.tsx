@@ -7,7 +7,7 @@ import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
-import AnalyticsWeeklyChart from "@/modules/analytics/components/AnalyticsWeeklyChart";
+
 import AnalyticsCompletionGauge from "@/modules/analytics/components/AnalyticsCompletionGauge";
 import AnalyticsPerformanceSummary from "@/modules/analytics/components/AnalyticsPerformanceSummary";
 import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
@@ -113,11 +113,8 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Row 1: Weekly activity + Completion gauge + Performance summary */}
-        <div className="grid gap-5 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <AnalyticsWeeklyChart times={userTimes} doneCount={totalDone} totalTasks={userTaskCount} />
-          </div>
+        {/* Row 1: Completion gauge + Performance summary */}
+        <div className="grid gap-5 lg:grid-cols-3">
           <div className="lg:col-span-1">
             <AnalyticsCompletionGauge
               done={totalDone}
