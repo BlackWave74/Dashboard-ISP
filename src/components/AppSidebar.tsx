@@ -84,7 +84,7 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className="!border-r-0 my-3 ml-0 rounded-r-2xl bg-gradient-to-b from-sidebar to-[hsl(234_40%_8%)] shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)] animate-slide-in-right" style={{ zIndex: 20, height: "calc(100vh - 1.5rem)" }}>
+    <Sidebar className="!border-r-0 ml-0 rounded-br-2xl bg-gradient-to-b from-sidebar to-[hsl(234_40%_8%)] shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)] animate-slide-in-right" style={{ zIndex: 20 }}>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 pt-6 pb-2">
         <img
