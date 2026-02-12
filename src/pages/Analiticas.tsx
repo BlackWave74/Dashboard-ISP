@@ -6,6 +6,7 @@ import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
+import SyncIndicator from "@/components/SyncIndicator";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
 
 import AnalyticsCompletionGauge from "@/modules/analytics/components/AnalyticsCompletionGauge";
@@ -38,6 +39,7 @@ export default function AnaliticasPage() {
   });
 
   const loading = loadingTasks || loadingTimes || loadingHours;
+  const hasCachedData = tasks.length > 0;
 
   const {
     projects,
@@ -55,7 +57,7 @@ export default function AnaliticasPage() {
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
 
-  if (loading && tasks.length === 0) {
+  if (loading && !hasCachedData) {
     return (
       <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -77,6 +79,7 @@ export default function AnaliticasPage() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
+      <SyncIndicator syncing={loading && hasCachedData} />
       <div className="mx-auto w-full max-w-[1900px] space-y-5 p-5 md:p-8">
         {/* Header */}
         <motion.div
