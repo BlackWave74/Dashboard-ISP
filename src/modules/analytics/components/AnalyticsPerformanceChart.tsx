@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import {
   AreaChart,
   Area,
@@ -15,33 +14,24 @@ type Props = {
   times: ElapsedTimeRecord[];
 };
 
-const periods = [
-  { key: "7d", label: "7D" },
-  { key: "30d", label: "1M" },
-  { key: "90d", label: "3M" },
-  { key: "180d", label: "6M" },
-  { key: "all", label: "Tudo" },
+const periodOptions = [
+  { key: "7d", label: "7D", days: 7 },
+  { key: "30d", label: "1M", days: 30 },
+  { key: "90d", label: "3M", days: 90 },
+  { key: "180d", label: "6M", days: 180 },
+  { key: "all", label: "Tudo", days: 0 },
 ] as const;
-
-const tooltipStyle = {
-  background: "hsl(258 30% 10%)",
-  border: "1px solid hsl(260 22% 20%)",
-  borderRadius: 12,
-  fontSize: 12,
-  color: "hsl(210 40% 96%)",
-  boxShadow: "0 12px 40px -10px rgba(0,0,0,0.6)",
-  padding: "8px 12px",
-};
 
 export default function AnalyticsPerformanceChart({ times }: Props) {
   const [period, setPeriod] = useState<string>("180d");
 
   const chartData = useMemo(() => {
     const now = new Date();
+    const selectedPeriod = periodOptions.find((p) => p.key === period);
     const cutoff =
-      period === "all"
-        ? null
-        : new Date(now.getTime() - Number(period.replace("d", "")) * 24 * 60 * 60 * 1000);
+      selectedPeriod && selectedPeriod.days > 0
+        ? new Date(now.getTime() - selectedPeriod.days * 24 * 60 * 60 * 1000)
+        : null;
 
     const daily: Record<string, number> = {};
     times.forEach((t) => {
@@ -60,7 +50,6 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
         return { date: label, hours: Math.round(hours * 10) / 10 };
       });
 
-    // Aggregate to max 30 points for smooth curve
     if (sorted.length > 30) {
       const step = Math.ceil(sorted.length / 30);
       const aggregated: typeof sorted = [];
@@ -75,81 +64,108 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
     return sorted;
   }, [times, period]);
 
+  const totalHours = chartData.reduce((s, d) => s + d.hours, 0);
+  const peakHours = chartData.length > 0 ? Math.max(...chartData.map((d) => d.hours)) : 0;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-      className="ana-card ana-glow p-5 space-y-4"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="rounded-xl border border-border/50 bg-card/80 p-5">
+      {/* Header */}
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-[hsl(var(--ana-text))]">Desempenho ao Longo do Tempo</h3>
-          <p className="mt-0.5 text-xs text-[hsl(var(--ana-text-muted))]">
-            Horas registradas por período
-          </p>
+          <h3 className="text-base font-semibold text-foreground">Desempenho do Projeto</h3>
+          <p className="text-xs text-muted-foreground">Horas registradas ao longo do tempo</p>
         </div>
-        <div className="flex gap-1 rounded-lg bg-[hsl(var(--ana-surface))] p-1 border border-[hsl(var(--ana-border))]">
-          {periods.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setPeriod(p.key)}
-              className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
-                period === p.key
-                  ? "bg-[hsl(var(--ana-purple))] text-white shadow-md"
-                  : "text-[hsl(var(--ana-text-muted))] hover:text-[hsl(var(--ana-text))]"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-4">
+          {/* Period filters */}
+          <div className="flex gap-0.5 rounded-lg border border-border/50 bg-muted/50 p-0.5">
+            {periodOptions.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPeriod(p.key)}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                  period === p.key
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
+      {/* Quick stats */}
+      <div className="mt-3 mb-4 flex gap-6 text-xs">
+        <div>
+          <span className="text-muted-foreground">Total período</span>
+          <p className="text-lg font-bold text-foreground">{Math.round(totalHours).toLocaleString("pt-BR")}h</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Pico</span>
+          <p className="text-lg font-bold text-primary">{peakHours.toLocaleString("pt-BR")}h</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Média/dia</span>
+          <p className="text-lg font-bold text-foreground">
+            {chartData.length > 0 ? (totalHours / chartData.length).toFixed(1) : "0"}h
+          </p>
+        </div>
+      </div>
+
+      {/* Chart */}
       {chartData.length > 0 ? (
-        <div className="h-[280px]">
+        <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
               <defs>
-                <linearGradient id="anaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(262 83% 58%)" stopOpacity={0.4} />
-                  <stop offset="50%" stopColor="hsl(234 89% 64%)" stopOpacity={0.15} />
+                <linearGradient id="anaGradMain" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(262 83% 58%)" stopOpacity={0.35} />
+                  <stop offset="40%" stopColor="hsl(234 89% 64%)" stopOpacity={0.15} />
                   <stop offset="100%" stopColor="hsl(234 89% 64%)" stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="anaStroke" x1="0" y1="0" x2="1" y2="0">
+                <linearGradient id="anaStrokeGrad" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor="hsl(262 83% 58%)" />
-                  <stop offset="100%" stopColor="hsl(234 89% 64%)" />
+                  <stop offset="50%" stopColor="hsl(234 89% 64%)" />
+                  <stop offset="100%" stopColor="hsl(200 80% 60%)" />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(260 22% 14%)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 25% 16%)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fill: "hsl(215 15% 45%)", fontSize: 10 }}
+                tick={{ fill: "hsl(215 20% 60%)", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: "hsl(215 15% 45%)", fontSize: 10 }}
+                tick={{ fill: "hsl(215 20% 60%)", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
-                contentStyle={tooltipStyle}
+                contentStyle={{
+                  background: "hsl(222 40% 8%)",
+                  border: "1px solid hsl(222 25% 16%)",
+                  borderRadius: 10,
+                  fontSize: 12,
+                  color: "hsl(210 40% 96%)",
+                  boxShadow: "0 12px 40px -10px rgba(0,0,0,0.6)",
+                }}
                 formatter={(v: number) => [`${v}h`, "Horas"]}
                 labelStyle={{ color: "hsl(215 15% 55%)", marginBottom: 4 }}
               />
               <Area
                 type="monotone"
                 dataKey="hours"
-                stroke="url(#anaStroke)"
+                stroke="url(#anaStrokeGrad)"
                 strokeWidth={2.5}
-                fill="url(#anaGrad)"
+                fill="url(#anaGradMain)"
                 dot={false}
                 activeDot={{
                   r: 5,
                   fill: "hsl(262 83% 58%)",
-                  stroke: "hsl(260 35% 6%)",
+                  stroke: "hsl(222 40% 8%)",
                   strokeWidth: 2,
                 }}
               />
@@ -157,10 +173,17 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex h-[280px] items-center justify-center">
-          <p className="text-sm text-[hsl(var(--ana-text-muted))]">Sem dados para o período selecionado.</p>
+        <div className="flex h-[300px] items-center justify-center">
+          <p className="text-sm text-muted-foreground">Sem dados para o período selecionado.</p>
         </div>
       )}
-    </motion.div>
+
+      {/* Legend */}
+      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-primary" /> Horas Registradas
+        </span>
+      </div>
+    </div>
   );
 }
