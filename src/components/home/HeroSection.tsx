@@ -37,13 +37,13 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
 
   return (
     <div ref={ref} className="flex items-center gap-2">
-      <p className="text-lg font-bold text-white">
+      <p className={`text-lg font-bold text-white transition-transform ${done ? "animate-[celebrate_0.5s_ease-out]" : ""}`}>
         {count === target && suffix === "/5" ? "4.9" : count}
         {suffix}
       </p>
       {done && (
         <PartyPopper
-          className="h-4 w-4 text-[hsl(45_100%_65%)] animate-scale-in"
+          className="h-4 w-4 text-[hsl(45_100%_65%)] animate-[celebrate_0.5s_ease-out]"
         />
       )}
     </div>
