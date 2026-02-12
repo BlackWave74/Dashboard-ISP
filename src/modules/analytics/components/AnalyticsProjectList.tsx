@@ -33,20 +33,20 @@ export default function AnalyticsProjectList({ projects, onToggleFavorite, selec
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-base font-semibold text-foreground">Projetos</h3>
-        <div className="flex gap-0.5 rounded-lg border border-border/50 bg-muted/50 p-0.5">
+        <h3 className="text-base font-bold text-white/90">Projetos</h3>
+        <div className="flex gap-0.5 rounded-lg border border-white/[0.06] bg-white/[0.03] p-0.5">
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
                 filter === f.key
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg shadow-[hsl(262_83%_58%/0.3)]"
+                  : "text-white/30 hover:text-white/60"
               }`}
             >
               {f.label}
-              <span className="ml-1 opacity-60">{f.count}</span>
+              <span className="ml-1 opacity-50">{f.count}</span>
             </button>
           ))}
         </div>
@@ -68,7 +68,7 @@ export default function AnalyticsProjectList({ projects, onToggleFavorite, selec
           ))}
         </AnimatePresence>
         {filtered.length === 0 && (
-          <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
+          <p className="col-span-full py-12 text-center text-sm text-white/30">
             Nenhum projeto encontrado.
           </p>
         )}

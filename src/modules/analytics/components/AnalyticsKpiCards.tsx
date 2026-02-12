@@ -1,4 +1,4 @@
-import { Users, FolderKanban, Clock, ListChecks, TrendingUp, TrendingDown } from "lucide-react";
+import { Users, FolderKanban, Clock, ListChecks, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 
 type Props = {
   clients: number;
@@ -17,42 +17,44 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
     {
       label: "Clientes Atendidos",
       value: clients.toLocaleString("pt-BR"),
-      desc: "Clientes com projetos ativos",
+      desc: "Clientes com projetos vinculados",
       icon: Users,
-      iconBg: "bg-primary/20",
-      iconColor: "text-primary",
-      change: `${activeProjects} projetos`,
-      up: true,
+      color: "from-[hsl(270_80%_55%)] to-[hsl(234_89%_55%)]",
+      glow: "hsl(270 80% 55% / 0.25)",
+      badge: `${activeProjects} projetos`,
+      badgeUp: true,
     },
     {
       label: "Projetos Ativos",
       value: activeProjects.toLocaleString("pt-BR"),
       desc: "Com tarefas em andamento",
       icon: FolderKanban,
-      iconBg: "bg-violet-500/20",
-      iconColor: "text-violet-400",
-      change: `${totalTasks} tarefas`,
-      up: true,
+      color: "from-[hsl(250_80%_60%)] to-[hsl(270_80%_55%)]",
+      glow: "hsl(250 80% 60% / 0.25)",
+      badge: `${totalTasks} tarefas`,
+      badgeUp: true,
     },
     {
       label: "Horas Alocadas",
       value: `${Math.round(totalHours).toLocaleString("pt-BR")}h`,
       desc: "Total registrado no período",
       icon: Clock,
-      iconBg: "bg-emerald-500/20",
-      iconColor: "text-emerald-400",
-      change: `+${Math.round(totalHours / Math.max(activeProjects, 1))}h/projeto`,
-      up: true,
+      color: "from-[hsl(160_84%_39%)] to-[hsl(200_80%_50%)]",
+      glow: "hsl(160 84% 39% / 0.25)",
+      badge: `~${Math.round(totalHours / Math.max(activeProjects, 1))}h/projeto`,
+      badgeUp: true,
     },
     {
       label: "Taxa de Conclusão",
       value: `${completionRate}%`,
-      desc: `${doneCount} de ${totalTasks} tarefas`,
-      icon: ListChecks,
-      iconBg: "bg-amber-500/20",
-      iconColor: "text-amber-400",
-      change: overdueRate > 0 ? `${overdueRate}% atrasadas` : "Sem atrasos",
-      up: overdueRate === 0,
+      desc: `${doneCount} concluídas de ${totalTasks}`,
+      icon: overdueRate > 0 ? AlertTriangle : ListChecks,
+      color: overdueRate > 20
+        ? "from-[hsl(0_84%_60%)] to-[hsl(38_92%_50%)]"
+        : "from-[hsl(234_89%_64%)] to-[hsl(260_80%_55%)]",
+      glow: overdueRate > 20 ? "hsl(0 84% 60% / 0.25)" : "hsl(234 89% 64% / 0.25)",
+      badge: overdueRate > 0 ? `${overdueCount} atrasadas` : "Sem atrasos",
+      badgeUp: overdueRate === 0,
     },
   ];
 
@@ -61,29 +63,43 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
       {kpis.map((k, i) => (
         <div
           key={k.label}
-          className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/80 p-5 transition-colors hover:border-border"
-          style={{ opacity: 0, animation: `fadeSlideUp 0.5s ease-out ${i * 100}ms forwards` }}
+          className="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-5 transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.12] hover:shadow-2xl"
+          style={{
+            background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))",
+            opacity: 0,
+            animation: `fadeSlideUp 0.6s ease-out ${i * 120}ms forwards`,
+          }}
         >
-          {/* Subtle glow */}
-          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition-opacity group-hover:opacity-100 opacity-0" />
+          {/* Corner glow on hover */}
+          <div
+            className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
+            style={{ background: k.glow }}
+          />
 
-          <div className="relative flex items-start justify-between">
-            <div className={`grid h-10 w-10 place-items-center rounded-lg ${k.iconBg}`}>
-              <k.icon className={`h-5 w-5 ${k.iconColor}`} />
+          {/* Top accent line */}
+          <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${k.color} opacity-50 transition-opacity duration-500 group-hover:opacity-100`} />
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${k.color} shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+                <k.icon className="h-5 w-5 text-white" />
+              </div>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  k.badgeUp
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : "bg-[hsl(0_84%_60%/0.15)] text-[hsl(0_84%_60%)]"
+                }`}
+              >
+                {k.badgeUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                {k.badge}
+              </span>
             </div>
-            <span
-              className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                k.up ? "bg-emerald-500/15 text-emerald-400" : "bg-destructive/15 text-destructive"
-              }`}
-            >
-              {k.up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {k.change}
-            </span>
-          </div>
 
-          <p className="mt-4 text-2xl font-bold text-foreground">{k.value}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{k.label}</p>
-          <p className="mt-1 text-[0.7rem] text-muted-foreground/70">{k.desc}</p>
+            <p className="text-2xl font-bold text-white/90">{k.value}</p>
+            <p className="mt-0.5 text-xs font-semibold text-white/60">{k.label}</p>
+            <p className="mt-1 text-[0.65rem] text-white/35">{k.desc}</p>
+          </div>
         </div>
       ))}
     </div>

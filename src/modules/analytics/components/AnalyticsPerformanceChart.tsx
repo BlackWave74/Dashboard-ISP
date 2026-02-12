@@ -7,6 +7,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from "recharts";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 
@@ -22,8 +24,19 @@ const periodOptions = [
   { key: "all", label: "Tudo", days: 0 },
 ] as const;
 
+const tooltipBg = {
+  background: "linear-gradient(145deg, hsl(270 50% 12%), hsl(234 45% 8%))",
+  border: "1px solid hsl(270 30% 20%)",
+  borderRadius: 14,
+  fontSize: 12,
+  color: "hsl(210 40% 96%)",
+  boxShadow: "0 20px 60px -15px rgba(0,0,0,0.7)",
+  padding: "10px 14px",
+};
+
 export default function AnalyticsPerformanceChart({ times }: Props) {
   const [period, setPeriod] = useState<string>("180d");
+  const [chartType, setChartType] = useState<"area" | "bar">("area");
 
   const chartData = useMemo(() => {
     const now = new Date();
@@ -60,7 +73,6 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
       }
       return aggregated;
     }
-
     return sorted;
   }, [times, period]);
 
@@ -68,24 +80,43 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
   const peakHours = chartData.length > 0 ? Math.max(...chartData.map((d) => d.hours)) : 0;
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/80 p-5">
+    <div
+      className="rounded-2xl border border-white/[0.06] p-6 transition-all"
+      style={{ background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))" }}
+    >
       {/* Header */}
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
         <div>
-          <h3 className="text-base font-semibold text-foreground">Desempenho do Projeto</h3>
-          <p className="text-xs text-muted-foreground">Horas registradas ao longo do tempo</p>
+          <h3 className="text-base font-bold text-white/90">Desempenho do Projeto</h3>
+          <p className="text-xs text-white/40 mt-0.5">Horas registradas ao longo do tempo</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {/* Chart type toggle */}
+          <div className="flex gap-0.5 rounded-lg border border-white/[0.06] bg-white/[0.03] p-0.5">
+            {(["area", "bar"] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setChartType(type)}
+                className={`rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  chartType === type
+                    ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg"
+                    : "text-white/30 hover:text-white/60"
+                }`}
+              >
+                {type === "area" ? "Montanha" : "Barras"}
+              </button>
+            ))}
+          </div>
           {/* Period filters */}
-          <div className="flex gap-0.5 rounded-lg border border-border/50 bg-muted/50 p-0.5">
+          <div className="flex gap-0.5 rounded-lg border border-white/[0.06] bg-white/[0.03] p-0.5">
             {periodOptions.map((p) => (
               <button
                 key={p.key}
                 onClick={() => setPeriod(p.key)}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
                   period === p.key
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg shadow-[hsl(262_83%_58%/0.3)]"
+                    : "text-white/30 hover:text-white/60"
                 }`}
               >
                 {p.label}
@@ -96,94 +127,101 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
       </div>
 
       {/* Quick stats */}
-      <div className="mt-3 mb-4 flex gap-6 text-xs">
-        <div>
-          <span className="text-muted-foreground">Total período</span>
-          <p className="text-lg font-bold text-foreground">{Math.round(totalHours).toLocaleString("pt-BR")}h</p>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Pico</span>
-          <p className="text-lg font-bold text-primary">{peakHours.toLocaleString("pt-BR")}h</p>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Média/dia</span>
-          <p className="text-lg font-bold text-foreground">
-            {chartData.length > 0 ? (totalHours / chartData.length).toFixed(1) : "0"}h
-          </p>
-        </div>
+      <div className="mb-5 flex gap-8">
+        {[
+          { label: "Total período", value: `${Math.round(totalHours).toLocaleString("pt-BR")}h`, highlight: false },
+          { label: "Pico", value: `${peakHours.toLocaleString("pt-BR")}h`, highlight: true },
+          { label: "Média/dia", value: `${chartData.length > 0 ? (totalHours / chartData.length).toFixed(1) : "0"}h`, highlight: false },
+        ].map((s) => (
+          <div key={s.label}>
+            <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold">{s.label}</span>
+            <p className={`text-xl font-bold ${s.highlight ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] bg-clip-text text-transparent" : "text-white/80"}`}>
+              {s.value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Chart */}
       {chartData.length > 0 ? (
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="anaGradMain" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(262 83% 58%)" stopOpacity={0.35} />
-                  <stop offset="40%" stopColor="hsl(234 89% 64%)" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="hsl(234 89% 64%)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="anaStrokeGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="hsl(262 83% 58%)" />
-                  <stop offset="50%" stopColor="hsl(234 89% 64%)" />
-                  <stop offset="100%" stopColor="hsl(200 80% 60%)" />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 25% 16%)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tick={{ fill: "hsl(215 20% 60%)", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tick={{ fill: "hsl(215 20% 60%)", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(222 40% 8%)",
-                  border: "1px solid hsl(222 25% 16%)",
-                  borderRadius: 10,
-                  fontSize: 12,
-                  color: "hsl(210 40% 96%)",
-                  boxShadow: "0 12px 40px -10px rgba(0,0,0,0.6)",
-                }}
-                formatter={(v: number) => [`${v}h`, "Horas"]}
-                labelStyle={{ color: "hsl(215 15% 55%)", marginBottom: 4 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="hours"
-                stroke="url(#anaStrokeGrad)"
-                strokeWidth={2.5}
-                fill="url(#anaGradMain)"
-                dot={false}
-                activeDot={{
-                  r: 5,
-                  fill: "hsl(262 83% 58%)",
-                  stroke: "hsl(222 40% 8%)",
-                  strokeWidth: 2,
-                }}
-              />
-            </AreaChart>
+            {chartType === "area" ? (
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="anaGradMountain" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(262 83% 58%)" stopOpacity={0.5} />
+                    <stop offset="30%" stopColor="hsl(234 89% 64%)" stopOpacity={0.25} />
+                    <stop offset="70%" stopColor="hsl(234 89% 64%)" stopOpacity={0.08} />
+                    <stop offset="100%" stopColor="hsl(234 45% 10%)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="anaStrokeMountain" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="hsl(262 83% 65%)" />
+                    <stop offset="50%" stopColor="hsl(234 89% 70%)" />
+                    <stop offset="100%" stopColor="hsl(200 80% 65%)" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(270 20% 15%)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "hsl(270 10% 40%)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  tick={{ fill: "hsl(270 10% 40%)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip contentStyle={tooltipBg} formatter={(v: number) => [`${v}h`, "Horas"]} />
+                <Area
+                  type="monotone"
+                  dataKey="hours"
+                  stroke="url(#anaStrokeMountain)"
+                  strokeWidth={2.5}
+                  fill="url(#anaGradMountain)"
+                  dot={false}
+                  activeDot={{
+                    r: 6,
+                    fill: "hsl(262 83% 58%)",
+                    stroke: "hsl(270 50% 12%)",
+                    strokeWidth: 3,
+                  }}
+                />
+              </AreaChart>
+            ) : (
+              <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="anaBarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(262 83% 58%)" />
+                    <stop offset="100%" stopColor="hsl(234 89% 64%)" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(270 20% 15%)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "hsl(270 10% 40%)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  tick={{ fill: "hsl(270 10% 40%)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip contentStyle={tooltipBg} formatter={(v: number) => [`${v}h`, "Horas"]} />
+                <Bar dataKey="hours" fill="url(#anaBarGrad)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            )}
           </ResponsiveContainer>
         </div>
       ) : (
         <div className="flex h-[300px] items-center justify-center">
-          <p className="text-sm text-muted-foreground">Sem dados para o período selecionado.</p>
+          <p className="text-sm text-white/30">Sem dados para o período selecionado.</p>
         </div>
       )}
-
-      {/* Legend */}
-      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-primary" /> Horas Registradas
-        </span>
-      </div>
     </div>
   );
 }

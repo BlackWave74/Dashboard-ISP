@@ -15,6 +15,7 @@ import type { ProjectAnalytics } from "@/modules/analytics/types";
 export default function AnaliticasPage() {
   const { session } = useAuth();
   const accessToken = session?.accessToken;
+  const userName = session?.name;
   const now = new Date();
 
   const { tasks, loading: loadingTasks, error: errorTasks } = useTasks({ accessToken, period: "all" });
@@ -41,7 +42,8 @@ export default function AnaliticasPage() {
     totalOverdue,
     totalHours,
     toggleFavorite,
-  } = useAnalyticsData(tasks, projectHours);
+    userTaskCount,
+  } = useAnalyticsData(tasks, projectHours, userName);
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
 
@@ -59,7 +61,7 @@ export default function AnaliticasPage() {
   if (errorTasks) {
     return (
       <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-8">
-        <div className="flex items-center gap-3 rounded-xl bg-destructive/5 border border-destructive/20 p-6">
+        <div className="flex items-center gap-3 rounded-2xl bg-destructive/10 p-6">
           <AlertCircle className="h-5 w-5 text-destructive" />
           <p className="text-sm text-destructive">{errorTasks}</p>
         </div>
@@ -68,14 +70,14 @@ export default function AnaliticasPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] w-full bg-gradient-to-br from-[hsl(270_60%_10%)] to-[hsl(234_45%_6%)]">
+    <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
       <div className="mx-auto w-full max-w-[1900px] space-y-6 p-5 md:p-8">
         {/* Header with search */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Visão geral de clientes, projetos, horas e desempenho.
+              {userName ? `Projetos de ${userName}` : "Visão geral de clientes, projetos, horas e desempenho."}
             </p>
           </div>
           <AnalyticsSearch
@@ -90,7 +92,7 @@ export default function AnaliticasPage() {
           clients={uniqueClients}
           activeProjects={activeProjects}
           totalHours={totalHours}
-          totalTasks={tasks.length}
+          totalTasks={userTaskCount}
           doneCount={totalDone}
           overdueCount={totalOverdue}
         />
