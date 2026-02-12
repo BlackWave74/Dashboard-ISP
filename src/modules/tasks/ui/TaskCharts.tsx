@@ -298,7 +298,7 @@ export function TaskCharts({
       )}
 
       {/* Grid: 3 charts side by side */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {/* Pie: Consultants — original design (no label lines) */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}

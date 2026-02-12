@@ -508,20 +508,20 @@ export default function TarefasPage() {
         />
       </div>
 
-      <div className="relative z-10 w-full max-w-full px-4 py-5 sm:px-6 lg:px-10 overflow-x-hidden">
+      <div className="relative z-10 w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
-        <motion.div {...fadeUp} className="mb-6 flex items-center justify-between">
+        <motion.div {...fadeUp} className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
               Painel de Atividades
             </h1>
-            <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">
+            <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))]">
               Acompanhe o progresso, prazos e desempenho das suas atividades em tempo real.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
               <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
               {formatLastUpdated(combinedLastUpdated)}
             </div>
@@ -529,7 +529,7 @@ export default function TarefasPage() {
               type="button"
               onClick={() => { reload(); reloadTimes(); }}
               disabled={refreshing}
-              className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3.5 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-40 whitespace-nowrap"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
               Atualizar
@@ -538,7 +538,7 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ KPI CARDS ═══ */}
-        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <KpiCard icon={Layers} label="Total de Tarefas" value={stats.total} color="purple" delay={0} />
           <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0.05} />
           <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.1} />
@@ -547,7 +547,7 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
-        <div className="mb-6 grid gap-5 grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_280px_340px]">
+        <div className="mb-5 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_260px_320px]">
 
           {/* LEFT: Focus — Top performers */}
           <motion.div
@@ -910,14 +910,14 @@ function KpiCard({ icon: Icon, label, value, color, delay = 0 }: KpiCardProps) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      className={`task-card group flex items-center gap-3 transition-all ${c.glow}`}
+      className={`task-card group flex items-center gap-2.5 p-3 sm:p-4 transition-all ${c.glow}`}
     >
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${c.icon}`}>
-        <Icon className="h-4.5 w-4.5" />
+      <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl ${c.icon}`}>
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] truncate">{label}</p>
-        <p className="text-xl font-extrabold text-[hsl(var(--task-text))] leading-tight">{value}</p>
+        <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] truncate">{label}</p>
+        <p className="text-lg sm:text-xl font-extrabold text-[hsl(var(--task-text))] leading-tight">{value}</p>
       </div>
     </motion.div>
   );
