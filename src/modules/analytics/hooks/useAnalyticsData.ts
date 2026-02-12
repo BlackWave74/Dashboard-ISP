@@ -131,6 +131,7 @@ export function useAnalyticsData(
   const projects: ProjectAnalytics[] = useMemo(() => {
     const fromHours = filteredProjectHours.map((ph) => {
       const taskStats = tasksByProject.get(ph.projectId) ?? { done: 0, pending: 0, overdue: 0 };
+      console.debug("[analytics] project", ph.projectName, "tasks:", taskStats);
       const totalTasks = taskStats.done + taskStats.pending + taskStats.overdue;
       const completionRate = totalTasks > 0 ? taskStats.done / totalTasks : 0;
       const overdueRate = totalTasks > 0 ? taskStats.overdue / totalTasks : 0;
