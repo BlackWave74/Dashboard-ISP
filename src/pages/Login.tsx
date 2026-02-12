@@ -230,9 +230,10 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <p className="login-footer">
-        Desenvolvido pelo time <span className="login-overview-highlight">ISP Consulte</span> — São Paulo, Brasil. Todos os direitos reservados.
-      </p>
+      <footer className="login-footer">
+        <p>Desenvolvido pelo time <span className="login-overview-highlight">ISP Consulte</span></p>
+        <p>São Paulo, Brasil · Todos os direitos reservados · {new Date().getFullYear()}</p>
+      </footer>
     </div>
   );
 }
