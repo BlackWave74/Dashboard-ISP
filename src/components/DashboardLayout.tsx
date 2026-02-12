@@ -6,12 +6,11 @@ import { PanelLeft } from "lucide-react";
 
 function FloatingToggle() {
   const { open, toggleSidebar } = useSidebar();
+  if (open) return null;
   return (
     <button
       onClick={toggleSidebar}
-      className={`fixed top-5 z-50 flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-[hsl(260_40%_15%/0.9)] text-white/50 shadow-lg backdrop-blur-sm transition-all hover:bg-[hsl(260_40%_18%)] hover:text-white hover:shadow-xl ${
-        open ? "left-[15rem]" : "left-3"
-      }`}
+      className="fixed top-5 left-3 z-50 flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-[hsl(260_40%_15%/0.9)] text-white/50 shadow-lg backdrop-blur-sm transition-all hover:bg-[hsl(260_40%_18%)] hover:text-white hover:shadow-xl"
     >
       <PanelLeft className="h-3.5 w-3.5" />
     </button>
