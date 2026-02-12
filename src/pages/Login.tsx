@@ -26,7 +26,7 @@ const DonutChart = () => (
     <circle
       cx="50" cy="50" r="40" fill="none"
       stroke="url(#donutGrad)" strokeWidth="9"
-      strokeDasharray="251.3 0"
+      strokeDasharray="0 251.3"
       strokeLinecap="round"
       transform="rotate(-90 50 50)"
     />
@@ -231,7 +231,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <p className="login-footer">
-        Desenvolvido pelo time <span className="login-overview-highlight">ISP Consulte</span>
+        Desenvolvido pelo time <span className="login-overview-highlight">ISP Consulte</span> — São Paulo, Brasil. Todos os direitos reservados.
       </p>
     </div>
   );
