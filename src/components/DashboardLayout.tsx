@@ -1,7 +1,21 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { PanelLeft } from "lucide-react";
+
+function FloatingToggle() {
+  const { open, toggleSidebar } = useSidebar();
+  if (open) return null;
+  return (
+    <button
+      onClick={toggleSidebar}
+      className="fixed left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-xl border border-border/50 bg-card/80 text-muted-foreground shadow-lg backdrop-blur-sm transition-all hover:bg-card hover:text-foreground hover:shadow-xl"
+    >
+      <PanelLeft className="h-4 w-4" />
+    </button>
+  );
+}
 
 export default function DashboardLayout() {
   const { isAuthenticated, loadingSession } = useAuth();
@@ -22,6 +36,7 @@ export default function DashboardLayout() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
+        <FloatingToggle />
         <main className="flex-1">
           <Outlet />
         </main>
