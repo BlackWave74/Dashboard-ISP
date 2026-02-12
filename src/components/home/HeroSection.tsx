@@ -90,7 +90,7 @@ function AnimatedSubtitle() {
   }, []);
 
   return (
-    <p ref={ref} className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed md:text-lg">
+    <p ref={ref} className="mx-auto mt-12 max-w-2xl text-center text-base leading-relaxed md:text-lg">
       {subtitleSegments.map((seg, i) => (
         <span
           key={i}
