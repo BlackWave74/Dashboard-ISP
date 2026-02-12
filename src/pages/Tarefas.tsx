@@ -576,38 +576,43 @@ export default function TarefasPage() {
               </div>
             </div>
 
-            {/* Activity Bar Chart */}
+            {/* Activity Heatmap — login-style growing squares */}
             <div className="flex-1 min-h-[200px]">
-              <div className="flex items-end gap-3 h-[180px]">
+              <div className="flex items-end gap-2 h-[180px]">
                 {activityBars.map((bar, i) => {
-                  const doneH = maxBarValue > 0 ? (bar.done / maxBarValue) * 100 : 0;
-                  const pendH = maxBarValue > 0 ? (bar.pending / maxBarValue) * 100 : 0;
+                  const intensity = maxBarValue > 0 ? bar.total / maxBarValue : 0;
+                  const rows = 5;
+                  const cols = 3;
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                    <div key={i} className="flex-1 flex flex-col items-center gap-2">
                       <span className="text-[9px] font-bold text-[hsl(var(--task-text))]">
                         {bar.total > 0 ? bar.total : ""}
                       </span>
-                      <div className="relative w-full flex items-end gap-[3px] h-[140px]">
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${Math.max(doneH, 6)}%` }}
-                          transition={{ delay: i * 0.06 + 0.4, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                          className="flex-1 rounded-t-md bg-gradient-to-t from-[hsl(var(--task-yellow))] to-[hsl(var(--task-yellow)/0.7)] relative group/bar"
-                        >
-                          <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] font-bold text-[hsl(var(--task-yellow))] opacity-0 group-hover/bar:opacity-100 transition-opacity">
-                            {bar.done}
-                          </span>
-                        </motion.div>
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${Math.max(pendH, 6)}%` }}
-                          transition={{ delay: i * 0.06 + 0.5, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                          className="flex-1 rounded-t-md bg-gradient-to-t from-[hsl(var(--task-purple))] to-[hsl(var(--task-purple)/0.6)] relative group/bar"
-                        >
-                          <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] font-bold text-[hsl(var(--task-purple))] opacity-0 group-hover/bar:opacity-100 transition-opacity">
-                            {bar.pending}
-                          </span>
-                        </motion.div>
+                      <div className="grid gap-[3px]" style={{ gridTemplateRows: `repeat(${rows}, 1fr)`, gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                        {Array.from({ length: rows * cols }).map((_, cellIdx) => {
+                          const cellThreshold = (cellIdx + 1) / (rows * cols);
+                          const active = intensity >= cellThreshold;
+                          const doneRatio = bar.total > 0 ? bar.done / bar.total : 0;
+                          const isDoneCell = cellIdx < Math.round(doneRatio * rows * cols);
+                          return (
+                            <motion.div
+                              key={cellIdx}
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: active ? 1 : 0.6, opacity: active ? 1 : 0.15 }}
+                              transition={{ delay: i * 0.05 + cellIdx * 0.02 + 0.3, duration: 0.3 }}
+                              className="activity-square"
+                              style={{
+                                width: 10,
+                                height: 10,
+                                background: active
+                                  ? isDoneCell
+                                    ? `hsl(var(--task-yellow))`
+                                    : `hsl(var(--task-purple))`
+                                  : `hsl(var(--task-border))`,
+                              }}
+                            />
+                          );
+                        })}
                       </div>
                       <span className="text-[10px] font-medium text-[hsl(var(--task-text-muted))] capitalize">{bar.month}</span>
                     </div>
@@ -694,15 +699,15 @@ export default function TarefasPage() {
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.35 + idx * 0.04 }}
-                    className="group rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 transition-all hover:border-[hsl(var(--task-yellow)/0.3)] hover:bg-[hsl(var(--task-surface-hover))]"
+                    className={`group relative rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 transition-all hover:border-[hsl(var(--task-yellow)/0.3)] hover:bg-[hsl(var(--task-surface-hover))] ${task.statusKey === "overdue" ? "task-shake" : ""}`}
                   >
                     <div className="flex items-start gap-2.5">
                       <span className={`mt-1.5 shrink-0 h-2 w-2 rounded-full ${
                         task.statusKey === "overdue" ? "bg-rose-400 animate-pulse" : "bg-[hsl(var(--task-yellow))]"
                       }`} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-[hsl(var(--task-text))] leading-snug truncate">{task.title}</p>
-                        <p className="text-[10px] text-[hsl(var(--task-text-muted))] mt-0.5 truncate">{task.project}</p>
+                        <p className="text-xs font-semibold text-[hsl(var(--task-text))] leading-snug group-hover:whitespace-normal truncate group-hover:truncate-none">{task.title}</p>
+                        <p className="text-[10px] text-[hsl(var(--task-text-muted))] mt-0.5 truncate group-hover:whitespace-normal">{task.project}</p>
                       </div>
                     </div>
                     <div className="mt-2 flex items-center justify-between text-[9px]">
@@ -711,6 +716,17 @@ export default function TarefasPage() {
                       </span>
                       <span className="text-[hsl(var(--task-text-muted))]">{task.consultant}</span>
                     </div>
+                    {/* Expanded on hover */}
+                    <div className="hidden group-hover:block mt-2 pt-2 border-t border-[hsl(var(--task-border)/0.3)]">
+                      <p className="text-[10px] text-[hsl(var(--task-text-muted))] leading-relaxed">
+                        {task.description || "Sem descrição"}
+                      </p>
+                      {task.durationSeconds != null && task.durationSeconds > 0 && (
+                        <p className="text-[9px] text-[hsl(var(--task-text-muted))] mt-1">
+                          Tempo: <span className="font-bold text-[hsl(var(--task-text))]">{task.durationLabel}</span>
+                        </p>
+                      )}
+                    </div>
                   </motion.div>
                 ))
               )}
@@ -718,7 +734,7 @@ export default function TarefasPage() {
 
             {stats.overdue > 0 && (
               <div className="mt-3 flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-3 py-2">
-                <AlertTriangle className="h-3.5 w-3.5 text-rose-400" />
+                <AlertTriangle className="h-3.5 w-3.5 text-rose-400 task-shake" />
                 <span className="text-[10px] font-bold text-rose-400">
                   {stats.overdue} tarefa{stats.overdue > 1 ? "s" : ""} atrasada{stats.overdue > 1 ? "s" : ""}
                 </span>
