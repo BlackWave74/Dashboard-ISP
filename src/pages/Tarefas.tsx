@@ -538,7 +538,7 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ KPI CARDS ═══ */}
-        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-5">
           <KpiCard icon={Layers} label="Total de Tarefas" value={stats.total} color="purple" delay={0} />
           <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0.05} />
           <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.1} />
@@ -547,14 +547,14 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
-        <div className="mb-5 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_260px_320px]">
+        <div className="mb-5 grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_260px_320px]">
 
           {/* LEFT: Focus — Top performers */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="task-card flex flex-col max-h-[calc(100vh-340px)] min-h-[280px] overflow-hidden"
+            className="task-card flex flex-col max-h-[60vh] xl:max-h-[calc(100vh-340px)] min-h-[260px] overflow-hidden md:col-span-1"
           >
             <div className="flex items-center justify-between mb-4 sticky top-0 z-10 bg-[hsl(var(--task-surface))] pb-2">
               <div>
@@ -652,7 +652,7 @@ export default function TarefasPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="task-card flex flex-col items-center justify-center"
+            className="task-card flex flex-col items-center justify-center md:col-span-1"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))] mb-2">
               Progresso das Tarefas
@@ -679,7 +679,7 @@ export default function TarefasPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="task-card flex flex-col max-h-[calc(100vh-340px)] min-h-[280px] overflow-hidden"
+            className="task-card flex flex-col max-h-[60vh] xl:max-h-[calc(100vh-340px)] min-h-[260px] overflow-hidden md:col-span-2 xl:col-span-1"
           >
             <div className="flex items-center gap-2 mb-4 sticky top-0 z-10 bg-[hsl(var(--task-surface))] pb-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--task-yellow)/0.15)]">
