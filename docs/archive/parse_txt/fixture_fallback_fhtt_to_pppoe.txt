@@ -1,7 +1,0 @@
-!module config:onu_wan.
-interface onu_1/1/2 pppoe pro dis 54321 key: xyz sl 2 p 3 o 10
-# serial line distante, sem chave direta no scan principal
-line aux 1
-line aux 2
-onu set white phy addr sl 2 p 3 o 10 sn FHTTFALLB1234 ty HG6143D
-!module config:onu_wifi.

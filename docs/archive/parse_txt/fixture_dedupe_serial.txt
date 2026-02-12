@@ -1,6 +1,0 @@
-!module config:onu_wan.
-interface onu_1/1/2 pppoe pro dis 11111 key: k1 sl 1 p 1 o 1
-onu set white phy addr sl 1 p 1 o 1 sn FHTTDUP12345 ty AN5506-04-FA
-interface onu_1/1/3 pppoe pro dis 22222 key: k2 sl 1 p 1 o 1
-onu set white phy addr sl 1 p 1 o 1 sn FHTTDUP12345 ty AN5506-04-FA
-!module config:onu_wifi.
