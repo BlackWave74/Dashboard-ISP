@@ -10,6 +10,7 @@ import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards"
 import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
 import AnalyticsTaskSummary from "@/modules/analytics/components/AnalyticsTaskSummary";
 import AnalyticsProjectHoursChart from "@/modules/analytics/components/AnalyticsProjectHoursChart";
+import AnalyticsTasksByProjectChart from "@/modules/analytics/components/AnalyticsTasksByProjectChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
 import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
 import type { ProjectAnalytics } from "@/modules/analytics/types";
@@ -45,7 +46,8 @@ export default function AnaliticasPage() {
     totalHours,
     toggleFavorite,
     userTaskCount,
-  } = useAnalyticsData(tasks, projectHours, userName);
+    userTimes,
+  } = useAnalyticsData(tasks, projectHours, times, userName);
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
 
@@ -109,18 +111,21 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Charts row */}
+        {/* Row 1: Performance chart + Task summary */}
         <div className="grid gap-5 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <AnalyticsPerformanceChart times={times} />
+            <AnalyticsPerformanceChart times={userTimes} />
           </div>
           <div className="lg:col-span-2">
-            <AnalyticsProjectHoursChart projects={projects} />
+            <AnalyticsTaskSummary done={totalDone} pending={totalPending} overdue={totalOverdue} />
           </div>
         </div>
 
-        {/* Task Summary */}
-        <AnalyticsTaskSummary done={totalDone} pending={totalPending} overdue={totalOverdue} />
+        {/* Row 2: Hours by project + Tasks by project */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <AnalyticsProjectHoursChart projects={projects} />
+          <AnalyticsTasksByProjectChart projects={projects} />
+        </div>
 
         {/* Projects */}
         <AnalyticsProjectList
