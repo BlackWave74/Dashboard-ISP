@@ -1,4 +1,4 @@
-import { Shield, Zap, BarChart3, Layers, ArrowRight } from "lucide-react";
+import { Shield, Zap, BarChart3, Layers } from "lucide-react";
 
 const features = [
   {
@@ -85,10 +85,6 @@ export default function FeaturesGrid() {
               <h3 className="text-base font-bold text-white/90">{f.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-white/45">{f.desc}</p>
 
-              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-[hsl(270_90%_75%)] opacity-0 transition-all duration-300 group-hover:opacity-100">
-                <span>Saiba mais</span>
-                <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
-              </div>
             </div>
           </div>
         ))}
