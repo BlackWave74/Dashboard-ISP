@@ -5,24 +5,40 @@ import { formatDurationHHMM } from "@/modules/tasks/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Calendar, User, FolderKanban, Clock, FileText } from "lucide-react";
 
-/* Parse description into structured steps */
+/* Parse description — handles HTML tags, \n, numbered lists, bullets */
 function FormattedDescription({ text }: { text?: string }) {
   if (!text || text === "Sem descrição") {
     return <p className="text-xs text-[hsl(var(--task-text-muted))] italic">Sem descrição disponível</p>;
   }
 
-  // Try to detect numbered steps like "1. xxx 2. xxx" or "- xxx"
+  // Check if text contains HTML tags
+  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(text);
+  if (hasHtml) {
+    // Strip dangerous tags but keep formatting ones
+    const sanitized = text
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/on\w+="[^"]*"/gi, "");
+    return (
+      <div
+        className="text-xs text-[hsl(var(--task-text))] leading-relaxed prose-sm prose-invert max-w-none [&_br]:block [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-0.5"
+        dangerouslySetInnerHTML={{ __html: sanitized }}
+      />
+    );
+  }
+
+  // Split by actual newlines, \n literals, or numbered patterns
   const lines = text
-    .split(/(?=\d+\.\s)|(?:\n)|(?:(?<=\.\s)(?=-))/g)
+    .replace(/\\n/g, "\n")
+    .split(/\n/)
     .map((l) => l.trim())
     .filter(Boolean);
 
-  // If it splits into multiple meaningful chunks, render as structured list
   if (lines.length > 1) {
     return (
       <div className="space-y-1.5">
         {lines.map((line, i) => {
-          const stepMatch = line.match(/^(\d+)\.\s*(.*)/);
+          const stepMatch = line.match(/^(\d+)[.)]\s*(.*)/);
           if (stepMatch) {
             return (
               <div key={i} className="flex items-start gap-2">
@@ -33,7 +49,7 @@ function FormattedDescription({ text }: { text?: string }) {
               </div>
             );
           }
-          const bulletMatch = line.match(/^[-•]\s*(.*)/);
+          const bulletMatch = line.match(/^[-•*]\s*(.*)/);
           if (bulletMatch) {
             return (
               <div key={i} className="flex items-start gap-2 pl-1">
@@ -42,7 +58,6 @@ function FormattedDescription({ text }: { text?: string }) {
               </div>
             );
           }
-          // Label-like lines (e.g., "Observações: ...")
           const labelMatch = line.match(/^([A-ZÀ-Ú][a-zà-ú]*(?:\s[a-zà-ú]+)*):\s*(.*)/);
           if (labelMatch) {
             return (
@@ -173,46 +188,50 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                     className="overflow-hidden"
                   >
                     <div className="px-6 py-4 bg-[hsl(var(--task-bg))] border-t border-[hsl(var(--task-border)/0.3)]">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-5">
-                        <div className="flex items-start gap-2.5 sm:col-span-2 lg:col-span-4">
-                          <FileText className="h-4 w-4 mt-0.5 shrink-0 text-[hsl(var(--task-yellow))]" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] mb-1.5">Descrição</p>
-                            <FormattedDescription text={task.description} />
+                      {/* Meta info grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                        <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2.5">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <User className="h-3 w-3 text-[hsl(var(--task-purple))]" />
+                            <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Responsável</span>
                           </div>
+                          <p className="text-xs font-semibold text-[hsl(var(--task-text))]">{task.consultant}</p>
                         </div>
-                        <div className="flex items-start gap-2.5">
-                          <User className="h-4 w-4 mt-0.5 shrink-0 text-[hsl(var(--task-purple))]" />
-                          <div>
-                            <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] mb-0.5">Responsável</p>
-                            <p className="text-xs font-medium text-[hsl(var(--task-text))]">{task.consultant}</p>
+                        <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2.5">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <FolderKanban className="h-3 w-3 text-emerald-400" />
+                            <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Projeto</span>
                           </div>
+                          <p className="text-xs font-semibold text-[hsl(var(--task-text))]">{task.project}</p>
                         </div>
-                        <div className="flex items-start gap-2.5">
-                          <FolderKanban className="h-4 w-4 mt-0.5 shrink-0 text-emerald-400" />
-                          <div>
-                            <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] mb-0.5">Projeto</p>
-                            <p className="text-xs font-medium text-[hsl(var(--task-text))]">{task.project}</p>
+                        <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2.5">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Calendar className="h-3 w-3 text-rose-400" />
+                            <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Prazo</span>
                           </div>
+                          <p className={`text-xs font-semibold ${task.statusKey === "overdue" ? "text-rose-400" : "text-[hsl(var(--task-text))]"}`}>
+                            {task.deadlineLabel || "Sem prazo"}
+                          </p>
                         </div>
-                        <div className="flex items-start gap-2.5">
-                          <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-rose-400" />
-                          <div>
-                            <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] mb-0.5">Prazo</p>
-                            <p className={`text-xs font-medium ${task.statusKey === "overdue" ? "text-rose-400" : "text-[hsl(var(--task-text))]"}`}>
-                              {task.deadlineLabel || "Sem prazo definido"}
-                            </p>
+                        {task.durationSeconds != null && task.durationSeconds > 0 && (
+                          <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2.5">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <Clock className="h-3 w-3 text-[hsl(var(--task-text-muted))]" />
+                              <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Tempo</span>
+                            </div>
+                            <p className="text-xs font-semibold text-[hsl(var(--task-text))]">{task.durationLabel}</p>
                           </div>
-                        </div>
+                        )}
                       </div>
-                      {task.durationSeconds != null && task.durationSeconds > 0 && (
-                        <div className="mt-3 flex items-center gap-2 pt-3 border-t border-[hsl(var(--task-border)/0.3)]">
-                          <Clock className="h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
-                          <span className="text-[10px] text-[hsl(var(--task-text-muted))]">
-                            Tempo registrado: <span className="font-bold text-[hsl(var(--task-text))]">{task.durationLabel}</span>
-                          </span>
+
+                      {/* Description */}
+                      <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <FileText className="h-3 w-3 text-[hsl(var(--task-yellow))]" />
+                          <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Descrição</span>
                         </div>
-                      )}
+                        <FormattedDescription text={task.description} />
+                      </div>
                     </div>
                   </motion.div>
                 )}

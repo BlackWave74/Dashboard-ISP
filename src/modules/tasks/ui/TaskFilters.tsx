@@ -82,7 +82,7 @@ export function TaskFilters({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar tarefa..."
-            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-9 pr-8 text-xs text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
+            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-10 pr-8 text-xs text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
           />
           {search && (
             <button

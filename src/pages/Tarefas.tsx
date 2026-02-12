@@ -536,14 +536,14 @@ export default function TarefasPage() {
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
         <div className="mb-6 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_240px_320px]">
 
-          {/* LEFT: Summary Stats (replaces activity heatmap) */}
+          {/* LEFT: Summary Stats — Radial mini-gauges */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
             className="task-card flex flex-col"
           >
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">
                   Resumo do Projeto
@@ -554,54 +554,67 @@ export default function TarefasPage() {
               </div>
             </div>
 
-            {/* Hero Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] p-4 text-center">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] mb-1">Horas</p>
-                <p className="text-3xl font-extrabold text-[hsl(var(--task-text))] leading-none">
-                  {totalHoursLabel}<span className="text-sm font-medium text-[hsl(var(--task-text-muted))]">h</span>
-                </p>
-              </div>
-              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] p-4 text-center">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] mb-1">Total</p>
-                <p className="text-3xl font-extrabold text-[hsl(var(--task-text))] leading-none">{stats.total}</p>
-              </div>
-              <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4 text-center">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] mb-1">Concluídas</p>
-                <p className="text-3xl font-extrabold text-emerald-400 leading-none">{stats.done}</p>
-              </div>
+            {/* Mini radial gauges for each status */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {[
+                { label: "Concluídas", value: stats.done, color: "#22c55e", bg: "emerald" },
+                { label: "Em Andamento", value: stats.pending, color: "hsl(43 97% 52%)", bg: "yellow" },
+                { label: "Atrasadas", value: stats.overdue, color: "#f43f5e", bg: "rose" },
+              ].map((item) => {
+                const pctItem = stats.total > 0 ? Math.round((item.value / stats.total) * 100) : 0;
+                const circumference = 2 * Math.PI * 32;
+                const offset = circumference - (pctItem / 100) * circumference;
+                return (
+                  <motion.div
+                    key={item.label}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="flex flex-col items-center rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3"
+                  >
+                    <div className="relative h-[72px] w-[72px]">
+                      <svg viewBox="0 0 72 72" className="h-full w-full -rotate-90">
+                        <circle cx="36" cy="36" r="32" fill="none" stroke="hsl(228 20% 12%)" strokeWidth="5" />
+                        <motion.circle
+                          cx="36" cy="36" r="32" fill="none"
+                          stroke={item.color}
+                          strokeWidth="5"
+                          strokeLinecap="round"
+                          strokeDasharray={circumference}
+                          initial={{ strokeDashoffset: circumference }}
+                          animate={{ strokeDashoffset: offset }}
+                          transition={{ duration: 1, delay: 0.5 }}
+                          style={{ filter: "drop-shadow(0 0 4px " + item.color + "40)" }}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-sm font-extrabold text-[hsl(var(--task-text))]">{item.value}</span>
+                      </div>
+                    </div>
+                    <span className="mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">{item.label}</span>
+                    <span className="text-[9px] font-bold" style={{ color: item.color }}>{pctItem}%</span>
+                  </motion.div>
+                );
+              })}
             </div>
 
-            {/* Status Breakdown Bars */}
-            <div className="space-y-3 flex-1">
-              {[
-                { label: "Em Andamento", value: stats.pending, total: stats.total, color: "hsl(var(--task-yellow))" },
-                { label: "Concluídas", value: stats.done, total: stats.total, color: "#22c55e" },
-                { label: "Atrasadas", value: stats.overdue, total: stats.total, color: "#f43f5e" },
-              ].map((item) => (
-                <div key={item.label}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] font-semibold text-[hsl(var(--task-text-muted))]">{item.label}</span>
-                    <span className="text-[10px] font-bold text-[hsl(var(--task-text))]">
-                      {item.value} <span className="text-[hsl(var(--task-text-muted))] font-normal">/ {item.total}</span>
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-[hsl(var(--task-border))] overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%` }}
-                      transition={{ duration: 0.8, delay: 0.5 }}
-                      className="h-full rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    />
-                  </div>
-                </div>
-              ))}
+            {/* Total + hours row */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] p-3 text-center">
+                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] mb-1">Total</p>
+                <p className="text-2xl font-extrabold text-[hsl(var(--task-text))] leading-none">{stats.total}</p>
+              </div>
+              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] p-3 text-center">
+                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] mb-1">Horas</p>
+                <p className="text-2xl font-extrabold text-[hsl(var(--task-text))] leading-none">
+                  {totalHoursLabel}<span className="text-xs font-medium text-[hsl(var(--task-text-muted))]">h</span>
+                </p>
+              </div>
             </div>
 
             {/* Progress bar */}
             {stats.total > 0 && (
-              <div className="mt-5 pt-4 border-t border-[hsl(var(--task-border))]">
+              <div className="pt-3 border-t border-[hsl(var(--task-border))]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Progresso geral</span>
                   <span className="text-sm font-extrabold text-emerald-400">{pctDone}%</span>
