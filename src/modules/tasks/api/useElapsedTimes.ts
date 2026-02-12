@@ -1,0 +1,296 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { storage } from "@/modules/shared/storage";
+import type { ElapsedTimeRecord } from "../types";
+
+type UseElapsedTimesResult = {
+  times: ElapsedTimeRecord[];
+  loading: boolean;
+  error: string | null;
+  reload: () => void;
+  lastUpdated: number | null;
+  reloadCooldownMsLeft: number;
+  noChanges: boolean;
+};
+
+type UseElapsedTimesParams = {
+  accessToken?: string | null;
+  period?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+const CACHE_KEY = "cache:elapsed_times:v2";
+const CACHE_TTL_MS = 15 * 60 * 1000;
+const RELOAD_COOLDOWN_MS = 4000;
+const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_TASKS_TIMEOUT_MS ?? "8000");
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 10;
+
+const buildDateFilter = (period?: string, dateFrom?: string, dateTo?: string) => {
+  const now = new Date();
+  if (period && period !== "all" && period !== "custom") {
+    const days = period === "7d" ? 7 : period === "30d" ? 30 : period === "90d" ? 90 : 180;
+    const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    return `inserted_at=gte.${encodeURIComponent(from.toISOString())}`;
+  }
+  if (period === "custom") {
+    const parts: string[] = [];
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      if (!Number.isNaN(from.getTime())) parts.push(`inserted_at=gte.${encodeURIComponent(from.toISOString())}`);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      if (!Number.isNaN(to.getTime())) parts.push(`inserted_at=lte.${encodeURIComponent(to.toISOString())}`);
+    }
+    return parts.join("&");
+  }
+  return "";
+};
+
+const buildEndpoint = (period?: string, dateFrom?: string, dateTo?: string) => {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    return {
+      endpoint: null,
+      key: null,
+      error: "Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.",
+    };
+  }
+
+  const base = url.replace(/\/$/, "");
+  const dateFilter = buildDateFilter(period, dateFrom, dateTo);
+  const select = [
+    "id",
+    "task_id",
+    "user_id",
+    "comment_text",
+    "date_start",
+    "date_stop",
+    "minutes",
+    "seconds",
+    "inserted_at",
+    "updated_at",
+  ].join(",");
+  const filterSuffix = dateFilter ? `&${dateFilter}` : "";
+  const endpoint = `${base}/rest/v1/elapsed_times?select=${encodeURIComponent(select)}${filterSuffix}`;
+  const latestEndpoint = `${base}/rest/v1/elapsed_times?select=updated_at,inserted_at&order=inserted_at.desc&limit=1${filterSuffix}`;
+  return { endpoint, latestEndpoint, key, error: null };
+};
+
+const normalizeSeconds = (record: Partial<ElapsedTimeRecord> & { minutes?: number; seconds?: number }) => {
+  if (typeof record.seconds === "number" && Number.isFinite(record.seconds)) return record.seconds;
+  if (typeof record.minutes === "number" && Number.isFinite(record.minutes)) return record.minutes * 60;
+  const sec = Number(record.seconds);
+  if (!Number.isNaN(sec)) return sec;
+  const min = Number(record.minutes);
+  return Number.isNaN(min) ? 0 : min * 60;
+};
+
+export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedTimesResult {
+  const { period = "all", dateFrom, dateTo } = params;
+  const { endpoint, latestEndpoint, key, error: envError } = useMemo(
+    () => buildEndpoint(period, dateFrom, dateTo),
+    [period, dateFrom, dateTo]
+  );
+  const [times, setTimes] = useState<ElapsedTimeRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(envError);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [noChanges, setNoChanges] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const lastReloadRef = useRef(0);
+  const inFlightKeyRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const abortReasonRef = useRef<"cleanup" | "new-request" | "unmount" | "timeout">("cleanup");
+  const [reloadCooldownMsLeft, setReloadCooldownMsLeft] = useState(0);
+
+  const reload = useCallback(() => {
+    const now = Date.now();
+    if (now - lastReloadRef.current < RELOAD_COOLDOWN_MS) return;
+    lastReloadRef.current = now;
+    setRefreshToken((prev) => prev + 1);
+  }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const now = Date.now();
+      const left = Math.max(0, RELOAD_COOLDOWN_MS - (now - lastReloadRef.current));
+      setReloadCooldownMsLeft(left);
+    };
+    tick();
+    const id = window.setInterval(tick, 250);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (envError) return;
+    if (!endpoint || !latestEndpoint || !key) return;
+
+    const periodKey = period === "custom" ? `custom:${dateFrom ?? ""}:${dateTo ?? ""}` : period;
+    const cacheKey = `${CACHE_KEY}:${periodKey}`;
+    const cached = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
+      cacheKey,
+      null
+    );
+    if (cached?.data?.length) {
+      setTimes(cached.data);
+      setLastUpdated(cached.timestamp ?? null);
+    }
+
+    const requestKey = `${endpoint}|${params.accessToken || key}|${refreshToken}`;
+    if (inFlightKeyRef.current === requestKey) return;
+    if (abortRef.current) {
+      abortReasonRef.current = "new-request";
+      abortRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+    inFlightKeyRef.current = requestKey;
+    let timeoutFired = false;
+    const timeoutId = window.setTimeout(() => {
+      timeoutFired = true;
+      abortReasonRef.current = "timeout";
+      controller.abort();
+    }, REQUEST_TIMEOUT_MS);
+
+    const startedAt = Date.now();
+
+    const fetchTimes = async () => {
+      setLoading(true);
+      setError(null);
+      setNoChanges(false);
+      try {
+        const bearer = params.accessToken || key;
+        const cachedForCheck = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
+          cacheKey,
+          null
+        );
+        const cachedLatestMs = cachedForCheck?.latestUpdatedAtMs ?? null;
+        if (typeof cachedLatestMs === "number" && refreshToken > 0) {
+          const latestResponse = await fetch(latestEndpoint, {
+            headers: {
+              apikey: key,
+              Authorization: `Bearer ${bearer}`,
+            },
+            signal: controller.signal,
+            cache: "no-store",
+          });
+          if (latestResponse.ok) {
+            const latestRows = (await latestResponse.json()) as { updated_at?: string | null; inserted_at?: string | null }[];
+            const latestRow = latestRows?.[0] ?? null;
+            const latestUpdated = latestRow?.updated_at ?? null;
+            const latestInserted = latestRow?.inserted_at ?? null;
+            const parsedUpdated = latestUpdated ? Date.parse(String(latestUpdated)) : Number.NaN;
+            const parsedInserted = latestInserted ? Date.parse(String(latestInserted)) : Number.NaN;
+            const latestMs = [parsedUpdated, parsedInserted].filter(Number.isFinite).reduce(
+              (acc, value) => Math.max(acc, value),
+              Number.NaN
+            );
+            if (!Number.isNaN(latestMs) && latestMs === cachedLatestMs) {
+              setNoChanges(true);
+              setTimes(cachedForCheck?.data ?? []);
+              setLastUpdated(cachedForCheck?.timestamp ?? null);
+              return;
+            }
+          }
+        }
+        const fetchPage = async (offset: number) => {
+          const separator = endpoint.includes("?") ? "&" : "?";
+          const url = `${endpoint}${separator}limit=${PAGE_SIZE}&offset=${offset}`;
+          const response = await fetch(url, {
+            headers: {
+              apikey: key,
+              Authorization: `Bearer ${bearer}`,
+            },
+            signal: controller.signal,
+            cache: "no-store",
+          });
+
+          if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || `Erro ao buscar tempos (${response.status}).`);
+          }
+
+          return (await response.json()) as (ElapsedTimeRecord & { minutes?: number })[];
+        };
+
+        let data: ElapsedTimeRecord[] = [];
+        let offset = 0;
+        for (let page = 0; page < MAX_PAGES; page += 1) {
+          const chunk = await fetchPage(offset);
+          data = data.concat(chunk.map((row) => ({ ...row, seconds: normalizeSeconds(row) })));
+          if (chunk.length < PAGE_SIZE) break;
+          offset += PAGE_SIZE;
+        }
+        setTimes(data);
+
+        const timestamp = Date.now();
+        const latestUpdatedAtMs = data.reduce<number | null>((max, row) => {
+          const rawUpdated = row?.updated_at ? String(row.updated_at) : null;
+          const rawInserted = row?.inserted_at ? String(row.inserted_at) : null;
+          const parsedUpdated = rawUpdated ? Date.parse(rawUpdated) : Number.NaN;
+          const parsedInserted = rawInserted ? Date.parse(rawInserted) : Number.NaN;
+          const parsed = [parsedUpdated, parsedInserted].filter(Number.isFinite).reduce(
+            (acc, value) => Math.max(acc, value),
+            Number.NaN
+          );
+          if (Number.isNaN(parsed)) return max;
+          if (max === null) return parsed;
+          return parsed > max ? parsed : max;
+        }, null);
+        setLastUpdated(timestamp);
+        storage.set(cacheKey, { data, timestamp, latestUpdatedAtMs });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        const abortLike =
+          controller.signal.aborted ||
+          (err instanceof DOMException && err.name === "AbortError") ||
+          message.toLowerCase().includes("aborted");
+        if (abortLike) return;
+        const messageSafe = message || "Nao foi possivel carregar os tempos.";
+        console.error("[elapsed_times] fetch error", { endpoint, message });
+        setError(messageSafe);
+
+        const cachedFallback = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
+          cacheKey,
+          null
+        );
+        if (cachedFallback?.data?.length) {
+          setTimes(cachedFallback.data);
+          setLastUpdated(cachedFallback.timestamp ?? null);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          const refreshedCache = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
+            cacheKey,
+            null
+          );
+          const stale = !refreshedCache?.timestamp || Date.now() - refreshedCache.timestamp > CACHE_TTL_MS;
+          if (stale) {
+            setLastUpdated(refreshedCache?.timestamp ?? null);
+          }
+        }
+        inFlightKeyRef.current = null;
+        clearTimeout(timeoutId);
+      }
+    };
+
+    fetchTimes();
+
+    return () => {
+      abortReasonRef.current = "unmount";
+      controller.abort();
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
+      clearTimeout(timeoutId);
+      inFlightKeyRef.current = null;
+    };
+  }, [endpoint, latestEndpoint, key, envError, refreshToken, params.accessToken, period, dateFrom, dateTo]);
+
+  return { times, loading, error, reload, lastUpdated, reloadCooldownMsLeft, noChanges };
+}
