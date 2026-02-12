@@ -23,7 +23,7 @@ type UseElapsedTimesParams = {
 const CACHE_KEY = "cache:elapsed_times:v2";
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const RELOAD_COOLDOWN_MS = 4000;
-const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_TASKS_TIMEOUT_MS ?? "8000");
+const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_TASKS_TIMEOUT_MS ?? "25000");
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 10;
 
@@ -207,6 +207,7 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
             headers: {
               apikey: key,
               Authorization: `Bearer ${bearer}`,
+              Prefer: "count=exact",
             },
             signal: controller.signal,
             cache: "no-store",
@@ -217,16 +218,37 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
             throw new Error(text || `Erro ao buscar tempos (${response.status}).`);
           }
 
-          return (await response.json()) as (ElapsedTimeRecord & { minutes?: number })[];
+          const range = response.headers.get("Content-Range");
+          let totalFromHeader: number | null = null;
+          if (range && range.includes("/")) {
+            const raw = range.split("/")[1];
+            const n = Number(raw);
+            if (Number.isFinite(n)) totalFromHeader = n;
+          }
+
+          const rows = (await response.json()) as (ElapsedTimeRecord & { minutes?: number })[];
+          return { rows, totalFromHeader };
         };
 
-        let data: ElapsedTimeRecord[] = [];
-        let offset = 0;
-        for (let page = 0; page < MAX_PAGES; page += 1) {
-          const chunk = await fetchPage(offset);
-          data = data.concat(chunk.map((row) => ({ ...row, seconds: normalizeSeconds(row) })));
-          if (chunk.length < PAGE_SIZE) break;
-          offset += PAGE_SIZE;
+        // Fetch first page to discover total count
+        const first = await fetchPage(0);
+        let data: ElapsedTimeRecord[] = first.rows.map((row) => ({ ...row, seconds: normalizeSeconds(row) }));
+
+        if (first.rows.length >= PAGE_SIZE && first.totalFromHeader && first.totalFromHeader > PAGE_SIZE) {
+          // Fetch remaining pages in parallel
+          const remaining = Math.min(Math.ceil(first.totalFromHeader / PAGE_SIZE) - 1, MAX_PAGES - 1);
+          const offsets = Array.from({ length: remaining }, (_, i) => (i + 1) * PAGE_SIZE);
+          const pages = await Promise.all(offsets.map((o) => fetchPage(o)));
+          for (const p of pages) data = data.concat(p.rows.map((row) => ({ ...row, seconds: normalizeSeconds(row) })));
+        } else if (first.rows.length >= PAGE_SIZE) {
+          // Fallback sequential if no count header
+          let offset = PAGE_SIZE;
+          for (let page = 1; page < MAX_PAGES; page++) {
+            const chunk = await fetchPage(offset);
+            data = data.concat(chunk.rows.map((row) => ({ ...row, seconds: normalizeSeconds(row) })));
+            if (chunk.rows.length < PAGE_SIZE) break;
+            offset += PAGE_SIZE;
+          }
         }
         setTimes(data);
 
