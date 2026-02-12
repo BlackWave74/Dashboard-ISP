@@ -290,26 +290,26 @@ export function TaskCharts({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       {!tasks.length && (
         <div className="mb-4 task-card px-4 py-3 text-sm text-[hsl(var(--task-text-muted))]">
           Nenhuma tarefa neste recorte. Ajuste filtros ou recarregue a base.
         </div>
       )}
 
-      {/* Grid: 3 charts side by side */}
+      {/* Grid: responsive charts */}
       <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        {/* Pie: Consultants — original design (no label lines) */}
+        {/* Pie: Consultants */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="task-card flex flex-col min-h-0"
+          className="task-card flex flex-col min-h-0 min-w-0"
         >
           <div className="mb-3 flex items-center justify-between">
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
-              <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">Distribuição por consultor</p>
+              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Distribuição por consultor</p>
             </div>
             <ChartInfoButton
               title="Distribuição por Responsável"
@@ -318,18 +318,18 @@ export function TaskCharts({
               dataType="consultants"
             />
           </div>
-          <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
+          <div className="flex-1 min-h-[180px] max-h-[280px]">
             {pieByConsultant.length ? (
-              <div className="flex items-center gap-3 h-full">
-                <div className="flex-1 min-w-0" style={{ minHeight: 200 }}>
-                  <ResponsiveContainer width="100%" height={200}>
+              <div className="flex flex-col sm:flex-row items-center gap-3 h-full">
+                <div className="flex-1 min-w-0 w-full" style={{ minHeight: 180 }}>
+                  <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
                       <Pie
                         data={pieByConsultant}
                         dataKey="value"
                         nameKey="name"
-                        innerRadius={50}
-                        outerRadius={75}
+                        innerRadius="40%"
+                        outerRadius="65%"
                         paddingAngle={3}
                         stroke="none"
                         className="cursor-pointer"
@@ -350,7 +350,7 @@ export function TaskCharts({
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-1.5 shrink-0">
+                <div className="space-y-1.5 shrink-0 w-full sm:w-auto">
                   {pieByConsultant.map((d, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
@@ -373,12 +373,12 @@ export function TaskCharts({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="task-card flex flex-col min-h-0"
+          className="task-card flex flex-col min-h-0 min-w-0"
         >
           <div className="mb-3 flex items-center justify-between">
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
-              <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">Horas por projeto</p>
+              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Horas por projeto</p>
             </div>
             <ChartInfoButton
               title="Horas por Projeto"
@@ -387,14 +387,14 @@ export function TaskCharts({
               dataType="projects"
             />
           </div>
-          <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
+          <div className="flex-1 min-h-[180px] max-h-[280px]">
             {barByProject.length ? (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={barByProject}
                   layout="vertical"
                   barCategoryGap="40%"
-                  margin={{ top: 5, right: 40, bottom: 5, left: 5 }}
+                  margin={{ top: 5, right: 35, bottom: 5, left: 5 }}
                 >
                   <defs>
                     {barByProject.map((_, idx) => (
@@ -418,7 +418,7 @@ export function TaskCharts({
                   <Bar
                     dataKey="hours"
                     radius={[0, 6, 6, 0]}
-                    barSize={20}
+                    barSize={18}
                     minPointSize={12}
                     className="cursor-pointer"
                     onClick={(data: { name?: string; payload?: { name?: string } }) => {
@@ -444,14 +444,14 @@ export function TaskCharts({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="task-card flex flex-col min-h-0"
+          className="task-card flex flex-col min-h-0 min-w-0"
         >
           <div className="mb-3 flex items-center justify-between">
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-400">Linha do Tempo</p>
-              <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">Tarefas por prazo</p>
+              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Tarefas por prazo</p>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {[7, 30].map((range) => (
                 <button
                   key={range}
@@ -474,13 +474,13 @@ export function TaskCharts({
               />
             </div>
           </div>
-          <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
+          <div className="flex-1 min-h-[180px] max-h-[280px]">
             {lineByDeadline.length ? (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineByDeadline} margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" />
                   <XAxis dataKey="iso" tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`} />
-                  <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} />
+                  <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} width={30} />
                   <Tooltip
                     contentStyle={tooltipStyle}
                     itemStyle={{ color: "#e2e8f0" }}
