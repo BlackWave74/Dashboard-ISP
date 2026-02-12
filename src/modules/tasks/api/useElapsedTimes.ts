@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storage } from "@/modules/shared/storage";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import type { ElapsedTimeRecord } from "../types";
 
 type UseElapsedTimesResult = {
@@ -49,8 +50,8 @@ const buildDateFilter = (period?: string, dateFrom?: string, dateTo?: string) =>
 };
 
 const buildEndpoint = (period?: string, dateFrom?: string, dateTo?: string) => {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const url = SUPABASE_URL;
+  const key = SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     return {

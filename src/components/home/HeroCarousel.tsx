@@ -36,7 +36,7 @@ export default function HeroCarousel() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card/55">
+    <div className="hero-showcase relative overflow-hidden rounded-2xl">
       <div className="relative h-[22rem] md:h-[26rem]">
         {slides.map((slide, idx) => (
           <div
@@ -45,12 +45,12 @@ export default function HeroCarousel() {
           >
             {/* Background gradient */}
             <div
-              className={`absolute -inset-[120px] bg-gradient-to-br ${slide.gradient} hero-hue-rotate`}
+              className={`hero-showcase__bg absolute -inset-[18px] scale-105 bg-gradient-to-br ${slide.gradient} hero-hue-rotate`}
               aria-hidden="true"
             />
 
             {/* Content panel */}
-            <div className="relative z-10 mx-auto mt-12 w-[min(680px,calc(100%-3rem))] rounded-xl border border-white/10 bg-background/50 p-8 text-center backdrop-blur-sm">
+            <div className="hero-showcase__panel relative z-10 mx-auto mt-12 w-[min(680px,calc(100%-3rem))] rounded-xl bg-background/50 p-8 text-center backdrop-blur-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
                 {slide.kicker}
               </p>
@@ -79,13 +79,13 @@ export default function HeroCarousel() {
       </div>
 
       {/* Dots */}
-      <div className="relative z-10 flex justify-center gap-2 pb-4">
+      <div className="hero-showcase__dots relative z-10 flex justify-center gap-2 pb-4">
         {slides.map((slide, idx) => (
           <button
             key={slide.id}
             type="button"
             onClick={() => setActive(idx)}
-            className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${idx === active ? "bg-primary scale-125" : "bg-border hover:bg-muted-foreground"}`}
+            className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${idx === active ? "bg-primary scale-125" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
             aria-label={`Slide ${idx + 1}`}
           />
         ))}

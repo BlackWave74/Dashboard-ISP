@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 
 type ProjectHoursRow = {
   cliente_id: number;
@@ -33,8 +34,8 @@ type UseProjectHoursResult = {
 };
 
 const buildRpcEndpoint = () => {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const url = SUPABASE_URL;
+  const key = SUPABASE_ANON_KEY;
   if (!url || !key) {
     return { endpoint: null, key: null, error: "Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY." };
   }
