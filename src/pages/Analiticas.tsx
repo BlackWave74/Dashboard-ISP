@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
+import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
+import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
 import AnalyticsTaskSummary from "@/modules/analytics/components/AnalyticsTaskSummary";
+import AnalyticsProjectHoursChart from "@/modules/analytics/components/AnalyticsProjectHoursChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
 import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
 import type { ProjectAnalytics } from "@/modules/analytics/types";
@@ -18,6 +21,7 @@ export default function AnaliticasPage() {
   const now = new Date();
 
   const { tasks, loading: loadingTasks, error: errorTasks } = useTasks({ accessToken, period: "180d" });
+  const { times, loading: loadingTimes } = useElapsedTimes({ accessToken, period: "180d" });
 
   const startIso = useMemo(() => {
     const d = new Date();
@@ -30,7 +34,7 @@ export default function AnaliticasPage() {
     endIso: now.toISOString(),
   });
 
-  const loading = loadingTasks || loadingHours;
+  const loading = loadingTasks || loadingTimes || loadingHours;
 
   const {
     projects,
@@ -95,7 +99,7 @@ export default function AnaliticasPage() {
           />
         </motion.div>
 
-        {/* KPI Cards — 3 cards only */}
+        {/* KPI Cards */}
         <AnalyticsKpiCards
           clients={uniqueClients}
           activeProjects={activeProjects}
@@ -105,7 +109,17 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Task Summary — full width */}
+        {/* Charts row */}
+        <div className="grid gap-5 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <AnalyticsPerformanceChart times={times} />
+          </div>
+          <div className="lg:col-span-2">
+            <AnalyticsProjectHoursChart projects={projects} />
+          </div>
+        </div>
+
+        {/* Task Summary */}
         <AnalyticsTaskSummary done={totalDone} pending={totalPending} overdue={totalOverdue} />
 
         {/* Projects */}
