@@ -11,7 +11,7 @@ import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards"
 import AnalyticsCompletionGauge from "@/modules/analytics/components/AnalyticsCompletionGauge";
 import AnalyticsPerformanceSummary from "@/modules/analytics/components/AnalyticsPerformanceSummary";
 import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
-import AnalyticsProjectHoursChart from "@/modules/analytics/components/AnalyticsProjectHoursChart";
+
 import AnalyticsTasksByProjectChart from "@/modules/analytics/components/AnalyticsTasksByProjectChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
 import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
@@ -136,11 +136,8 @@ export default function AnaliticasPage() {
         {/* Row 2: Performance timeline */}
         <AnalyticsPerformanceChart times={userTimes} />
 
-        {/* Row 3: Hours by project + Tasks by project */}
-        <div className="grid gap-5 lg:grid-cols-2">
-          <AnalyticsProjectHoursChart projects={projects} times={userTimes} />
-          <AnalyticsTasksByProjectChart projects={projects} />
-        </div>
+        {/* Row 3: Tasks by project */}
+        <AnalyticsTasksByProjectChart projects={projects} />
 
         {/* Projects list */}
         <AnalyticsProjectList
