@@ -59,15 +59,13 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
   );
 }
 
-// Typewriter effect — only re-triggers when `trigger` increments
-function TypewriterWord({ text, trigger }: { text: string; trigger: number }) {
+// Simple typewriter that runs once when triggered via key change
+function TypewriterWord({ text, runKey }: { text: string; runKey: number }) {
   const [displayed, setDisplayed] = useState("");
   const [showCursor, setShowCursor] = useState(false);
-  const lastTrigger = useRef(0);
 
   useEffect(() => {
-    if (trigger === 0 || trigger === lastTrigger.current) return;
-    lastTrigger.current = trigger;
+    if (runKey === 0) return;
     setDisplayed("");
     setShowCursor(true);
     let i = 0;
@@ -80,7 +78,7 @@ function TypewriterWord({ text, trigger }: { text: string; trigger: number }) {
       }
     }, 55);
     return () => clearInterval(id);
-  }, [trigger, text]);
+  }, [runKey]); // only runKey — text doesn't change
 
   return (
     <span className="font-semibold text-white/90">
@@ -102,47 +100,56 @@ const subtitleSegments = [
 
 function AnimatedSubtitle() {
   const ref = useRef<HTMLParagraphElement>(null);
-  const [cycle, setCycle] = useState(0);
-  const [elapsed, setElapsed] = useState(-1);
-  const visible = useRef(false);
+  // Each segment gets its own trigger key; incremented once per cycle at the right delay
+  const [triggers, setTriggers] = useState<number[]>(subtitleSegments.map(() => 0));
+  const [shown, setShown] = useState<boolean[]>(subtitleSegments.map(() => false));
+  const started = useRef(false);
 
   useEffect(() => {
-    let loopInterval: ReturnType<typeof setInterval>;
-    let ticker: ReturnType<typeof setInterval>;
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
     const runCycle = () => {
-      setCycle((c) => c + 1);
-      setElapsed(0);
-      ticker = setInterval(() => setElapsed((e) => e + 100), 100);
-      const maxDelay = subtitleSegments[subtitleSegments.length - 1].delay + 2000;
-      setTimeout(() => clearInterval(ticker), maxDelay);
+      // Reset all
+      setTriggers(subtitleSegments.map(() => 0));
+      setShown(subtitleSegments.map(() => false));
+
+      // Schedule each segment
+      subtitleSegments.forEach((seg, i) => {
+        const t = setTimeout(() => {
+          if (seg.type === "keyword") {
+            setTriggers((prev) => { const n = [...prev]; n[i] = prev[i] + 1; return n; });
+          }
+          setShown((prev) => { const n = [...prev]; n[i] = true; return n; });
+        }, seg.delay);
+        timers.push(t);
+      });
     };
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !visible.current) {
-          visible.current = true;
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
           runCycle();
-          loopInterval = setInterval(runCycle, 10000);
+          const loop = setInterval(runCycle, 10000);
+          timers.push(loop as unknown as ReturnType<typeof setTimeout>);
         }
       },
       { threshold: 0.5 }
     );
     if (ref.current) observer.observe(ref.current);
-    return () => { observer.disconnect(); clearInterval(loopInterval); clearInterval(ticker); };
+    return () => { observer.disconnect(); timers.forEach(clearTimeout); };
   }, []);
 
   return (
     <p ref={ref} className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed md:text-lg">
       {subtitleSegments.map((seg, i) => {
-        const active = elapsed >= seg.delay;
         if (seg.type === "keyword") {
-          return <TypewriterWord key={i} text={seg.text} trigger={active ? cycle : 0} />;
+          return <TypewriterWord key={i} text={seg.text} runKey={triggers[i]} />;
         }
         return (
           <span
             key={i}
-            className={`text-white/60 transition-opacity duration-400 ${active ? "opacity-100" : "opacity-0"}`}
+            className={`text-white/60 transition-opacity duration-400 ${shown[i] ? "opacity-100" : "opacity-0"}`}
           >
             {seg.text}
           </span>
