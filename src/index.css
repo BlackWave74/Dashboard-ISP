@@ -643,3 +643,96 @@ body {
   background-size: 200% 100%;
   animation: task-shimmer 1.5s ease-in-out infinite;
 }
+
+/* ===== Analytics Page Tokens ===== */
+:root {
+  --ana-bg: 260 35% 6%;
+  --ana-surface: 258 30% 10%;
+  --ana-surface-hover: 256 28% 14%;
+  --ana-border: 260 22% 16%;
+  --ana-border-light: 258 20% 22%;
+  --ana-text: 210 40% 96%;
+  --ana-text-muted: 215 15% 55%;
+  --ana-yellow: 43 97% 52%;
+  --ana-purple: 262 83% 58%;
+  --ana-indigo: 234 89% 64%;
+  --ana-green: 160 84% 39%;
+  --ana-red: 0 84% 60%;
+  --ana-amber: 38 92% 50%;
+}
+
+.ana-page {
+  min-height: 100vh;
+  background: linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%));
+}
+
+.ana-card {
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--ana-border));
+  background: hsl(var(--ana-surface));
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.ana-card:hover {
+  border-color: hsl(var(--ana-border-light));
+}
+
+.ana-glow {
+  box-shadow: 0 0 40px -12px hsl(var(--ana-purple) / 0.25);
+}
+
+/* Mountain chart gradient pulse */
+@keyframes ana-chart-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+}
+.ana-chart-gradient-pulse {
+  animation: ana-chart-pulse 4s ease-in-out infinite;
+}
+
+/* KPI sparkline draw */
+@keyframes ana-spark-draw {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+.ana-spark-line {
+  stroke-dasharray: 200;
+  animation: ana-spark-draw 1.8s ease-out forwards;
+}
+
+/* Favorite star pulse */
+@keyframes ana-star-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+.ana-star-active {
+  animation: ana-star-pulse 0.4s ease-out;
+}
+
+/* Shimmer loading */
+.ana-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--ana-surface)) 0%,
+    hsl(var(--ana-surface-hover)) 50%,
+    hsl(var(--ana-surface)) 100%
+  );
+  background-size: 200% 100%;
+  animation: task-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Performance badge */
+.ana-perf-good {
+  color: hsl(var(--ana-green));
+  background: hsl(var(--ana-green) / 0.12);
+  border: 1px solid hsl(var(--ana-green) / 0.25);
+}
+.ana-perf-bad {
+  color: hsl(var(--ana-red));
+  background: hsl(var(--ana-red) / 0.12);
+  border: 1px solid hsl(var(--ana-red) / 0.25);
+}
+.ana-perf-neutral {
+  color: hsl(var(--ana-amber));
+  background: hsl(var(--ana-amber) / 0.12);
+  border: 1px solid hsl(var(--ana-amber) / 0.25);
+}
