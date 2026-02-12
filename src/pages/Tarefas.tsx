@@ -574,13 +574,14 @@ export default function TarefasPage() {
             {/* Top performers list */}
             <div className="space-y-2 flex-1 overflow-y-auto max-h-[320px] styled-scrollbar">
               {(() => {
-                const performerMap = new Map<string, { total: number; done: number; overdue: number; hours: number }>();
+                const performerMap = new Map<string, { total: number; done: number; overdue: number; pending: number; hours: number }>();
                 filteredTasks.forEach((t) => {
                   const name = (t.consultant || "").trim() || "Sem responsável";
-                  const cur = performerMap.get(name) ?? { total: 0, done: 0, overdue: 0, hours: 0 };
+                  const cur = performerMap.get(name) ?? { total: 0, done: 0, overdue: 0, pending: 0, hours: 0 };
                   cur.total += 1;
                   if (t.statusKey === "done") cur.done += 1;
-                  if (t.statusKey === "overdue") cur.overdue += 1;
+                  else if (t.statusKey === "overdue") cur.overdue += 1;
+                  else cur.pending += 1;
                   cur.hours += (t.durationSeconds ?? 0) / 3600;
                   performerMap.set(name, cur);
                 });
@@ -620,24 +621,32 @@ export default function TarefasPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
-                          <div className="flex items-center gap-2 text-[9px]">
+                          <div className="flex items-center gap-2 text-[9px] flex-wrap">
                             <span className="text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
                             <span className="text-emerald-400">{data.done} feitas</span>
+                            {data.pending > 0 && <span className="text-[hsl(var(--task-yellow))]">{data.pending} em andamento</span>}
                             {data.overdue > 0 && <span className="text-rose-400">{data.overdue} atrasadas</span>}
-                            {data.hours > 0 && <span className="text-[hsl(var(--task-text-muted))]">{data.hours.toFixed(1)}h</span>}
                           </div>
                         </div>
                         <span className="text-sm font-extrabold" style={{ color }}>{pctDoneLocal}%</span>
                       </div>
-                      {/* Progress bar */}
-                      <div className="h-1.5 rounded-full bg-[hsl(var(--task-border))] overflow-hidden">
+                      {/* Progress bar with loading shimmer */}
+                      <div className="h-2 rounded-full bg-[hsl(var(--task-border))] overflow-hidden relative">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${pctBar}%` }}
-                          transition={{ duration: 0.8, delay: 0.4 + idx * 0.08 }}
-                          className="h-full rounded-full"
-                          style={{ background: `linear-gradient(90deg, ${color}, ${color}99)` }}
-                        />
+                          transition={{ duration: 1.2, delay: 0.4 + idx * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                          className="h-full rounded-full relative overflow-hidden"
+                          style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)` }}
+                        >
+                          <div
+                            className="absolute inset-0 animate-[task-shimmer_2s_ease-in-out_infinite]"
+                            style={{
+                              background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)`,
+                              backgroundSize: "200% 100%",
+                            }}
+                          />
+                        </motion.div>
                       </div>
                     </motion.div>
                   );
