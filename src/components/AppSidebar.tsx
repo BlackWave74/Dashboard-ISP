@@ -8,6 +8,8 @@ import {
   Package,
   LogOut,
   ChevronDown,
+  Settings,
+  HelpCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -15,12 +17,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
@@ -33,8 +29,8 @@ function UserAvatar({ name, email }: { name?: string; email?: string }) {
     .toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 px-1">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground shadow-lg shadow-primary/20">
         {initials}
       </div>
       <div className="min-w-0 flex-1">
@@ -47,12 +43,35 @@ function UserAvatar({ name, email }: { name?: string; email?: string }) {
   );
 }
 
+interface NavItemProps {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  end?: boolean;
+}
+
+function SidebarNavItem({ to, icon: Icon, label, end }: NavItemProps) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+      activeClassName="bg-primary text-primary-foreground shadow-md shadow-primary/25 hover:bg-primary hover:text-primary-foreground"
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0" />
+      <span>{label}</span>
+    </NavLink>
+  );
+}
+
 export function AppSidebar() {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [projectsOpen, setProjectsOpen] = useState(() => {
-    return ["/tarefas", "/analiticas"].some((p) => location.pathname.startsWith(p));
+    return ["/tarefas", "/analiticas"].some((p) =>
+      location.pathname.startsWith(p)
+    );
   });
 
   const handleLogout = () => {
@@ -65,126 +84,88 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className="border-r border-sidebar-border bg-sidebar">
+    <Sidebar className="border-r-0 bg-sidebar">
       {/* Logo */}
-      <div className="flex items-center justify-center px-4 py-5">
+      <div className="flex items-center gap-2.5 px-5 pt-6 pb-2">
         <img
           src="/resouce/ISP-Consulte-v3-branco.png"
           alt="ISP Consulte"
-          className="h-9 w-auto object-contain"
+          className="h-8 w-auto object-contain"
         />
       </div>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50 text-xs uppercase tracking-wider">
+      <SidebarContent className="px-3 pt-6">
+        {/* MENU section */}
+        <div className="mb-6">
+          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50">
             Menu
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Página Inicial */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/"
-                    end
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    activeClassName="bg-primary/15 text-primary font-medium"
-                  >
-                    <Home className="h-4 w-4" />
-                    <span>Página Inicial</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+          </p>
+          <nav className="flex flex-col gap-1">
+            <SidebarNavItem to="/" icon={Home} label="Dashboard" end />
 
-              {/* Projetos (with submenu) */}
-              <SidebarMenuItem>
-                <button
-                  onClick={() => setProjectsOpen((o) => !o)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                    isProjectsActive
-                      ? "bg-primary/15 text-primary font-medium"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  }`}
+            {/* Projetos collapsible */}
+            <button
+              onClick={() => setProjectsOpen((o) => !o)}
+              className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isProjectsActive
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              <FolderKanban className="h-[18px] w-[18px] shrink-0" />
+              <span className="flex-1 text-left">Projetos</span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-200 ${
+                  projectsOpen ? "rotate-0" : "-rotate-90"
+                }`}
+              />
+            </button>
+
+            {(projectsOpen || isProjectsActive) && (
+              <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-sidebar-border pl-3">
+                <NavLink
+                  to="/tarefas"
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                  activeClassName="text-primary bg-primary/10"
                 >
-                  <FolderKanban className="h-4 w-4" />
-                  <span className="flex-1 text-left">Projetos</span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                      projectsOpen ? "rotate-0" : "-rotate-90"
-                    }`}
-                  />
-                </button>
-              </SidebarMenuItem>
+                  <ListTodo className="h-4 w-4" />
+                  <span>Tarefas</span>
+                </NavLink>
+                <NavLink
+                  to="/analiticas"
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                  activeClassName="text-primary bg-primary/10"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Analíticas</span>
+                </NavLink>
+              </div>
+            )}
 
-              {(projectsOpen || isProjectsActive) && (
-                <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to="/tarefas"
-                        className="flex items-center gap-3 rounded-lg py-2 pl-10 pr-3 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        activeClassName="bg-primary/10 text-primary font-medium"
-                      >
-                        <ListTodo className="h-4 w-4" />
-                        <span>Tarefas</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to="/analiticas"
-                        className="flex items-center gap-3 rounded-lg py-2 pl-10 pr-3 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        activeClassName="bg-primary/10 text-primary font-medium"
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        <span>Analíticas</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>
-              )}
+            <SidebarNavItem to="/usuarios" icon={UserPlus} label="Usuários" />
+            <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />
+          </nav>
+        </div>
 
-              {/* Usuários */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/usuarios"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    activeClassName="bg-primary/15 text-primary font-medium"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    <span>Usuários</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Comodato */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/comodato"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    activeClassName="bg-primary/15 text-primary font-medium"
-                  >
-                    <Package className="h-4 w-4" />
-                    <span>Comodato</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* MANAGE section */}
+        <div>
+          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50">
+            Gerenciar
+          </p>
+          <nav className="flex flex-col gap-1">
+            <SidebarNavItem to="/configuracoes" icon={Settings} label="Configurações" />
+            <SidebarNavItem to="/suporte" icon={HelpCircle} label="Suporte" />
+          </nav>
+        </div>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4 space-y-3">
+      <SidebarFooter className="border-t border-sidebar-border/50 p-4 space-y-3">
         <UserAvatar name={session?.name} email={session?.email} />
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-[18px] w-[18px]" />
           Sair
         </button>
       </SidebarFooter>
