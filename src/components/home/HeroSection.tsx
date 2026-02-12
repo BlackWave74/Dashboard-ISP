@@ -35,7 +35,7 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
         if (entry.isIntersecting && !visible.current) {
           visible.current = true;
           runAnimation();
-          interval = setInterval(runAnimation, 8000);
+          interval = setInterval(runAnimation, 10000);
         }
       },
       { threshold: 0.5 }
@@ -59,13 +59,16 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
   );
 }
 
-// Typewriter effect for highlighted keywords
-function TypewriterWord({ text, start }: { text: string; start: boolean }) {
+// Typewriter effect — only re-triggers when `trigger` increments
+function TypewriterWord({ text, trigger }: { text: string; trigger: number }) {
   const [displayed, setDisplayed] = useState("");
   const [showCursor, setShowCursor] = useState(false);
+  const lastTrigger = useRef(0);
 
   useEffect(() => {
-    if (!start) { setDisplayed(""); setShowCursor(false); return; }
+    if (trigger === 0 || trigger === lastTrigger.current) return;
+    lastTrigger.current = trigger;
+    setDisplayed("");
     setShowCursor(true);
     let i = 0;
     const id = setInterval(() => {
@@ -77,7 +80,7 @@ function TypewriterWord({ text, start }: { text: string; start: boolean }) {
       }
     }, 55);
     return () => clearInterval(id);
-  }, [start, text]);
+  }, [trigger, text]);
 
   return (
     <span className="font-semibold text-white/90">
@@ -99,14 +102,16 @@ const subtitleSegments = [
 
 function AnimatedSubtitle() {
   const ref = useRef<HTMLParagraphElement>(null);
+  const [cycle, setCycle] = useState(0);
   const [elapsed, setElapsed] = useState(-1);
   const visible = useRef(false);
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    let loopInterval: ReturnType<typeof setInterval>;
     let ticker: ReturnType<typeof setInterval>;
 
     const runCycle = () => {
+      setCycle((c) => c + 1);
       setElapsed(0);
       ticker = setInterval(() => setElapsed((e) => e + 100), 100);
       const maxDelay = subtitleSegments[subtitleSegments.length - 1].delay + 2000;
@@ -118,13 +123,13 @@ function AnimatedSubtitle() {
         if (entry.isIntersecting && !visible.current) {
           visible.current = true;
           runCycle();
-          interval = setInterval(runCycle, 8000);
+          loopInterval = setInterval(runCycle, 10000);
         }
       },
       { threshold: 0.5 }
     );
     if (ref.current) observer.observe(ref.current);
-    return () => { observer.disconnect(); clearInterval(interval); clearInterval(ticker); };
+    return () => { observer.disconnect(); clearInterval(loopInterval); clearInterval(ticker); };
   }, []);
 
   return (
@@ -132,7 +137,7 @@ function AnimatedSubtitle() {
       {subtitleSegments.map((seg, i) => {
         const active = elapsed >= seg.delay;
         if (seg.type === "keyword") {
-          return <TypewriterWord key={i} text={seg.text} start={active} />;
+          return <TypewriterWord key={i} text={seg.text} trigger={active ? cycle : 0} />;
         }
         return (
           <span
