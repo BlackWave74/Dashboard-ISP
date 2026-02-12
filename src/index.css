@@ -512,3 +512,62 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-hue-rotate { animation: none !important; }
 }
+
+/* ===== Task Page Tokens ===== */
+:root {
+  --task-bg: 228 30% 4%;
+  --task-surface: 228 25% 8%;
+  --task-surface-hover: 228 25% 11%;
+  --task-border: 228 20% 14%;
+  --task-border-light: 228 18% 18%;
+  --task-text: 210 40% 96%;
+  --task-text-muted: 215 15% 55%;
+  --task-yellow: 43 97% 52%;
+  --task-purple: 262 83% 58%;
+  --task-green: 142 71% 45%;
+  --task-red: 0 84% 60%;
+}
+
+.task-page {
+  --tw-bg-opacity: 1;
+  min-height: 100vh;
+}
+
+/* Task page stat glow */
+.task-stat-glow {
+  position: relative;
+}
+.task-stat-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.task-stat-glow:hover::after {
+  opacity: 1;
+}
+
+/* Progress ring animation */
+@keyframes task-ring-fill {
+  from { stroke-dashoffset: 283; }
+}
+
+/* Task card shimmer */
+@keyframes task-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.task-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--task-surface)) 0%,
+    hsl(var(--task-surface-hover)) 50%,
+    hsl(var(--task-surface)) 100%
+  );
+  background-size: 200% 100%;
+  animation: task-shimmer 1.5s ease-in-out infinite;
+}

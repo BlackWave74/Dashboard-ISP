@@ -36,7 +36,7 @@ type Props = {
   onPickDeadlineIso?: (iso: string) => void;
 };
 
-const COLORS = ["#6366f1", "#22c55e", "#eab308", "#f43f5e", "#06b6d4", "#a855f7", "#f97316", "#84cc16"];
+const COLORS = ["#FCBD0F", "#9333ea", "#22c55e", "#f43f5e", "#06b6d4", "#6366f1", "#f97316", "#84cc16"];
 
 function groupTopN(tasks: TaskView[], key: (t: TaskView) => string | null | undefined, topN: number) {
   const map = new Map<string, number>();
@@ -164,16 +164,16 @@ export function TaskCharts({
   return (
     <div className="h-full w-full" style={{ minHeight: 420 }}>
       {!tasks.length && (
-        <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
+        <div className="mb-4 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-4 py-3 text-sm text-[hsl(var(--task-text-muted))]">
           Nenhuma tarefa neste recorte. Ajuste filtros ou recarregue a base para visualizar dados.
         </div>
       )}
 
       <div className="grid items-stretch gap-4 xl:grid-cols-3">
-        <div className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/45 p-4">
+        <div className="flex h-full flex-col rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-4">
           <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-indigo-300">Distribuição por responsáveis</p>
-            <p className="mt-1 text-sm text-slate-400">Quem concentra mais tarefas neste recorte.</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--task-yellow))]">Distribuição por responsáveis</p>
+            <p className="mt-1 text-sm text-[hsl(var(--task-text-muted))]">Quem concentra mais tarefas neste recorte.</p>
           </div>
 
           <div className="mt-3 flex-1" style={{ minHeight: 320 }}>
@@ -205,7 +205,7 @@ export function TaskCharts({
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-slate-400">
+              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
                 Sem dados para este recorte.
               </div>
             )}
@@ -286,27 +286,27 @@ export function TaskCharts({
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-slate-400">
+              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
                 Sem dados para este recorte.
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/45 p-4">
+        <div className="flex h-full flex-col rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-4">
           <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-indigo-300">Linha do tempo</p>
-            <p className="mt-1 text-sm text-slate-400">Quantidade por data de prazo (últimos pontos).</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-400">Linha do tempo</p>
+            <p className="mt-1 text-sm text-[hsl(var(--task-text-muted))]">Quantidade por data de prazo (últimos pontos).</p>
             <div className="mt-2 flex justify-center gap-2">
               {[7, 30].map((range) => (
                 <button
                   key={range}
                   type="button"
                   onClick={() => setDeadlineRange(range as TimelineRange)}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                  className={`rounded-md border px-3 py-1 text-xs transition ${
                     deadlineRange === range
-                      ? "border-emerald-400 bg-emerald-500/10 text-emerald-100"
-                      : "border-slate-700 text-slate-300 hover:border-emerald-300 hover:text-emerald-100"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                      : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-emerald-400/30 hover:text-emerald-300"
                   }`}
                 >
                   Últimos {range}d
@@ -350,7 +350,7 @@ export function TaskCharts({
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-slate-400">
+              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
                 Nenhuma tarefa com prazo para montar a linha do tempo.
               </div>
             )}
@@ -452,8 +452,8 @@ export function ProjectPerformanceGauge({
           >
             <defs>
               <linearGradient id="tcGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#22d3ee" />
-                <stop offset="100%" stopColor="#a855f7" />
+                <stop offset="0%" stopColor="#FCBD0F" />
+                <stop offset="100%" stopColor="#9333ea" />
               </linearGradient>
               <filter id="tcGlow" x="-80%" y="-80%" width="260%" height="260%">
                 <feGaussianBlur stdDeviation="5" result="coloredBlur" />

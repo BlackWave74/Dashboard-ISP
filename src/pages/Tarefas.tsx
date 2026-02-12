@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { TaskCharts, ProjectPerformanceGauge } from "@/modules/tasks/ui/TaskCharts";
 import { TaskFilters } from "@/modules/tasks/ui/TaskFilters";
@@ -6,6 +7,20 @@ import { TaskListTable } from "@/modules/tasks/ui/TaskListTable";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { STATUS_LABELS, type TaskRecord, type TaskView } from "@/modules/tasks/types";
+import {
+  RefreshCw,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  TrendingUp,
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+  Zap,
+  Target,
+  X,
+} from "lucide-react";
 import {
   deadlineColor,
   formatDatePtBR,
@@ -156,48 +171,46 @@ const aggregateProjectHours = (tasks: TaskView[]) => {
 
 /* ─── Sub-components ─── */
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } }),
+};
+
 function StatCard({
   label,
   value,
-  accent,
+  icon: Icon,
+  accent = "default",
   onClick,
 }: {
   label: string;
   value: number | string;
-  accent?: "emerald" | "rose" | "indigo" | "amber";
+  icon?: React.ElementType;
+  accent?: "yellow" | "green" | "red" | "purple" | "default";
   onClick?: () => void;
 }) {
-  const accentClasses =
-    accent === "emerald"
-      ? "from-emerald-500/20 via-transparent to-transparent border-emerald-500/30 text-emerald-100"
-      : accent === "rose"
-        ? "from-rose-500/20 via-transparent to-transparent border-rose-500/30 text-rose-100"
-        : accent === "amber"
-          ? "from-amber-500/20 via-transparent to-transparent border-amber-500/30 text-amber-100"
-          : "from-indigo-500/20 via-transparent to-transparent border-indigo-500/30 text-indigo-100";
+  const accents = {
+    yellow: { border: "border-[hsl(var(--task-yellow)/0.25)]", glow: "bg-[hsl(var(--task-yellow)/0.08)]", icon: "text-[hsl(var(--task-yellow))]", value: "text-[hsl(var(--task-yellow))]" },
+    green: { border: "border-emerald-500/25", glow: "bg-emerald-500/8", icon: "text-emerald-400", value: "text-emerald-400" },
+    red: { border: "border-rose-500/25", glow: "bg-rose-500/8", icon: "text-rose-400", value: "text-rose-400" },
+    purple: { border: "border-[hsl(var(--task-purple)/0.25)]", glow: "bg-[hsl(var(--task-purple)/0.08)]", icon: "text-[hsl(var(--task-purple))]", value: "text-[hsl(var(--task-purple))]" },
+    default: { border: "border-[hsl(var(--task-border))]", glow: "", icon: "text-[hsl(var(--task-text-muted))]", value: "text-[hsl(var(--task-text))]" },
+  };
+  const a = accents[accent];
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="relative overflow-hidden rounded-2xl border border-border bg-card px-4 py-4 text-left transition hover:border-primary/60 hover:shadow-lg"
+      className={`group relative flex flex-col gap-1 rounded-xl border ${a.border} bg-[hsl(var(--task-surface))] p-4 text-left transition hover:bg-[hsl(var(--task-surface-hover))] hover:shadow-lg`}
     >
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accentClasses}`} aria-hidden />
-      <div className="relative">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
-        <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
+      {a.glow && <div className={`absolute inset-0 rounded-xl ${a.glow} opacity-0 group-hover:opacity-100 transition`} />}
+      <div className="relative flex items-center justify-between">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--task-text-muted))]">{label}</p>
+        {Icon && <Icon className={`h-4 w-4 ${a.icon}`} />}
       </div>
+      <p className={`relative text-2xl font-bold ${a.value}`}>{value}</p>
     </button>
-  );
-}
-
-function InfoCard({ title, value, subtitle }: { title: string; value: number | string; subtitle?: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card px-4 py-4 shadow-md">
-      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-      <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
-      {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
-    </div>
   );
 }
 
@@ -550,274 +563,317 @@ export default function TarefasPage() {
   }, [debouncedSearch, status, deadline, period, dateFrom, dateTo, deadlineTo, consultant]);
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-8 sm:py-10">
-      <section className="mx-auto flex w-full max-w-[1900px] flex-col gap-6 rounded-2xl border border-border bg-card/70 p-5 shadow-xl sm:p-8">
-        {/* Header */}
-        <div className="flex w-full flex-col items-center gap-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-          <h1 className="text-2xl font-semibold text-foreground">Central de Tarefas</h1>
-          <div className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            {refreshing ? (
-              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            ) : (
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-            )}
-            <span>{formatLastUpdated(combinedLastUpdated)}</span>
-          </div>
-        </div>
+    <div className="task-page min-h-screen bg-[hsl(var(--task-bg))] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1800px] space-y-6">
 
-        {/* Filters */}
-        <div ref={filtersBoxRef} className="space-y-3">
-          <TaskFilters
-            search={search}
-            setSearch={setSearch}
-            status={status}
-            setStatus={setStatus}
-            deadline={deadline}
-            setDeadline={setDeadline}
-            period={period}
-            setPeriod={setPeriod}
-            dateFrom={dateFrom}
-            setDateFrom={setDateFrom}
-            dateTo={dateTo}
-            setDateTo={setDateTo}
-            deadlineTo={deadlineTo}
-            setDeadlineTo={setDeadlineTo}
-            consultant={consultant}
-            setConsultant={setConsultant}
-            consultantOptions={consultantOptions}
-            searchRef={searchInputRef}
-            project={effectiveProjectFilter}
-            setProject={setProject}
-            projectOptions={projectOptions}
-            projectDisabled={Boolean(lockedProject)}
-          />
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-1 text-xs text-muted-foreground">
-            <button
-              type="button"
-              onClick={() => {
-                reload();
-                reloadTimes();
-              }}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary"
-            >
-              {refreshing ? "Atualizando..." : "Recarregar dados"}
-            </button>
-            <button
-              type="button"
-              onClick={resetFilters}
-              disabled={!hasActiveFilters}
-              className="rounded-lg border border-destructive/60 bg-destructive/10 px-4 py-2 text-sm font-semibold text-destructive-foreground transition hover:border-destructive hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Limpar filtros
-            </button>
-          </div>
-        </div>
-
-        {/* Performance Gauge */}
-        <div className="rounded-2xl border border-border bg-card/50 p-4 shadow-md">
+        {/* ── HEADER ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex flex-wrap items-center justify-between gap-4"
+        >
           <div>
-            <p className="text-sm font-semibold text-foreground">Desempenho do projeto</p>
-            <p className="text-xs text-muted-foreground">Percentual que falta para concluir</p>
+            <h1 className="text-3xl font-bold text-[hsl(var(--task-text))]">
+              Central de Tarefas
+            </h1>
+            <p className="mt-1 text-sm text-[hsl(var(--task-text-muted))]">
+              Visão geral do progresso e atividades do projeto
+            </p>
           </div>
-          <div className="mt-3">
-            <ProjectPerformanceGauge tasks={filteredTasks ?? tasks ?? []} />
-          </div>
-        </div>
-
-        {/* Charts carousel */}
-        <div className="space-y-2">
-          <div className="rounded-2xl border border-border bg-card/45 p-4 shadow-lg">
-            <TaskCharts
-              tasks={filteredTasks}
-              barProjectsOverride={barProjectsFromTasks}
-              onPickConsultant={(name) => {
-                if (!name || name === "Outros") return;
-                setSearch(name);
-                scrollToFilters();
-                requestAnimationFrame(() => searchInputRef.current?.focus());
-              }}
-              onPickProject={handleProjectSelect}
-              onPickDeadlineIso={(iso) => {
-                if (!iso) return;
-                setDeadlineTo(iso);
-                scrollToFilters();
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Stat cards */}
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-          <StatCard label="Total" value={stats.total} onClick={() => { setStatus("all"); setDeadline("all"); }} />
-          <StatCard label="Concluídas" value={stats.done} accent="emerald" onClick={() => { setStatus("done"); setDeadline("all"); }} />
-          <StatCard label="Em andamento" value={stats.pending} accent="amber" onClick={() => { setStatus("pending"); setDeadline("all"); }} />
-          <StatCard label="Atrasadas" value={stats.overdue} accent="rose" onClick={() => { setStatus("all"); setDeadline("overdue"); }} />
-          <StatCard label="Média de tempo" value={stats.avgSeconds ? formatDurationHHMM(stats.avgSeconds) : "Sem dados"} accent="indigo" />
-          <StatCard label="Tempo total" value={stats.totalSeconds ? formatDurationHHMM(stats.totalSeconds) : "Sem dados"} accent="indigo" />
-        </div>
-
-        {/* Hours summary */}
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <InfoCard title="Horas consumidas (mês)" value={formatHoursLabel(hoursSummary.month)} subtitle="Durações registradas nas tarefas." />
-          <InfoCard title="Horas consumidas (trimestre)" value={formatHoursLabel(hoursSummary.quarter)} subtitle="Período do trimestre corrente." />
-          <InfoCard title="Horas consumidas (total)" value={formatHoursLabel(hoursSummary.total)} subtitle="Somatório geral no recorte atual." />
-        </div>
-
-        {/* Projects & pending info */}
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <InfoCard title="Projetos ativos" value={projectsOverview.activeCount} subtitle="Projetos com tarefas pendentes ou atrasadas" />
-          <InfoCard title="Tarefas pendentes" value={projectsOverview.pendingTotal} subtitle="Inclui atrasadas e sem status" />
-          <InfoCard title="Total filtrado" value={filteredTasks.length} subtitle="Tarefas no recorte atual" />
-        </div>
-
-        {/* Collapsible sections */}
-        <div className="space-y-4">
-          {/* Projects panel */}
-          <div className="rounded-2xl border border-border bg-card/45 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-primary">Projetos e horas</p>
-                <p className="text-sm text-muted-foreground">Horas consumidas e status por projeto.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowProjectsPanel((v) => !v)}
-                className="rounded-full border border-border px-3 py-1 text-xs text-foreground transition hover:border-primary hover:text-primary"
-              >
-                {showProjectsPanel ? "Recolher" : "Expandir"} ({projectsOverview.groups.length})
-              </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => { reload(); reloadTimes(); }}
+              disabled={refreshing}
+              className="flex items-center gap-2 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-4 py-2 text-xs font-medium text-[hsl(var(--task-text))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Atualizando..." : "Atualizar"}
+            </button>
+            <div className="flex items-center gap-2 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-[10px] text-[hsl(var(--task-text-muted))]">
+              <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
+              {formatLastUpdated(combinedLastUpdated)}
             </div>
-            {showProjectsPanel && (
-              <div className="mt-4 space-y-3">
-                {projectsOverview.groups.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border bg-muted px-4 py-6 text-center text-muted-foreground">
-                    Nenhum projeto no recorte atual.
+          </div>
+        </motion.div>
+
+        {/* ── STAT CARDS ROW ── */}
+        <motion.div
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+        >
+          <motion.div custom={0} variants={fadeUp}>
+            <StatCard label="Total" value={stats.total} icon={Layers} onClick={() => { setStatus("all"); setDeadline("all"); }} />
+          </motion.div>
+          <motion.div custom={1} variants={fadeUp}>
+            <StatCard label="Concluídas" value={stats.done} icon={CheckCircle2} accent="green" onClick={() => { setStatus("done"); setDeadline("all"); }} />
+          </motion.div>
+          <motion.div custom={2} variants={fadeUp}>
+            <StatCard label="Em andamento" value={stats.pending} icon={Clock} accent="yellow" onClick={() => { setStatus("pending"); setDeadline("all"); }} />
+          </motion.div>
+          <motion.div custom={3} variants={fadeUp}>
+            <StatCard label="Atrasadas" value={stats.overdue} icon={AlertTriangle} accent="red" onClick={() => { setStatus("all"); setDeadline("overdue"); }} />
+          </motion.div>
+          <motion.div custom={4} variants={fadeUp}>
+            <StatCard label="Média de tempo" value={stats.avgSeconds ? formatDurationHHMM(stats.avgSeconds) : "—"} icon={TrendingUp} accent="purple" />
+          </motion.div>
+          <motion.div custom={5} variants={fadeUp}>
+            <StatCard label="Tempo total" value={stats.totalSeconds ? formatDurationHHMM(stats.totalSeconds) : "—"} icon={Zap} accent="purple" />
+          </motion.div>
+        </motion.div>
+
+        {/* ── MAIN GRID: Charts + Sidebar ── */}
+        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+          {/* LEFT: Charts & content */}
+          <div className="space-y-6">
+            {/* Performance + Hours row */}
+            <div className="grid gap-4 md:grid-cols-[1fr_280px]">
+              {/* Performance Gauge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-5"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-4 w-4 text-[hsl(var(--task-yellow))]" />
+                  <p className="text-sm font-semibold text-[hsl(var(--task-text))]">Progresso do Projeto</p>
+                </div>
+                <ProjectPerformanceGauge tasks={filteredTasks ?? tasks ?? []} />
+              </motion.div>
+
+              {/* Hours summary */}
+              <div className="flex flex-col gap-3">
+                {[
+                  { label: "Horas no mês", value: formatHoursLabel(hoursSummary.month), accent: "yellow" as const },
+                  { label: "Horas no trimestre", value: formatHoursLabel(hoursSummary.quarter), accent: "purple" as const },
+                  { label: "Horas totais", value: formatHoursLabel(hoursSummary.total), accent: "green" as const },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-4 py-3"
+                  >
+                    <span className="text-xs text-[hsl(var(--task-text-muted))]">{item.label}</span>
+                    <span className={`text-lg font-bold ${
+                      item.accent === "yellow" ? "text-[hsl(var(--task-yellow))]" :
+                      item.accent === "purple" ? "text-[hsl(var(--task-purple))]" :
+                      "text-emerald-400"
+                    }`}>{item.value}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Charts */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-5"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="h-4 w-4 text-[hsl(var(--task-purple))]" />
+                <p className="text-sm font-semibold text-[hsl(var(--task-text))]">Atividade</p>
+              </div>
+              <TaskCharts
+                tasks={filteredTasks}
+                barProjectsOverride={barProjectsFromTasks}
+                onPickConsultant={(name) => {
+                  if (!name || name === "Outros") return;
+                  setSearch(name);
+                  scrollToFilters();
+                  requestAnimationFrame(() => searchInputRef.current?.focus());
+                }}
+                onPickProject={handleProjectSelect}
+                onPickDeadlineIso={(iso) => {
+                  if (!iso) return;
+                  setDeadlineTo(iso);
+                  scrollToFilters();
+                }}
+              />
+            </motion.div>
+
+            {/* Filters */}
+            <div ref={filtersBoxRef}>
+              <TaskFilters
+                search={search}
+                setSearch={setSearch}
+                status={status}
+                setStatus={setStatus}
+                deadline={deadline}
+                setDeadline={setDeadline}
+                period={period}
+                setPeriod={setPeriod}
+                dateFrom={dateFrom}
+                setDateFrom={setDateFrom}
+                dateTo={dateTo}
+                setDateTo={setDateTo}
+                deadlineTo={deadlineTo}
+                setDeadlineTo={setDeadlineTo}
+                consultant={consultant}
+                setConsultant={setConsultant}
+                consultantOptions={consultantOptions}
+                searchRef={searchInputRef}
+                project={effectiveProjectFilter}
+                setProject={setProject}
+                projectOptions={projectOptions}
+                projectDisabled={Boolean(lockedProject)}
+              />
+
+              {hasActiveFilters && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/5 px-3 py-1.5 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
+                  >
+                    <X className="h-3 w-3" />
+                    Limpar filtros
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Task List Table */}
+            <div>
+              {(error || timesError) && (
+                <div className="mb-4 rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-2 text-xs text-rose-400">
+                  {String(error || timesError)}
+                </div>
+              )}
+
+              {loading || loadingTimes ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="task-shimmer h-12 rounded-xl" />
+                  ))}
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-6 py-16 text-center">
+                  <Layers className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.3)] mb-3" />
+                  <p className="text-sm text-[hsl(var(--task-text-muted))]">Nenhuma tarefa encontrada</p>
+                  <p className="text-xs text-[hsl(var(--task-text-muted)/0.6)] mt-1">Tente ajustar os filtros</p>
+                </div>
+              ) : (
+                <>
+                  <TaskListTable tasks={paginatedTasks} />
+
+                  {filteredTasks.length > pageSize && (
+                    <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[hsl(var(--task-text-muted))]">
+                      <span>
+                        {Math.min((page - 1) * pageSize + 1, filteredTasks.length)}–{Math.min(page * pageSize, filteredTasks.length)} de {filteredTasks.length}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 transition hover:border-[hsl(var(--task-yellow)/0.4)] disabled:opacity-30"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <span className="px-3 text-xs font-medium text-[hsl(var(--task-text))]">
+                          {page} / {totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
+                          className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 transition hover:border-[hsl(var(--task-yellow)/0.4)] disabled:opacity-30"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT SIDEBAR */}
+          <div className="space-y-4">
+            {/* Projects summary */}
+            <div className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[hsl(var(--task-yellow))]">Projetos</p>
+                <span className="text-[10px] text-[hsl(var(--task-text-muted))]">{projectsOverview.activeCount} ativos</span>
+              </div>
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                {projectsOverview.groups.length === 0 ? (
+                  <p className="text-xs text-[hsl(var(--task-text-muted))] text-center py-4">Nenhum projeto</p>
                 ) : (
-                  projectsOverview.groups.slice(0, 20).map((group) => (
+                  projectsOverview.groups.slice(0, 8).map((group) => (
                     <button
                       key={group.name}
                       type="button"
                       onClick={() => handleProjectSelect(group.name)}
-                      className="w-full rounded-2xl border border-border bg-card px-4 py-4 text-left transition hover:border-primary/60 hover:shadow-lg"
+                      className="w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 text-left transition hover:border-[hsl(var(--task-yellow)/0.3)] hover:bg-[hsl(var(--task-surface-hover))]"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{group.name}</p>
-                          <p className="text-xs text-muted-foreground">Horas: {formatHoursLabel(group.duration)}</p>
-                        </div>
-                        <div className="text-right text-xs text-muted-foreground">
-                          <p>Pendentes/atr: {group.pending + group.overdue}</p>
-                          <p>Concluídas: {group.done}</p>
-                        </div>
+                      <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{group.name}</p>
+                      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-[hsl(var(--task-text-muted))]">
+                        <span>{formatHoursLabel(group.duration)}</span>
+                        <span>•</span>
+                        <span className="text-emerald-400">{group.done} feitas</span>
+                        {(group.pending + group.overdue) > 0 && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[hsl(var(--task-yellow))]">{group.pending + group.overdue} pendentes</span>
+                          </>
+                        )}
+                      </div>
+                      {/* Mini progress bar */}
+                      <div className="mt-2 h-1 w-full rounded-full bg-[hsl(var(--task-border))] overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--task-yellow))] to-emerald-400 transition-all"
+                          style={{ width: `${group.total > 0 ? (group.done / group.total) * 100 : 0}%` }}
+                        />
                       </div>
                     </button>
                   ))
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Pending panel */}
-          <div className="rounded-2xl border border-border bg-card/45 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-primary">Tarefas pendentes</p>
-                <p className="text-sm text-muted-foreground">Top pendências por prazo ou criação.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPendingPanel((v) => !v)}
-                className="rounded-full border border-border px-3 py-1 text-xs text-foreground transition hover:border-primary hover:text-primary"
-              >
-                {showPendingPanel ? "Recolher" : "Expandir"} ({pendingHighlights.length})
-              </button>
             </div>
-            {showPendingPanel && (
-              <div className="mt-4 space-y-3">
+
+            {/* Pending tasks */}
+            <div className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-rose-400">Pendências</p>
+                <span className="text-[10px] text-[hsl(var(--task-text-muted))]">{pendingHighlights.length} tarefas</span>
+              </div>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
                 {pendingHighlights.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border bg-muted px-4 py-6 text-center text-muted-foreground">
-                    Nenhuma pendência no recorte atual.
-                  </div>
+                  <p className="text-xs text-[hsl(var(--task-text-muted))] text-center py-4">Nenhuma pendência</p>
                 ) : (
-                  pendingHighlights.map((task, index) => (
+                  pendingHighlights.map((task, idx) => (
                     <div
-                      key={`${task.title}-${index}`}
-                      className="rounded-xl border border-border bg-card px-4 py-4 shadow-md"
+                      key={`${task.title}-${idx}`}
+                      className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-foreground">{task.title}</p>
-                        <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                          {STATUS_LABELS[task.statusKey]?.label ?? "Sem status"}
-                        </span>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-medium text-[hsl(var(--task-text))] leading-tight">{task.title}</p>
+                        {task.statusKey === "overdue" && (
+                          <span className="shrink-0 flex h-2 w-2 rounded-full bg-rose-400 animate-pulse" />
+                        )}
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        <span className="rounded-full border border-border px-3 py-1">{task.deadlineLabel || "Sem prazo"}</span>
-                        <span className="rounded-full border border-border px-3 py-1">{task.project || "Sem projeto"}</span>
-                        <span className="rounded-full border border-border px-3 py-1">{task.consultant || "Sem consultor"}</span>
-                        <span className="rounded-full border border-border px-3 py-1">{formatDurationHHMM(task.durationSeconds)}</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-md bg-[hsl(var(--task-border)/0.5)] px-2 py-0.5 text-[9px] text-[hsl(var(--task-text-muted))]">
+                          {task.deadlineLabel || "Sem prazo"}
+                        </span>
+                        <span className="rounded-md bg-[hsl(var(--task-border)/0.5)] px-2 py-0.5 text-[9px] text-[hsl(var(--task-text-muted))]">
+                          {task.consultant}
+                        </span>
                       </div>
                     </div>
                   ))
                 )}
               </div>
-            )}
+            </div>
           </div>
         </div>
-
-        {/* Task list table */}
-        <div className="mt-6">
-          {(error || timesError) && (
-            <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive-foreground">
-              {String(error || timesError)}
-            </div>
-          )}
-
-          {loading || loadingTimes ? (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-28 animate-pulse rounded-2xl border border-border bg-muted" />
-              ))}
-            </div>
-          ) : filteredTasks.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted px-6 py-8 text-center text-muted-foreground">
-              Nenhuma tarefa encontrada para os filtros atuais.
-            </div>
-          ) : (
-            <>
-              <TaskListTable tasks={paginatedTasks} />
-
-              {filteredTasks.length > pageSize && (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-                  <span>
-                    Mostrando {Math.min((page - 1) * pageSize + 1, filteredTasks.length)}-
-                    {Math.min(page * pageSize, filteredTasks.length)} de {filteredTasks.length}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="rounded-lg border border-border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Anterior
-                    </button>
-                    <span className="px-2">Página {page} / {totalPages}</span>
-                    <button
-                      type="button"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
-                      className="rounded-lg border border-border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Próxima
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

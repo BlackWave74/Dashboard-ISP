@@ -1,3 +1,6 @@
+import { Search, X, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
+
 type TaskFiltersProps = {
   search: string;
   setSearch: (value: string) => void;
@@ -23,32 +26,23 @@ type TaskFiltersProps = {
   projectDisabled?: boolean;
 };
 
-const deadlineOptions = [
-  { value: "all", label: "Todos os prazos" },
-  { value: "overdue", label: "Somente atrasados" },
-  { value: "done", label: "Somente concluidos" },
-  { value: "pending", label: "Somente pendentes" },
-];
-
-const statusOptions = [
-  { value: "all", label: "Todos os status" },
-  { value: "done", label: "Concluidas" },
+const statusChips = [
+  { value: "all", label: "Todos" },
+  { value: "done", label: "Concluídas" },
   { value: "pending", label: "Em andamento" },
   { value: "overdue", label: "Atrasadas" },
-  { value: "unknown", label: "Sem status" },
 ];
 
-const periodOptions = [
-  { value: "all", label: "Todo o periodo" },
-  { value: "7d", label: "Ultimos 7 dias" },
-  { value: "30d", label: "Ultimos 30 dias" },
-  { value: "90d", label: "Ultimos 90 dias" },
-  { value: "custom", label: "Personalizado" },
+const periodChips = [
+  { value: "all", label: "Tudo" },
+  { value: "7d", label: "7d" },
+  { value: "30d", label: "30d" },
+  { value: "90d", label: "90d" },
+  { value: "custom", label: "Custom" },
 ];
 
-const fieldBaseClass =
-  "h-11 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 text-sm text-white outline-none transition hover:border-indigo-400/70 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
-const selectBaseClass = `task-select ${fieldBaseClass} pr-10 appearance-none`;
+const selectClass =
+  "h-9 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 text-xs text-[hsl(var(--task-text))] outline-none transition hover:border-[hsl(var(--task-yellow)/0.4)] focus:border-[hsl(var(--task-yellow)/0.6)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)] appearance-none cursor-pointer";
 
 export function TaskFilters({
   search,
@@ -74,173 +68,131 @@ export function TaskFilters({
   projectOptions = [],
   projectDisabled = false,
 }: TaskFiltersProps) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2 sm:gap-3">
-        <div className="relative flex items-center">
+      {/* Main row: Search + Status chips + Period chips */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-[360px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--task-text-muted))]" />
           <input
-            value={search}
             ref={searchRef}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar por nome, consultor ou projeto..."
-            className={`${fieldBaseClass} pl-11 pr-3 ring-2 ring-transparent focus-visible:outline-none`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar tarefa..."
+            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-9 pr-8 text-xs text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
           />
-          <svg
-            className="pointer-events-none absolute left-4 h-5 w-5 text-slate-500"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden
-          >
-            <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
-            <path
-              d="m14 14 4 4"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
-        <div className="relative">
-          <select
-            value={deadline}
-            onChange={(event) => setDeadline(event.target.value)}
-            className={selectBaseClass}
-          >
-            {deadlineOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden
-          >
-            <path d="m6 8 4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        {/* Status chips */}
+        <div className="flex items-center gap-1 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-0.5">
+          {statusChips.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              onClick={() => setStatus(chip.value)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                status === chip.value
+                  ? "bg-[hsl(var(--task-yellow))] text-[hsl(var(--task-bg))] shadow-sm"
+                  : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
         </div>
 
-        <div className="relative">
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className={selectBaseClass}
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden
-          >
-            <path d="m6 8 4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        {/* Period chips */}
+        <div className="flex items-center gap-1 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-0.5">
+          {periodChips.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              onClick={() => setPeriod(chip.value)}
+              className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+                period === chip.value
+                  ? "bg-[hsl(var(--task-purple))] text-white shadow-sm"
+                  : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
         </div>
 
-        <div className="relative">
-          <select
-            value={period}
-            onChange={(event) => setPeriod(event.target.value)}
-            className={selectBaseClass}
-          >
-            {periodOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden
-          >
-            <path d="m6 8 4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-
-        <div className="relative">
-          <select
-            value={consultant}
-            onChange={(event) => setConsultant(event.target.value)}
-            className={selectBaseClass}
-          >
-            <option value="all">Todos os consultores</option>
-            {consultantOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden
-          >
-            <path d="m6 8 4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-
-        <div className="relative">
-          <select
-            value={project}
-            onChange={(event) => setProject(event.target.value)}
-            disabled={projectDisabled}
-            className={`${selectBaseClass} disabled:cursor-not-allowed disabled:opacity-60`}
-          >
-            <option value="all">Todos os projetos</option>
-            {projectOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden
-          >
-            <path d="m6 8 4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
+        {/* More filters toggle */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+            expanded
+              ? "border-[hsl(var(--task-yellow)/0.4)] bg-[hsl(var(--task-yellow)/0.1)] text-[hsl(var(--task-yellow))]"
+              : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-border-light))] hover:text-[hsl(var(--task-text))]"
+          }`}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filtros
+        </button>
       </div>
 
+      {/* Expanded filters */}
+      {expanded && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface)/0.5)] p-3">
+          <select value={deadline} onChange={(e) => setDeadline(e.target.value)} className={selectClass}>
+            <option value="all">Todos os prazos</option>
+            <option value="overdue">Atrasados</option>
+            <option value="done">Concluídos</option>
+            <option value="pending">Pendentes</option>
+          </select>
 
-      {period === "custom" && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="relative flex items-center">
-            <input
-              id="date-from"
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-              placeholder="De"
-              className={`${fieldBaseClass} appearance-none`}
-            />
-          </div>
-          <div className="relative flex items-center">
-            <input
-              id="date-to"
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-              placeholder="Até"
-              className={`${fieldBaseClass} appearance-none`}
-            />
-          </div>
+          <select value={consultant} onChange={(e) => setConsultant(e.target.value)} className={selectClass}>
+            <option value="all">Todos consultores</option>
+            {consultantOptions.map((o) => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+
+          <select
+            value={project}
+            onChange={(e) => setProject(e.target.value)}
+            disabled={projectDisabled}
+            className={`${selectClass} disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            <option value="all">Todos projetos</option>
+            {projectOptions.map((o) => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+
+          {period === "custom" && (
+            <>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className={`${selectClass} w-[140px]`}
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className={`${selectClass} w-[140px]`}
+              />
+            </>
+          )}
         </div>
       )}
-
     </div>
   );
 }
