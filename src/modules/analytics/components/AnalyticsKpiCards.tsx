@@ -1,4 +1,4 @@
-import { Users, FolderKanban, Clock } from "lucide-react";
+import { Users, FolderKanban, Clock, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
 type Props = {
@@ -18,54 +18,83 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
     {
       label: "Clientes Atendidos",
       value: clients.toLocaleString("pt-BR"),
-      sub: `com projetos vinculados`,
+      sub: "com projetos vinculados",
       icon: Users,
-      gradient: "from-[hsl(270_80%_55%)] to-[hsl(234_89%_55%)]",
+      accent: "hsl(262 83% 58%)",
     },
     {
       label: "Projetos Ativos",
       value: activeProjects.toLocaleString("pt-BR"),
-      sub: `${totalTasks} tarefas no total`,
+      sub: `de ${(activeProjects + (totalTasks > 0 ? Math.max(0, Math.round(totalTasks / 8) - activeProjects) : 0)).toLocaleString("pt-BR")} total`,
       icon: FolderKanban,
-      gradient: "from-[hsl(250_80%_60%)] to-[hsl(270_80%_55%)]",
+      accent: "hsl(234 89% 64%)",
     },
     {
       label: "Horas Alocadas",
       value: `${Math.round(totalHours).toLocaleString("pt-BR")}h`,
       sub: `~${activeProjects > 0 ? Math.round(totalHours / activeProjects) : 0}h por projeto`,
       icon: Clock,
-      gradient: "from-[hsl(160_84%_39%)] to-[hsl(200_80%_50%)]",
+      accent: "hsl(200 80% 55%)",
+    },
+    {
+      label: "Concluídas",
+      value: doneCount.toLocaleString("pt-BR"),
+      sub: `${completionPct}% do total`,
+      icon: CheckCircle2,
+      accent: "hsl(160 84% 39%)",
+    },
+    {
+      label: "Em Andamento",
+      value: pendingCount.toLocaleString("pt-BR"),
+      sub: `${totalTasks > 0 ? Math.round((pendingCount / totalTasks) * 100) : 0}% do total`,
+      icon: TrendingUp,
+      accent: "hsl(270 80% 55%)",
+    },
+    {
+      label: "Atrasadas",
+      value: overdueCount.toLocaleString("pt-BR"),
+      sub: `${totalTasks > 0 ? Math.round((overdueCount / totalTasks) * 100) : 0}% do total`,
+      icon: AlertTriangle,
+      accent: "hsl(0 84% 60%)",
     },
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
-      {kpis.map((k, i) => (
-        <motion.div
-          key={k.label}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: i * 0.1, ease: "easeOut" }}
-          className="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-6 transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.10] hover:shadow-2xl"
-          style={{
-            background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))",
-          }}
-        >
-          {/* Top accent line */}
-          <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${k.gradient} opacity-40 transition-opacity duration-500 group-hover:opacity-100`} />
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {kpis.map((k, i) => {
+        const Icon = k.icon;
+        return (
+          <motion.div
+            key={k.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: i * 0.06, ease: "easeOut" }}
+            className="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-white/[0.12] hover:shadow-xl"
+            style={{
+              background: "linear-gradient(145deg, hsl(270 50% 14% / 0.7), hsl(234 45% 10% / 0.5))",
+            }}
+          >
+            {/* Top accent dot */}
+            <div
+              className="absolute top-3 right-3 h-2 w-2 rounded-full opacity-50 group-hover:opacity-100 transition-opacity"
+              style={{ background: k.accent }}
+            />
 
-          <div className="relative z-10 flex items-start gap-4">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${k.gradient} shadow-lg transition-transform duration-300 group-hover:scale-110`}>
-              <k.icon className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-2.5 mb-3">
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110"
+                style={{ background: `${k.accent.replace(")", " / 0.15)")}` }}
+              >
+                <Icon className="h-4.5 w-4.5" style={{ color: k.accent }} />
+              </div>
+              <p className="text-[11px] font-semibold text-white/40 leading-tight">{k.label}</p>
             </div>
-            <div>
-              <p className="text-3xl font-bold text-white/90">{k.value}</p>
-              <p className="text-sm font-semibold text-white/50 mt-0.5">{k.label}</p>
-              <p className="text-xs text-white/30 mt-0.5">{k.sub}</p>
-            </div>
-          </div>
-        </motion.div>
-      ))}
+
+            <p className="text-2xl font-bold text-white/90">{k.value}</p>
+            <p className="text-[10px] text-white/25 mt-0.5">{k.sub}</p>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }

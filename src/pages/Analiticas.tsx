@@ -7,8 +7,10 @@ import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
+import AnalyticsWeeklyChart from "@/modules/analytics/components/AnalyticsWeeklyChart";
+import AnalyticsCompletionGauge from "@/modules/analytics/components/AnalyticsCompletionGauge";
+import AnalyticsPerformanceSummary from "@/modules/analytics/components/AnalyticsPerformanceSummary";
 import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
-import AnalyticsTaskSummary from "@/modules/analytics/components/AnalyticsTaskSummary";
 import AnalyticsProjectHoursChart from "@/modules/analytics/components/AnalyticsProjectHoursChart";
 import AnalyticsTasksByProjectChart from "@/modules/analytics/components/AnalyticsTasksByProjectChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
@@ -75,7 +77,7 @@ export default function AnaliticasPage() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
-      <div className="mx-auto w-full max-w-[1900px] space-y-6 p-5 md:p-8">
+      <div className="mx-auto w-full max-w-[1900px] space-y-5 p-5 md:p-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -101,7 +103,7 @@ export default function AnaliticasPage() {
           />
         </motion.div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards - 6 cards grid */}
         <AnalyticsKpiCards
           clients={uniqueClients}
           activeProjects={activeProjects}
@@ -111,23 +113,39 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Row 1: Performance chart + Task summary */}
+        {/* Row 1: Weekly activity + Completion gauge + Performance summary */}
         <div className="grid gap-5 lg:grid-cols-5">
-          <div className="lg:col-span-3">
-            <AnalyticsPerformanceChart times={userTimes} />
+          <div className="lg:col-span-2">
+            <AnalyticsWeeklyChart times={userTimes} doneCount={totalDone} totalTasks={userTaskCount} />
+          </div>
+          <div className="lg:col-span-1">
+            <AnalyticsCompletionGauge
+              done={totalDone}
+              total={userTaskCount}
+              activeProjects={activeProjects}
+              totalHours={totalHours}
+            />
           </div>
           <div className="lg:col-span-2">
-            <AnalyticsTaskSummary done={totalDone} pending={totalPending} overdue={totalOverdue} />
+            <AnalyticsPerformanceSummary
+              projects={projects}
+              totalDone={totalDone}
+              totalTasks={userTaskCount}
+              totalHours={totalHours}
+            />
           </div>
         </div>
 
-        {/* Row 2: Hours by project + Tasks by project */}
+        {/* Row 2: Performance timeline */}
+        <AnalyticsPerformanceChart times={userTimes} />
+
+        {/* Row 3: Hours by project + Tasks by project */}
         <div className="grid gap-5 lg:grid-cols-2">
           <AnalyticsProjectHoursChart projects={projects} />
           <AnalyticsTasksByProjectChart projects={projects} />
         </div>
 
-        {/* Projects */}
+        {/* Projects list */}
         <AnalyticsProjectList
           projects={projects}
           onToggleFavorite={toggleFavorite}
