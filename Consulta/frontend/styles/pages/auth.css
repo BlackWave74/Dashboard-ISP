@@ -1,0 +1,96 @@
+.page--auth {
+  min-height: 100vh;
+}
+
+.page--auth .auth-hero {
+  position: relative;
+}
+
+.page--auth .auth-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.035);
+  pointer-events: none;
+}
+
+/* Fundo real da página inteira */
+.page.page--auth {
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(99, 102, 241, 0.42), transparent 40%),
+    radial-gradient(circle at 82% 18%, rgba(16, 185, 129, 0.30), transparent 50%),
+    radial-gradient(circle at 55% 82%, rgba(56, 189, 248, 0.22), transparent 48%),
+    linear-gradient(135deg, #0a1026 0%, #0c2547 45%, #0b2f3b 100%);
+  filter: saturate(1.12);
+}
+
+/* glow “espalhado” por trás */
+.page.page--auth::before {
+  content: "";
+  position: fixed;
+  inset: -80px;
+  background:
+    radial-gradient(circle at 22% 22%, rgba(99, 102, 241, 0.28), transparent 40%),
+    radial-gradient(circle at 78% 18%, rgba(16, 185, 129, 0.26), transparent 44%);
+  filter: blur(36px);
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* vinheta por cima do fundo */
+.page.page--auth::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(2,6,23,0.05) 0%,
+      rgba(2,6,23,0.38) 55%,
+      rgba(2,6,23,0.72) 100%
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* garante que TODO conteúdo fique acima do fundo */
+.page.page--auth > * {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-login-wrap {
+  position: relative;
+  border-radius: 24px;
+  padding: 1px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: 0 40px 120px -70px rgba(0, 0, 0, 0.95);
+  transform: translateY(-2px);
+}
+
+.auth-login-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.22),
+    rgba(16, 185, 129, 0.12),
+    rgba(2, 6, 23, 0.65)
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.auth-login-wrap > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-login-wrap { transform: none; }
+}
