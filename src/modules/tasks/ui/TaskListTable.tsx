@@ -106,9 +106,12 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
       {/* Header */}
-      <div className="hidden sm:grid grid-cols-[1fr_130px_100px_130px_130px_80px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
-        {["Tarefa", "Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
-          <div key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--task-text-muted)/0.6)]">
+      <div className="hidden sm:grid grid-cols-[1fr_130px_100px_140px_140px_80px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+        <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--task-text))]">
+          Tarefa
+        </div>
+        {["Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
+          <div key={h} className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--task-text))] text-center">
             {h}
           </div>
         ))}
@@ -128,7 +131,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.025, duration: 0.2 }}
                 onClick={() => setExpandedId(isExpanded ? null : key)}
-                className={`group grid grid-cols-1 sm:grid-cols-[1fr_130px_100px_130px_130px_80px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
+                className={`group grid grid-cols-1 sm:grid-cols-[1fr_130px_100px_140px_140px_80px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
               >
                 {/* Task name */}
                 <div className="flex items-center gap-3 px-4 py-3.5">
@@ -143,21 +146,21 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                 </div>
 
                 {/* Status */}
-                <div className="hidden sm:flex items-center px-3 py-3">
+                <div className="hidden sm:flex items-center justify-center px-3 py-3">
                   <span className={`inline-flex items-center rounded-lg border px-2.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${statusPill(task.statusKey)}`}>
                     {STATUS_LABELS[task.statusKey]?.label ?? "—"}
                   </span>
                 </div>
 
                 {/* Deadline */}
-                <div className="hidden sm:flex items-center px-3 py-3">
+                <div className="hidden sm:flex items-center justify-center px-3 py-3">
                   <span className={`text-xs ${task.statusKey === "overdue" ? "text-rose-400 font-bold" : task.deadlineIsSoon ? "text-[hsl(var(--task-yellow))]" : "text-[hsl(var(--task-text-muted))]"}`}>
                     {task.deadlineLabel}
                   </span>
                 </div>
 
                 {/* Consultant */}
-                <div className="hidden sm:flex items-center gap-2 px-3 py-3">
+                <div className="hidden sm:flex items-center justify-center gap-2 px-3 py-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-[9px] font-bold text-[hsl(var(--task-purple))]">
                     {task.consultant ? task.consultant.charAt(0).toUpperCase() : "?"}
                   </div>
@@ -165,12 +168,12 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                 </div>
 
                 {/* Project */}
-                <div className="hidden sm:flex items-center px-3 py-3">
+                <div className="hidden sm:flex items-center justify-center px-3 py-3">
                   <span className="text-xs text-[hsl(var(--task-text-muted))] truncate">{task.project}</span>
                 </div>
 
                 {/* Duration */}
-                <div className="hidden sm:flex items-center px-3 py-3">
+                <div className="hidden sm:flex items-center justify-center px-3 py-3">
                   <span className="text-xs font-mono text-[hsl(var(--task-text-muted))]">
                     {formatDurationHHMM(task.durationSeconds)}
                   </span>

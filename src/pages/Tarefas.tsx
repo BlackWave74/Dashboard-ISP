@@ -600,7 +600,7 @@ export default function TarefasPage() {
                 }
 
                 return performers.map(([name, data], idx) => {
-                  const pctBar = (data.total / maxTotal) * 100;
+                  const pctBar = data.total > 0 ? (data.done / data.total) * 100 : 0;
                   const pctDoneLocal = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
                   const colors = ["#FCBD0F", "#9333ea", "#22c55e", "#06b6d4", "#f97316", "#6366f1"];
                   const color = colors[idx % colors.length];
@@ -815,19 +815,9 @@ export default function TarefasPage() {
             project={effectiveProjectFilter} setProject={setProject}
             projectOptions={projectOptions}
             projectDisabled={Boolean(lockedProject)}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={resetFilters}
           />
-          {hasActiveFilters && (
-            <div className="mt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-1.5 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
-              >
-                <X className="h-3 w-3" />
-                Limpar filtros
-              </button>
-            </div>
-          )}
         </motion.div>
 
         {/* ═══ TASK LIST ═══ */}

@@ -24,6 +24,8 @@ type TaskFiltersProps = {
   setProject: (value: string) => void;
   projectOptions?: string[];
   projectDisabled?: boolean;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 };
 
 const statusChips = [
@@ -67,6 +69,8 @@ export function TaskFilters({
   setProject,
   projectOptions = [],
   projectDisabled = false,
+  hasActiveFilters = false,
+  onClearFilters,
 }: TaskFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -131,19 +135,31 @@ export function TaskFilters({
           ))}
         </div>
 
-        {/* More filters toggle */}
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-            expanded
-              ? "border-[hsl(var(--task-yellow)/0.4)] bg-[hsl(var(--task-yellow)/0.1)] text-[hsl(var(--task-yellow))]"
-              : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-border-light))] hover:text-[hsl(var(--task-text))]"
-          }`}
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filtros
-        </button>
+        {/* More filters toggle + clear */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+              expanded
+                ? "border-[hsl(var(--task-yellow)/0.4)] bg-[hsl(var(--task-yellow)/0.1)] text-[hsl(var(--task-yellow))]"
+                : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-border-light))] hover:text-[hsl(var(--task-text))]"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filtros
+          </button>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="flex items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/5 px-2.5 py-1.5 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
+            >
+              <X className="h-3 w-3" />
+              Limpar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Expanded filters */}
