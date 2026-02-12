@@ -89,10 +89,18 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
     () => buildEndpoint(period, dateFrom, dateTo),
     [period, dateFrom, dateTo]
   );
-  const [tasks, setTasks] = useState<TaskRecord[]>([]);
+
+  // Hydrate from cache on mount so UI renders instantly
+  const initialCache = useMemo(() => {
+    const periodKey = period === "custom" ? `custom:${dateFrom ?? ""}:${dateTo ?? ""}` : period;
+    const cached = storage.get<{ data: TaskRecord[]; timestamp: number } | null>(`${CACHE_KEY}:${periodKey}`, null);
+    return cached?.data?.length ? cached : null;
+  }, []); // intentionally empty — only read cache on first mount
+
+  const [tasks, setTasks] = useState<TaskRecord[]>(initialCache?.data ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(envError);
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(initialCache?.timestamp ?? null);
   const [noChanges, setNoChanges] = useState(false);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);

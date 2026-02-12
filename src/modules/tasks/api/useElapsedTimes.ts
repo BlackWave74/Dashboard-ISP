@@ -96,10 +96,18 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
     () => buildEndpoint(period, dateFrom, dateTo),
     [period, dateFrom, dateTo]
   );
-  const [times, setTimes] = useState<ElapsedTimeRecord[]>([]);
+
+  // Hydrate from cache on mount so UI renders instantly
+  const initialCache = useMemo(() => {
+    const periodKey = period === "custom" ? `custom:${dateFrom ?? ""}:${dateTo ?? ""}` : period;
+    const cached = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number } | null>(`${CACHE_KEY}:${periodKey}`, null);
+    return cached?.data?.length ? cached : null;
+  }, []);
+
+  const [times, setTimes] = useState<ElapsedTimeRecord[]>(initialCache?.data ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(envError);
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(initialCache?.timestamp ?? null);
   const [noChanges, setNoChanges] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const lastReloadRef = useRef(0);
