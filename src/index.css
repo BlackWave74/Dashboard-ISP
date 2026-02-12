@@ -107,7 +107,7 @@
   }
 }
 
-/* --- Form Side (RIGHT on desktop) --- */
+/* --- Form Side (LEFT on desktop) --- */
 .login-form-side {
   display: flex;
   justify-content: center;
@@ -115,7 +115,7 @@
 }
 @media (min-width: 1024px) {
   .login-form-side {
-    order: 1;
+    order: 0;
   }
 }
 .login-form-inner {
@@ -284,7 +284,7 @@
   .login-overview-side {
     display: flex;
     justify-content: center;
-    order: 0;
+    order: 1;
   }
 }
 
@@ -387,10 +387,23 @@
   max-width: 140px;
   height: auto;
   margin-bottom: 0.5rem;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: drawLine 2s ease-out forwards 0.5s;
+}
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
 }
 .login-donut {
   width: 90px;
   height: 90px;
+}
+.login-donut circle:nth-child(2) {
+  stroke-dasharray: 0 251.3;
+  animation: drawDonut 1.5s ease-out forwards 0.8s;
+}
+@keyframes drawDonut {
+  to { stroke-dasharray: 251.3 0; }
 }
 
 /* Features grid */
