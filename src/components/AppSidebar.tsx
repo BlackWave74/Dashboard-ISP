@@ -1,4 +1,4 @@
-import { Home, ListTodo, UserPlus, Package, LogOut } from "lucide-react";
+import { Home, ListTodo, UserPlus, Package, LogOut, LayoutDashboard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +20,29 @@ const navItems = [
   { title: "Usuários", url: "/usuarios", icon: UserPlus },
   { title: "Comodato", url: "/comodato", icon: Package },
 ];
+
+function UserAvatar({ name, email }: { name?: string; email?: string }) {
+  const initials = (name || email || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  return (
+    <div className="flex items-center gap-3 px-1">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+        {initials}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">
+          {name || "Usuário"}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">{email || ""}</p>
+      </div>
+    </div>
+  );
+}
 
 export function AppSidebar() {
   const { session, logout } = useAuth();
@@ -68,10 +91,8 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
-        <div className="mb-2 truncate text-sm text-sidebar-foreground">
-          {session?.name || session?.email || "Usuário"}
-        </div>
+      <SidebarFooter className="border-t border-sidebar-border p-4 space-y-3">
+        <UserAvatar name={session?.name} email={session?.email} />
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
