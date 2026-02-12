@@ -103,8 +103,6 @@ export default function LoginPage() {
         {/* -------- LEFT: Overview Card -------- */}
         <div className="login-overview-side">
           <div className="login-overview-card">
-            <h2 className="login-overview-title">Seu painel completo</h2>
-            <p className="login-overview-subtitle">Desenvolvido pelo time <span className="login-overview-highlight">ISP Consulte</span></p>
             <p className="login-overview-desc">
               Dashboards, métricas, desempenho da equipe, tarefas e muito mais — tudo em um só lugar.
             </p>
@@ -230,6 +228,11 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <p className="login-footer">
+        Desenvolvido pelo time <span className="login-overview-highlight">ISP Consulte</span>
+      </p>
     </div>
   );
 }
