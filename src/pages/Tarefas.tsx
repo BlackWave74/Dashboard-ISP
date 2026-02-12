@@ -554,9 +554,9 @@ export default function TarefasPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="task-card flex flex-col"
+            className="task-card flex flex-col max-h-[calc(100vh-340px)] min-h-[280px] overflow-hidden"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 sticky top-0 z-10 bg-[hsl(var(--task-surface))] pb-2">
               <div>
                 <h2 className="text-lg font-extrabold text-[hsl(var(--task-text))] tracking-tight">
                   Desempenho da Equipe
@@ -565,7 +565,7 @@ export default function TarefasPage() {
             </div>
 
             {/* Top performers list */}
-            <div className="space-y-2 flex-1 overflow-y-auto max-h-[320px] styled-scrollbar">
+            <div className="space-y-2 flex-1 overflow-y-auto styled-scrollbar">
               {(() => {
                 const performerMap = new Map<string, { total: number; done: number; overdue: number; pending: number; hours: number }>();
                 filteredTasks.forEach((t) => {
@@ -679,9 +679,9 @@ export default function TarefasPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="task-card flex flex-col"
+            className="task-card flex flex-col max-h-[calc(100vh-340px)] min-h-[280px] overflow-hidden"
           >
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-4 sticky top-0 z-10 bg-[hsl(var(--task-surface))] pb-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--task-yellow)/0.15)]">
                 <Clock className="h-3.5 w-3.5 text-[hsl(var(--task-yellow))]" />
               </div>
@@ -691,7 +691,7 @@ export default function TarefasPage() {
               </div>
             </div>
 
-            <div className="space-y-2 flex-1 overflow-y-auto max-h-[360px] pr-1 custom-scrollbar">
+            <div className="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar">
               {pendingHighlights.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <CheckCircle2 className="h-10 w-10 text-emerald-400/20 mb-2" />
