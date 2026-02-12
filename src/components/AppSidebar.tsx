@@ -101,7 +101,7 @@ export function AppSidebar() {
             Menu
           </p>
           <nav className="flex flex-col gap-1">
-            <SidebarNavItem to="/" icon={Home} label="Dashboard" end />
+            <SidebarNavItem to="/" icon={Home} label="Página Inicial" end />
 
             {/* Projetos collapsible */}
             <button
