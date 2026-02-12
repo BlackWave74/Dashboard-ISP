@@ -151,7 +151,7 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
         <Info className="h-4 w-4" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto animate-scale-in">
+        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto animate-scale-in fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <DialogHeader className="text-center items-center">
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
@@ -308,8 +308,8 @@ export function TaskCharts({
         >
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
-              <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Distribuição por consultor</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
+              <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">Distribuição por consultor</p>
             </div>
             <ChartInfoButton
               title="Distribuição por Responsável"
@@ -377,8 +377,8 @@ export function TaskCharts({
         >
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
-              <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Horas por projeto</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
+              <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">Horas por projeto</p>
             </div>
             <ChartInfoButton
               title="Horas por Projeto"
@@ -448,8 +448,8 @@ export function TaskCharts({
         >
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-400">Linha do Tempo</p>
-              <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Tarefas por prazo</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-400">Linha do Tempo</p>
+              <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">Tarefas por prazo</p>
             </div>
             <div className="flex items-center gap-1">
               {[7, 30].map((range) => (
