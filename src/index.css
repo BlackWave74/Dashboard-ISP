@@ -533,21 +533,31 @@ body {
   min-height: 100vh;
 }
 
-/* Task page stat glow */
-.task-stat-glow {
-  position: relative;
+/* Unified task card */
+.task-card {
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--task-border));
+  background: hsl(var(--task-surface));
+  padding: 1.25rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
-.task-stat-glow::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
+.task-card:hover {
+  border-color: hsl(var(--task-border-light));
 }
-.task-stat-glow:hover::after {
-  opacity: 1;
+
+/* Custom scrollbar for deadline panel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--task-border));
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--task-border-light));
 }
 
 /* Progress ring animation */
