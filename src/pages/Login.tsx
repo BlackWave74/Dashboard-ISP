@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Shield } from "lucide-react";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,36 +26,41 @@ export default function LoginPage() {
     }
 
     setSubmitting(true);
-
-    // TODO: conectar com Supabase Auth
-    // Simulação temporária
-    await new Promise((r) => setTimeout(r, 1200));
-
-    // Placeholder: aceitar qualquer login
-    localStorage.setItem("auth_session", JSON.stringify({ email, name: email.split("@")[0] }));
+    const result = await login({ email, password });
     setSubmitting(false);
-    navigate("/");
+
+    if (result.success) {
+      navigate("/");
+    } else {
+      setError(result.message || "Credenciais inválidas.");
+    }
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden"
-      style={{ background: "hsl(var(--login-bg))" }}>
-      
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden"
+      style={{ background: "hsl(var(--login-bg))" }}
+    >
       {/* Background effects */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, hsl(var(--login-accent) / 0.4), transparent 70%)" }} />
-        <div className="absolute -bottom-32 -right-32 h-[400px] w-[400px] rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, hsl(234 89% 50% / 0.5), transparent 70%)" }} />
+        <div
+          className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, hsl(var(--login-accent) / 0.4), transparent 70%)" }}
+        />
+        <div
+          className="absolute -bottom-32 -right-32 h-[400px] w-[400px] rounded-full opacity-15"
+          style={{ background: "radial-gradient(circle, hsl(234 89% 50% / 0.5), transparent 70%)" }}
+        />
       </div>
 
       <div className="relative z-10 mx-auto grid w-full max-w-[1060px] gap-8 px-6 lg:grid-cols-2 lg:items-center">
-        
         {/* Left — Hero */}
         <div className="hidden flex-col gap-6 lg:flex">
           <div className="flex items-center gap-2">
             <Shield className="h-8 w-8" style={{ color: "hsl(var(--login-accent-glow))" }} />
-            <span className="text-xl font-bold" style={{ color: "hsl(var(--login-text))" }}>ISP Consulte</span>
+            <span className="text-xl font-bold" style={{ color: "hsl(var(--login-text))" }}>
+              ISP Consulte
+            </span>
           </div>
 
           <h1 className="text-4xl font-bold leading-tight" style={{ color: "hsl(var(--login-text))" }}>
@@ -80,7 +87,10 @@ export default function LoginPage() {
                   background: "hsl(var(--login-card) / 0.6)",
                 }}
               >
-                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "hsl(var(--login-accent-glow))" }}>
+                <p
+                  className="text-xs font-semibold uppercase tracking-widest"
+                  style={{ color: "hsl(var(--login-accent-glow))" }}
+                >
                   {item.label}
                 </p>
                 <p className="mt-1 text-sm" style={{ color: "hsl(var(--login-text-muted))" }}>
@@ -101,10 +111,15 @@ export default function LoginPage() {
         >
           <div className="mb-8 flex flex-col items-center gap-2 text-center lg:hidden">
             <Shield className="h-8 w-8" style={{ color: "hsl(var(--login-accent-glow))" }} />
-            <span className="text-lg font-bold" style={{ color: "hsl(var(--login-text))" }}>ISP Consulte</span>
+            <span className="text-lg font-bold" style={{ color: "hsl(var(--login-text))" }}>
+              ISP Consulte
+            </span>
           </div>
 
-          <p className="text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: "hsl(var(--login-accent-glow))" }}>
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.25em]"
+            style={{ color: "hsl(var(--login-accent-glow))" }}
+          >
             Painel
           </p>
           <h2 className="mt-1 text-2xl font-bold" style={{ color: "hsl(var(--login-text))" }}>
@@ -115,7 +130,7 @@ export default function LoginPage() {
           </p>
 
           {error && (
-            <div className="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+            <div className="mt-4 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -137,8 +152,6 @@ export default function LoginPage() {
                   borderColor: "hsl(var(--login-card-border))",
                   background: "hsl(var(--login-bg))",
                   color: "hsl(var(--login-text))",
-                  // @ts-expect-error custom property
-                  "--tw-ring-color": "hsl(var(--login-accent) / 0.4)",
                 }}
               />
             </div>
@@ -160,8 +173,6 @@ export default function LoginPage() {
                     borderColor: "hsl(var(--login-card-border))",
                     background: "hsl(var(--login-bg))",
                     color: "hsl(var(--login-text))",
-                    // @ts-expect-error custom property
-                    "--tw-ring-color": "hsl(var(--login-accent) / 0.4)",
                   }}
                 />
                 <button
@@ -179,11 +190,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:opacity-60"
-              style={{
-                background: "hsl(var(--login-accent))",
-                color: "hsl(var(--primary-foreground))",
-              }}
+              className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60"
+              style={{ background: "hsl(var(--login-accent))" }}
             >
               {submitting ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
