@@ -508,7 +508,7 @@ export default function TarefasPage() {
         />
       </div>
 
-      <div className="relative z-10 w-full max-w-full px-4 py-5 sm:px-6 lg:px-8 overflow-x-hidden">
+      <div className="relative z-10 w-full max-w-full px-4 py-5 sm:px-6 lg:px-10 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
         <motion.div {...fadeUp} className="mb-6 flex items-center justify-between">
@@ -547,7 +547,7 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
-        <div className="mb-6 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_240px_320px]">
+        <div className="mb-6 grid gap-5 grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_280px_340px]">
 
           {/* LEFT: Focus — Top performers */}
           <motion.div
@@ -558,16 +558,9 @@ export default function TarefasPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">
-                  Foco da Equipe
-                </p>
-                <h2 className="mt-1 text-xl font-extrabold text-[hsl(var(--task-text))] tracking-tight">
-                  Desempenho
+                <h2 className="text-lg font-extrabold text-[hsl(var(--task-text))] tracking-tight">
+                  Desempenho da Equipe
                 </h2>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-extrabold text-[hsl(var(--task-text))]">{stats.total}</p>
-                <p className="text-[9px] text-[hsl(var(--task-text-muted))] uppercase tracking-wider">tarefas</p>
               </div>
             </div>
 
@@ -620,12 +613,11 @@ export default function TarefasPage() {
                           {name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
-                          <div className="flex items-center gap-2 text-[9px] flex-wrap">
-                            <span className="text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
-                            <span className="text-emerald-400">{data.done} feitas</span>
-                            {data.pending > 0 && <span className="text-[hsl(var(--task-yellow))]">{data.pending} em andamento</span>}
-                            {data.overdue > 0 && <span className="text-rose-400">{data.overdue} atrasadas</span>}
+                          <p className="text-sm font-bold text-[hsl(var(--task-text))] truncate">{name}</p>
+                          <div className="flex items-center gap-2.5 text-[11px] flex-wrap mt-0.5">
+                            <span className="text-emerald-400 font-medium">{data.done} feitas</span>
+                            {data.pending > 0 && <span className="text-[hsl(var(--task-yellow))] font-medium">{data.pending} em andamento</span>}
+                            {data.overdue > 0 && <span className="text-rose-400 font-medium">{data.overdue} atrasadas</span>}
                           </div>
                         </div>
                         <span className="text-sm font-extrabold" style={{ color }}>{pctDoneLocal}%</span>
@@ -712,7 +704,7 @@ export default function TarefasPage() {
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.35 + idx * 0.04 }}
-                    className={`group relative rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 transition-all hover:border-[hsl(var(--task-yellow)/0.3)] hover:bg-[hsl(var(--task-surface-hover))] ${task.statusKey === "overdue" ? "task-shake" : ""}`}
+                    className={`group relative rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 transition-all hover:border-[hsl(var(--task-yellow)/0.3)] hover:bg-[hsl(var(--task-surface-hover))] ${task.statusKey === "overdue" ? "task-deadline-shake" : ""}`}
                   >
                     <div className="flex items-start gap-2.5">
                       <span className={`mt-1.5 shrink-0 h-2 w-2 rounded-full ${
@@ -827,7 +819,7 @@ export default function TarefasPage() {
           transition={{ duration: 0.4, delay: 0.45 }}
         >
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-[hsl(var(--task-text))]">
+            <h3 className="text-base font-bold text-[hsl(var(--task-text))]">
               Lista de Atividades
               <span className="ml-2 text-xs font-normal text-[hsl(var(--task-text-muted))]">
                 {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa encontrada" : "tarefas encontradas"}

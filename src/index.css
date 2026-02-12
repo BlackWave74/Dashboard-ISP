@@ -605,6 +605,17 @@ body {
   animation-delay: 0.8s;
 }
 
+/* Periodic deadline shake — repeats every 5s */
+@keyframes task-deadline-shake {
+  0%, 8%, 100% { transform: translateX(0); }
+  2% { transform: translateX(-2px) rotate(-0.5deg); }
+  4% { transform: translateX(2px) rotate(0.5deg); }
+  6% { transform: translateX(-1px); }
+}
+.task-deadline-shake {
+  animation: task-deadline-shake 5s ease-in-out infinite;
+}
+
 /* Activity heatmap square */
 .activity-square {
   border-radius: 3px;

@@ -80,13 +80,13 @@ export function TaskFilters({
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-[360px]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--task-text-muted))]" />
           <input
             ref={searchRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar tarefa..."
-            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-10 pr-8 text-xs text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
+            className="h-10 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-10 pr-8 text-sm text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
           />
           {search && (
             <button
@@ -106,7 +106,7 @@ export function TaskFilters({
               key={chip.value}
               type="button"
               onClick={() => setStatus(chip.value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                 status === chip.value
                   ? "bg-[hsl(var(--task-yellow))] text-[hsl(var(--task-bg))] shadow-sm"
                   : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
@@ -124,7 +124,7 @@ export function TaskFilters({
               key={chip.value}
               type="button"
               onClick={() => setPeriod(chip.value)}
-              className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+              className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${
                 period === chip.value
                   ? "bg-[hsl(var(--task-purple))] text-white shadow-sm"
                   : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
@@ -140,7 +140,7 @@ export function TaskFilters({
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
               expanded
                 ? "border-[hsl(var(--task-yellow)/0.4)] bg-[hsl(var(--task-yellow)/0.1)] text-[hsl(var(--task-yellow))]"
                 : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-border-light))] hover:text-[hsl(var(--task-text))]"
