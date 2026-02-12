@@ -6,12 +6,8 @@ const words = ["potencial", "crescimento", "sucesso"];
 function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: number; suffix?: string; duration?: number }) {
   const [count, setCount] = useState(0);
   const [done, setDone] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const visible = useRef(false);
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-
     const runAnimation = () => {
       setDone(false);
       setCount(0);
@@ -30,22 +26,13 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
       requestAnimationFrame(animate);
     };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !visible.current) {
-          visible.current = true;
-          runAnimation();
-          interval = setInterval(runAnimation, 15000);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => { observer.disconnect(); clearInterval(interval); };
+    runAnimation();
+    const interval = setInterval(runAnimation, 15000);
+    return () => clearInterval(interval);
   }, [target, duration]);
 
   return (
-    <div ref={ref} className="flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <p className={`text-lg font-bold text-white transition-transform ${done ? "animate-[celebrate_0.5s_ease-out]" : ""}`}>
         {suffix === "/5" ? (count / 10).toFixed(1) : count}
         {suffix}
