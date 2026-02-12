@@ -9,11 +9,11 @@ function FloatingToggle() {
   return (
     <button
       onClick={toggleSidebar}
-      className={`fixed top-5 z-50 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[hsl(260_40%_15%/0.9)] text-white/60 shadow-lg backdrop-blur-sm transition-all hover:bg-[hsl(260_40%_18%)] hover:text-white hover:shadow-xl ${
-        open ? "left-[15.5rem]" : "left-4"
+      className={`fixed top-5 z-50 flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-[hsl(260_40%_15%/0.9)] text-white/50 shadow-lg backdrop-blur-sm transition-all hover:bg-[hsl(260_40%_18%)] hover:text-white hover:shadow-xl ${
+        open ? "left-[15rem]" : "left-3"
       }`}
     >
-      <PanelLeft className="h-4 w-4" />
+      <PanelLeft className="h-3.5 w-3.5" />
     </button>
   );
 }

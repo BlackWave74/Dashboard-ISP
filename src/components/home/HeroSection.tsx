@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, Zap, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Sparkles, Zap, TrendingUp, PartyPopper } from "lucide-react";
 
 const words = ["potencial", "crescimento", "eficiência"];
 
@@ -42,8 +42,8 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
         {suffix}
       </p>
       {done && (
-        <CheckCircle2
-          className="h-4 w-4 text-[hsl(160_84%_50%)] animate-scale-in"
+        <PartyPopper
+          className="h-4 w-4 text-[hsl(45_100%_65%)] animate-scale-in"
         />
       )}
     </div>
