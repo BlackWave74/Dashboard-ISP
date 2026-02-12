@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import type { TaskRecord } from "@/modules/tasks/types";
 import type { ProjectHours } from "@/modules/tasks/api/useProjectHours";
+import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 import type { ProjectAnalytics } from "../types";
 
 function classifyTask(task: TaskRecord): "done" | "overdue" | "pending" {
@@ -29,7 +30,6 @@ function isResponsibleMatch(taskResponsible: string, userName: string): boolean 
   if (!a || !b) return false;
   if (a === b) return true;
   if (a.includes(b) || b.includes(a)) return true;
-  // Match first name + last name loosely
   const aParts = a.split(/\s+/);
   const bParts = b.split(/\s+/);
   if (aParts.length >= 2 && bParts.length >= 2) {
@@ -41,6 +41,7 @@ function isResponsibleMatch(taskResponsible: string, userName: string): boolean 
 export function useAnalyticsData(
   allTasks: TaskRecord[],
   projectHours: ProjectHours[],
+  allTimes: ElapsedTimeRecord[],
   userName?: string
 ) {
   const [favorites, setFavorites] = useState<Set<number>>(() => {
@@ -64,20 +65,38 @@ export function useAnalyticsData(
     });
   }, []);
 
-  // Filter tasks by user — match responsible_name to session name
-  const tasks = useMemo(() => {
-    if (!userName) return allTasks;
+  // Filter tasks by user
+  const { tasks, isFiltered } = useMemo(() => {
+    if (!userName) return { tasks: allTasks, isFiltered: false };
     const filtered = allTasks.filter((t) => {
       const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
       return isResponsibleMatch(responsible, userName);
     });
-    // If no match found, return all tasks as fallback (user might have a different name format)
     if (filtered.length === 0 && allTasks.length > 0) {
-      console.warn("[useAnalyticsData] No tasks matched userName:", userName, "— showing all tasks");
-      return allTasks;
+      console.warn("[useAnalyticsData] No tasks matched userName:", userName, "— showing all tasks. Sample responsible_names:", allTasks.slice(0, 5).map(t => t.responsible_name));
+      return { tasks: allTasks, isFiltered: false };
     }
-    return filtered;
+    return { tasks: filtered, isFiltered: true };
   }, [allTasks, userName]);
+
+  // Get task IDs from user's tasks for filtering elapsed_times
+  const userTaskIds = useMemo(() => {
+    const ids = new Set<string | number>();
+    tasks.forEach((t) => {
+      const tid = t.task_id ?? t.id;
+      if (tid) ids.add(tid);
+    });
+    return ids;
+  }, [tasks]);
+
+  // Filter elapsed_times to only user's tasks
+  const userTimes = useMemo(() => {
+    if (!isFiltered) return allTimes;
+    return allTimes.filter((t) => {
+      const tid = t.task_id;
+      return tid && userTaskIds.has(tid);
+    });
+  }, [allTimes, userTaskIds, isFiltered]);
 
   // Get project IDs from user's tasks
   const userProjectIds = useMemo(() => {
@@ -91,12 +110,11 @@ export function useAnalyticsData(
 
   // Filter project hours to only user's projects
   const filteredProjectHours = useMemo(() => {
-    if (!userName) return projectHours;
+    if (!userName || !isFiltered) return projectHours;
     const filtered = projectHours.filter((ph) => userProjectIds.has(ph.projectId));
-    // Fallback: if no project hours matched, show all
     if (filtered.length === 0 && projectHours.length > 0) return projectHours;
     return filtered;
-  }, [projectHours, userProjectIds, userName]);
+  }, [projectHours, userProjectIds, userName, isFiltered]);
 
   const tasksByProject = useMemo(() => {
     const map = new Map<number, { done: number; pending: number; overdue: number }>();
@@ -111,7 +129,6 @@ export function useAnalyticsData(
   }, [tasks]);
 
   const projects: ProjectAnalytics[] = useMemo(() => {
-    // Build from project hours
     const fromHours = filteredProjectHours.map((ph) => {
       const taskStats = tasksByProject.get(ph.projectId) ?? { done: 0, pending: 0, overdue: 0 };
       const totalTasks = taskStats.done + taskStats.pending + taskStats.overdue;
@@ -136,12 +153,10 @@ export function useAnalyticsData(
       };
     });
 
-    // Also include projects from tasks that might not be in projectHours
     const existingIds = new Set(fromHours.map((p) => p.projectId));
     const fromTasks: ProjectAnalytics[] = [];
     tasksByProject.forEach((stats, pid) => {
       if (existingIds.has(pid)) return;
-      // Try to get project name from tasks
       const task = tasks.find((t) => Number(t.project_id) === pid);
       const projectName = task?.projects?.name ?? task?.project_name ?? task?.project ?? task?.projeto ?? `Projeto ${pid}`;
       const clientId = Number(task?.projects?.cliente_id ?? 0);
@@ -193,5 +208,6 @@ export function useAnalyticsData(
     totalHours,
     toggleFavorite,
     userTaskCount,
+    userTimes,
   };
 }
