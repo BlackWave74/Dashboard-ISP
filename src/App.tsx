@@ -7,6 +7,7 @@ import LoginPage from "./pages/Login";
 import DashboardLayout from "./components/DashboardLayout";
 import IndexPage from "./pages/Index";
 import TarefasPage from "./pages/Tarefas";
+import AnaliticasPage from "./pages/Analiticas";
 import UsuariosPage from "./pages/Usuarios";
 import ComodatoPage from "./pages/Comodato";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<IndexPage />} />
             <Route path="/tarefas" element={<TarefasPage />} />
+            <Route path="/analiticas" element={<AnaliticasPage />} />
             <Route path="/usuarios" element={<UsuariosPage />} />
             <Route path="/comodato" element={<ComodatoPage />} />
           </Route>
