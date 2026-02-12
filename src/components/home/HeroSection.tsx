@@ -99,24 +99,33 @@ const subtitleSegments = [
 
 function AnimatedSubtitle() {
   const ref = useRef<HTMLParagraphElement>(null);
-  const [elapsed, setElapsed] = useState(-1); // -1 = not started
+  const [elapsed, setElapsed] = useState(-1);
+  const visible = useRef(false);
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    let ticker: ReturnType<typeof setInterval>;
+
+    const runCycle = () => {
+      setElapsed(0);
+      ticker = setInterval(() => setElapsed((e) => e + 100), 100);
+      const maxDelay = subtitleSegments[subtitleSegments.length - 1].delay + 2000;
+      setTimeout(() => clearInterval(ticker), maxDelay);
+    };
+
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setElapsed(0); },
+      ([entry]) => {
+        if (entry.isIntersecting && !visible.current) {
+          visible.current = true;
+          runCycle();
+          interval = setInterval(runCycle, 8000);
+        }
+      },
       { threshold: 0.5 }
     );
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); clearInterval(interval); clearInterval(ticker); };
   }, []);
-
-  useEffect(() => {
-    if (elapsed < 0) return;
-    const id = setInterval(() => setElapsed((e) => e + 100), 100);
-    const maxDelay = subtitleSegments[subtitleSegments.length - 1].delay + 2000;
-    const timeout = setTimeout(() => clearInterval(id), maxDelay);
-    return () => { clearInterval(id); clearTimeout(timeout); };
-  }, [elapsed >= 0]);
 
   return (
     <p ref={ref} className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed md:text-lg">
