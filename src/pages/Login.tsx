@@ -15,7 +15,6 @@ const features = [
   { icon: Users, label: "Gestão de Equipe", desc: "Veja quem está conectado e produzindo" },
   { icon: Clock, label: "Horas & Prazos", desc: "Controle de tempo em tempo real" },
   { icon: CheckCircle2, label: "Tarefas", desc: "Gerencie e conclua demandas" },
-  { icon: TrendingUp, label: "Relatórios", desc: "Dados para decisões inteligentes" },
   { icon: PieChart, label: "Análises", desc: "Gráficos detalhados por setor" },
 ];
 
@@ -37,7 +36,7 @@ const DonutChart = () => (
       </linearGradient>
     </defs>
     <text x="50" y="46" textAnchor="middle" fill="hsl(210 40% 98%)" fontSize="16" fontWeight="800">100%</text>
-    <text x="50" y="60" textAnchor="middle" fill="hsl(215 20% 55%)" fontSize="7">eficiência</text>
+    <text x="50" y="62" textAnchor="middle" fill="hsl(234 89% 72%)" fontSize="9" fontWeight="700">EFICIÊNCIA</text>
   </svg>
 );
 
@@ -105,7 +104,7 @@ export default function LoginPage() {
           <div className="login-overview-card">
             <h2 className="login-overview-title">
               Seu painel completo
-              <span className="login-overview-highlight"> após o login</span>
+              <span className="login-overview-highlight"> desenvolvido pela ISP Consulte</span>
             </h2>
             <p className="login-overview-desc">
               Dashboards, métricas, desempenho da equipe, tarefas e muito mais — tudo em um só lugar.
@@ -116,7 +115,7 @@ export default function LoginPage() {
               <div className="login-chart-cell">
                 <div className="login-chart-cell-header">
                   <Activity size={14} />
-                  <span>Desempenho semanal</span>
+                  <span>Desempenho</span>
                 </div>
                 <div className="login-chart-bars">
                   {barData.map((h, i) => (
