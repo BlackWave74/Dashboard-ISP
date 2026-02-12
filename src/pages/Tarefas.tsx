@@ -1,24 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import { TaskCharts, ProjectPerformanceGauge } from "@/modules/tasks/ui/TaskCharts";
+import { ProjectPerformanceGauge } from "@/modules/tasks/ui/TaskCharts";
 import { TaskFilters } from "@/modules/tasks/ui/TaskFilters";
 import { TaskListTable } from "@/modules/tasks/ui/TaskListTable";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useTasks } from "@/modules/tasks/api/useTasks";
-import { STATUS_LABELS, type TaskRecord, type TaskView } from "@/modules/tasks/types";
+import { type TaskRecord, type TaskView } from "@/modules/tasks/types";
 import {
   RefreshCw,
-  BarChart3,
-  CheckCircle2,
   Clock,
   AlertTriangle,
-  TrendingUp,
   Layers,
   ChevronLeft,
   ChevronRight,
-  Zap,
-  Target,
   X,
 } from "lucide-react";
 import {
@@ -83,13 +78,6 @@ const formatLastUpdated = (timestamp: number | null) => {
   return `Atualizado há ${hours}h${rest ? ` ${rest} min` : ""}`;
 };
 
-const formatHoursLabel = (seconds?: number) => {
-  if (!seconds || seconds <= 0) return "Sem dados";
-  const hours = seconds / 3600;
-  if (hours >= 10) return `${Math.round(hours)} h`;
-  if (hours >= 1) return `${hours.toFixed(1)} h`;
-  return `${Math.max(1, Math.round(hours * 60))} min`;
-};
 
 const STATUS_ORDER: TaskStatusKey[] = ["done", "pending", "overdue", "unknown"];
 
@@ -153,70 +141,10 @@ const filterByPeriod = (tasks: TaskView[], period: string) => {
   });
 };
 
-const aggregateProjectHours = (tasks: TaskView[]) => {
-  const map = new Map<string, { hours: number; seconds: number; count: number }>();
-  tasks.forEach((task) => {
-    const name = (task.project || "").trim() || "Projeto indefinido";
-    const seconds = typeof task.durationSeconds === "number" ? Math.max(0, task.durationSeconds) : 0;
-    const current = map.get(name) ?? { hours: 0, seconds: 0, count: 0 };
-    current.seconds += seconds;
-    current.hours = current.seconds / 3600;
-    current.count += 1;
-    map.set(name, current);
-  });
-  return [...map.entries()]
-    .map(([projectName, data]) => ({ projectName, ...data }))
-    .sort((a, b) => b.hours - a.hours || b.count - a.count);
-};
-
 /* ─── Sub-components ─── */
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } }),
-};
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  accent = "default",
-  onClick,
-}: {
-  label: string;
-  value: number | string;
-  icon?: React.ElementType;
-  accent?: "yellow" | "green" | "red" | "purple" | "default";
-  onClick?: () => void;
-}) {
-  const accents = {
-    yellow: { border: "border-[hsl(var(--task-yellow)/0.25)]", glow: "bg-[hsl(var(--task-yellow)/0.08)]", icon: "text-[hsl(var(--task-yellow))]", value: "text-[hsl(var(--task-yellow))]" },
-    green: { border: "border-emerald-500/25", glow: "bg-emerald-500/8", icon: "text-emerald-400", value: "text-emerald-400" },
-    red: { border: "border-rose-500/25", glow: "bg-rose-500/8", icon: "text-rose-400", value: "text-rose-400" },
-    purple: { border: "border-[hsl(var(--task-purple)/0.25)]", glow: "bg-[hsl(var(--task-purple)/0.08)]", icon: "text-[hsl(var(--task-purple))]", value: "text-[hsl(var(--task-purple))]" },
-    default: { border: "border-[hsl(var(--task-border))]", glow: "", icon: "text-[hsl(var(--task-text-muted))]", value: "text-[hsl(var(--task-text))]" },
-  };
-  const a = accents[accent];
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`group relative flex flex-col gap-1 rounded-xl border ${a.border} bg-[hsl(var(--task-surface))] p-4 text-left transition hover:bg-[hsl(var(--task-surface-hover))] hover:shadow-lg`}
-    >
-      {a.glow && <div className={`absolute inset-0 rounded-xl ${a.glow} opacity-0 group-hover:opacity-100 transition`} />}
-      <div className="relative flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--task-text-muted))]">{label}</p>
-        {Icon && <Icon className={`h-4 w-4 ${a.icon}`} />}
-      </div>
-      <p className={`relative text-2xl font-bold ${a.value}`}>{value}</p>
-    </button>
-  );
-}
-
 /* ─── Page ─── */
 
-const GRAPH_AUTOPLAY_MS = 30000;
+
 
 export default function TarefasPage() {
   const { session } = useAuth();
@@ -259,11 +187,7 @@ export default function TarefasPage() {
     dateTo,
   });
 
-  // Carousel state
-  const [graphSlideIndex, setGraphSlideIndex] = useState(0);
-  const [graphAutoPlay, setGraphAutoPlay] = useState(true);
-  const [showProjectsPanel, setShowProjectsPanel] = useState(false);
-  const [showPendingPanel, setShowPendingPanel] = useState(false);
+  // Panel state (unused but kept for possible future use)
 
   const scrollToFilters = useCallback(() => {
     filtersBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -474,47 +398,6 @@ export default function TarefasPage() {
     return { total: totalOverall, done, overdue, pending, avgSeconds, totalSeconds: totalSeconds || undefined };
   }, [filteredTasks, totalOverall]);
 
-  const hoursSummary = useMemo(() => {
-    const pickDate = (task: TaskView) =>
-      task.deadlineDate ||
-      parseDateValue(task.raw["created_at"]) ||
-      parseDateValue(task.raw["createdAt"]) ||
-      parseDateValue(task.raw["due_date"]) ||
-      parseDateValue(task.raw["dueDate"]) ||
-      parseDateValue(task.raw["deadline"]);
-    const sumFrom = (start: Date | null) =>
-      filteredTasks.reduce((acc, task) => {
-        if (typeof task.durationSeconds !== "number") return acc;
-        const d = pickDate(task);
-        if (start && (!d || d < start)) return acc;
-        return acc + task.durationSeconds;
-      }, 0);
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-    return { total: sumFrom(null), month: sumFrom(monthStart), quarter: sumFrom(quarterStart) };
-  }, [filteredTasks]);
-
-  const projectsOverview = useMemo(() => {
-    const map = new Map<string, { total: number; pending: number; overdue: number; done: number; duration: number }>();
-    filteredTasks.forEach((task) => {
-      const key = task.project || "Sem projeto";
-      const current = map.get(key) ?? { total: 0, pending: 0, overdue: 0, done: 0, duration: 0 };
-      current.total += 1;
-      if (task.statusKey === "done") current.done += 1;
-      else if (task.statusKey === "overdue") current.overdue += 1;
-      else current.pending += 1;
-      current.duration += task.durationSeconds ?? 0;
-      map.set(key, current);
-    });
-    const groups = [...map.entries()].map(([name, data]) => ({ name, ...data }));
-    return {
-      groups: groups.sort((a, b) => b.duration - a.duration),
-      activeCount: groups.filter((g) => g.pending + g.overdue > 0).length,
-      pendingTotal: groups.reduce((acc, g) => acc + g.pending + g.overdue, 0),
-    };
-  }, [filteredTasks]);
-
   const pendingHighlights = useMemo(() => {
     return filteredTasks
       .filter((t) => t.statusKey === "pending" || t.statusKey === "overdue" || t.statusKey === "unknown")
@@ -526,353 +409,345 @@ export default function TarefasPage() {
       .slice(0, 10);
   }, [filteredTasks]);
 
-  // Chart data
-  const barProjectsFromTasks = useMemo(() => {
-    return aggregateProjectHours(filteredTasks)
-      .slice(0, 8)
-      .map((row) => ({
-        name: row.projectName || "Projeto",
-        hours: Math.max(0, row.hours),
-        count: row.count,
-      }));
-  }, [filteredTasks]);
 
-  const handleProjectSelect = useCallback(
-    (name: string) => {
-      if (!name || name === "Outros") return;
-      setStatus("all");
-      setSearch(name);
-      scrollToFilters();
-      requestAnimationFrame(() => searchInputRef.current?.focus());
-    },
-    [scrollToFilters]
-  );
-
-  // Autoplay carousel
-  useEffect(() => {
-    if (!graphAutoPlay) return;
-    const id = setInterval(() => {
-      setGraphSlideIndex((prev) => (prev + 1) % 2);
-    }, GRAPH_AUTOPLAY_MS);
-    return () => clearInterval(id);
-  }, [graphAutoPlay]);
 
   // Reset page on filter change
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, status, deadline, period, dateFrom, dateTo, deadlineTo, consultant]);
 
+  /* ── derived for overview ── */
+  const totalHours = stats.totalSeconds ? (stats.totalSeconds / 3600) : 0;
+  const totalHoursLabel = totalHours >= 10 ? `${Math.round(totalHours)}` : totalHours >= 1 ? totalHours.toFixed(1) : totalHours > 0 ? `${Math.round(totalHours * 60)}m` : "0";
+  const pctDone = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+
+  /* simple monthly activity data for the bar chart */
+  const activityBars = useMemo(() => {
+    const monthMap = new Map<string, { done: number; pending: number }>();
+    filteredTasks.forEach((t) => {
+      const d = t.deadlineDate || parseDateValue(t.raw["created_at"]) || parseDateValue(t.raw["createdAt"]);
+      if (!d) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleString("pt-BR", { month: "short" }).replace(".", "");
+      const cur = monthMap.get(key) ?? { done: 0, pending: 0 };
+      if (t.statusKey === "done") cur.done += 1;
+      else cur.pending += 1;
+      monthMap.set(key, cur);
+    });
+    return [...monthMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([key, val]) => {
+        const [, m] = key.split("-");
+        const monthLabel = new Date(2024, Number(m) - 1).toLocaleString("pt-BR", { month: "short" }).replace(".", "");
+        return { month: monthLabel, done: val.done, pending: val.pending, total: val.done + val.pending };
+      });
+  }, [filteredTasks]);
+
+  const maxBarValue = Math.max(1, ...activityBars.map((b) => b.total));
+
   return (
     <div className="task-page min-h-screen bg-[hsl(var(--task-bg))] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1800px] space-y-6">
+      <div className="mx-auto max-w-[1800px] space-y-5">
 
-        {/* ── HEADER ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="flex flex-wrap items-center justify-between gap-4"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-[hsl(var(--task-text))]">
+        {/* ═══════════════════════════════════════════
+            TOP: Project Overview + Progress + Deadlines
+            ═══════════════════════════════════════════ */}
+        <div className="grid gap-4 xl:grid-cols-[1fr_260px_300px]">
+
+          {/* ── LEFT: Project Overview + Activity Chart ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-6 flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--task-text-muted))]">
+                Visão do Projeto
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { reload(); reloadTimes(); }}
+                  disabled={refreshing}
+                  className="flex items-center gap-1.5 rounded-lg border border-[hsl(var(--task-border))] px-3 py-1 text-[10px] text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+                </button>
+                <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
+                  <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
+                  {formatLastUpdated(combinedLastUpdated)}
+                </div>
+              </div>
+            </div>
+
+            {/* Big Title */}
+            <h1 className="text-3xl font-extrabold text-[hsl(var(--task-text))] tracking-tight">
               Central de Tarefas
             </h1>
-            <p className="mt-1 text-sm text-[hsl(var(--task-text-muted))]">
-              Visão geral do progresso e atividades do projeto
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => { reload(); reloadTimes(); }}
-              disabled={refreshing}
-              className="flex items-center gap-2 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-4 py-2 text-xs font-medium text-[hsl(var(--task-text))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-50"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              {refreshing ? "Atualizando..." : "Atualizar"}
-            </button>
-            <div className="flex items-center gap-2 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-[10px] text-[hsl(var(--task-text-muted))]">
-              <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
-              {formatLastUpdated(combinedLastUpdated)}
-            </div>
-          </div>
-        </motion.div>
 
-        {/* ── STAT CARDS ROW ── */}
-        <motion.div
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
-        >
-          <motion.div custom={0} variants={fadeUp}>
-            <StatCard label="Total" value={stats.total} icon={Layers} onClick={() => { setStatus("all"); setDeadline("all"); }} />
-          </motion.div>
-          <motion.div custom={1} variants={fadeUp}>
-            <StatCard label="Concluídas" value={stats.done} icon={CheckCircle2} accent="green" onClick={() => { setStatus("done"); setDeadline("all"); }} />
-          </motion.div>
-          <motion.div custom={2} variants={fadeUp}>
-            <StatCard label="Em andamento" value={stats.pending} icon={Clock} accent="yellow" onClick={() => { setStatus("pending"); setDeadline("all"); }} />
-          </motion.div>
-          <motion.div custom={3} variants={fadeUp}>
-            <StatCard label="Atrasadas" value={stats.overdue} icon={AlertTriangle} accent="red" onClick={() => { setStatus("all"); setDeadline("overdue"); }} />
-          </motion.div>
-          <motion.div custom={4} variants={fadeUp}>
-            <StatCard label="Média de tempo" value={stats.avgSeconds ? formatDurationHHMM(stats.avgSeconds) : "—"} icon={TrendingUp} accent="purple" />
-          </motion.div>
-          <motion.div custom={5} variants={fadeUp}>
-            <StatCard label="Tempo total" value={stats.totalSeconds ? formatDurationHHMM(stats.totalSeconds) : "—"} icon={Zap} accent="purple" />
-          </motion.div>
-        </motion.div>
-
-        {/* ── MAIN GRID: Charts + Sidebar ── */}
-        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-          {/* LEFT: Charts & content */}
-          <div className="space-y-6">
-            {/* Performance + Hours row */}
-            <div className="grid gap-4 md:grid-cols-[1fr_280px]">
-              {/* Performance Gauge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-5"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Target className="h-4 w-4 text-[hsl(var(--task-yellow))]" />
-                  <p className="text-sm font-semibold text-[hsl(var(--task-text))]">Progresso do Projeto</p>
-                </div>
-                <ProjectPerformanceGauge tasks={filteredTasks ?? tasks ?? []} />
-              </motion.div>
-
-              {/* Hours summary */}
-              <div className="flex flex-col gap-3">
-                {[
-                  { label: "Horas no mês", value: formatHoursLabel(hoursSummary.month), accent: "yellow" as const },
-                  { label: "Horas no trimestre", value: formatHoursLabel(hoursSummary.quarter), accent: "purple" as const },
-                  { label: "Horas totais", value: formatHoursLabel(hoursSummary.total), accent: "green" as const },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-4 py-3"
-                  >
-                    <span className="text-xs text-[hsl(var(--task-text-muted))]">{item.label}</span>
-                    <span className={`text-lg font-bold ${
-                      item.accent === "yellow" ? "text-[hsl(var(--task-yellow))]" :
-                      item.accent === "purple" ? "text-[hsl(var(--task-purple))]" :
-                      "text-emerald-400"
-                    }`}>{item.value}</span>
-                  </div>
-                ))}
+            {/* 3 Hero Stats */}
+            <div className="mt-4 flex items-end gap-8">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">Total</p>
+                <p className="text-4xl font-extrabold text-[hsl(var(--task-text))] leading-none">{totalHoursLabel}<span className="text-lg font-semibold text-[hsl(var(--task-text-muted))] ml-1">h</span></p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">Tarefas</p>
+                <p className="text-4xl font-extrabold text-[hsl(var(--task-text))] leading-none">{stats.total}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">Concluídas</p>
+                <p className="text-4xl font-extrabold text-emerald-400 leading-none">{stats.done}</p>
               </div>
             </div>
 
-            {/* Charts */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-5"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <BarChart3 className="h-4 w-4 text-[hsl(var(--task-purple))]" />
-                <p className="text-sm font-semibold text-[hsl(var(--task-text))]">Atividade</p>
-              </div>
-              <TaskCharts
-                tasks={filteredTasks}
-                barProjectsOverride={barProjectsFromTasks}
-                onPickConsultant={(name) => {
-                  if (!name || name === "Outros") return;
-                  setSearch(name);
-                  scrollToFilters();
-                  requestAnimationFrame(() => searchInputRef.current?.focus());
-                }}
-                onPickProject={handleProjectSelect}
-                onPickDeadlineIso={(iso) => {
-                  if (!iso) return;
-                  setDeadlineTo(iso);
-                  scrollToFilters();
-                }}
-              />
-            </motion.div>
-
-            {/* Filters */}
-            <div ref={filtersBoxRef}>
-              <TaskFilters
-                search={search}
-                setSearch={setSearch}
-                status={status}
-                setStatus={setStatus}
-                deadline={deadline}
-                setDeadline={setDeadline}
-                period={period}
-                setPeriod={setPeriod}
-                dateFrom={dateFrom}
-                setDateFrom={setDateFrom}
-                dateTo={dateTo}
-                setDateTo={setDateTo}
-                deadlineTo={deadlineTo}
-                setDeadlineTo={setDeadlineTo}
-                consultant={consultant}
-                setConsultant={setConsultant}
-                consultantOptions={consultantOptions}
-                searchRef={searchInputRef}
-                project={effectiveProjectFilter}
-                setProject={setProject}
-                projectOptions={projectOptions}
-                projectDisabled={Boolean(lockedProject)}
-              />
-
-              {hasActiveFilters && (
-                <div className="mt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/5 px-3 py-1.5 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
-                  >
-                    <X className="h-3 w-3" />
-                    Limpar filtros
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Task List Table */}
-            <div>
-              {(error || timesError) && (
-                <div className="mb-4 rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-2 text-xs text-rose-400">
-                  {String(error || timesError)}
-                </div>
-              )}
-
-              {loading || loadingTimes ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="task-shimmer h-12 rounded-xl" />
-                  ))}
-                </div>
-              ) : filteredTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-6 py-16 text-center">
-                  <Layers className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.3)] mb-3" />
-                  <p className="text-sm text-[hsl(var(--task-text-muted))]">Nenhuma tarefa encontrada</p>
-                  <p className="text-xs text-[hsl(var(--task-text-muted)/0.6)] mt-1">Tente ajustar os filtros</p>
-                </div>
-              ) : (
-                <>
-                  <TaskListTable tasks={paginatedTasks} />
-
-                  {filteredTasks.length > pageSize && (
-                    <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[hsl(var(--task-text-muted))]">
-                      <span>
-                        {Math.min((page - 1) * pageSize + 1, filteredTasks.length)}–{Math.min(page * pageSize, filteredTasks.length)} de {filteredTasks.length}
+            {/* Activity Bar Chart */}
+            <div className="mt-6 flex-1 min-h-[180px]">
+              <div className="flex items-end gap-2 h-[160px]">
+                {activityBars.map((bar, i) => {
+                  const doneH = maxBarValue > 0 ? (bar.done / maxBarValue) * 100 : 0;
+                  const pendH = maxBarValue > 0 ? (bar.pending / maxBarValue) * 100 : 0;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      {/* Percentage label */}
+                      <span className="text-[9px] font-semibold text-[hsl(var(--task-text-muted))]">
+                        {bar.total > 0 ? `${Math.round((bar.done / bar.total) * 100)}%` : ""}
                       </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setPage((p) => Math.max(1, p - 1))}
-                          disabled={page === 1}
-                          className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 transition hover:border-[hsl(var(--task-yellow)/0.4)] disabled:opacity-30"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <span className="px-3 text-xs font-medium text-[hsl(var(--task-text))]">
-                          {page} / {totalPages}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                          disabled={page === totalPages}
-                          className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 transition hover:border-[hsl(var(--task-yellow)/0.4)] disabled:opacity-30"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT SIDEBAR */}
-          <div className="space-y-4">
-            {/* Projects summary */}
-            <div className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[hsl(var(--task-yellow))]">Projetos</p>
-                <span className="text-[10px] text-[hsl(var(--task-text-muted))]">{projectsOverview.activeCount} ativos</span>
-              </div>
-              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-                {projectsOverview.groups.length === 0 ? (
-                  <p className="text-xs text-[hsl(var(--task-text-muted))] text-center py-4">Nenhum projeto</p>
-                ) : (
-                  projectsOverview.groups.slice(0, 8).map((group) => (
-                    <button
-                      key={group.name}
-                      type="button"
-                      onClick={() => handleProjectSelect(group.name)}
-                      className="w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 text-left transition hover:border-[hsl(var(--task-yellow)/0.3)] hover:bg-[hsl(var(--task-surface-hover))]"
-                    >
-                      <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{group.name}</p>
-                      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-[hsl(var(--task-text-muted))]">
-                        <span>{formatHoursLabel(group.duration)}</span>
-                        <span>•</span>
-                        <span className="text-emerald-400">{group.done} feitas</span>
-                        {(group.pending + group.overdue) > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="text-[hsl(var(--task-yellow))]">{group.pending + group.overdue} pendentes</span>
-                          </>
-                        )}
-                      </div>
-                      {/* Mini progress bar */}
-                      <div className="mt-2 h-1 w-full rounded-full bg-[hsl(var(--task-border))] overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--task-yellow))] to-emerald-400 transition-all"
-                          style={{ width: `${group.total > 0 ? (group.done / group.total) * 100 : 0}%` }}
+                      {/* Bars */}
+                      <div className="w-full flex items-end gap-[2px] h-[130px]">
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${Math.max(doneH, 4)}%` }}
+                          transition={{ delay: i * 0.05 + 0.3, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                          className="flex-1 rounded-t-sm bg-[hsl(var(--task-yellow))]"
+                        />
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${Math.max(pendH, 4)}%` }}
+                          transition={{ delay: i * 0.05 + 0.4, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                          className="flex-1 rounded-t-sm bg-[hsl(var(--task-purple))]"
                         />
                       </div>
-                    </button>
-                  ))
+                      {/* Month label */}
+                      <span className="text-[9px] text-[hsl(var(--task-text-muted))] capitalize">{bar.month}</span>
+                    </div>
+                  );
+                })}
+                {activityBars.length === 0 && (
+                  <div className="flex w-full items-center justify-center text-xs text-[hsl(var(--task-text-muted))]">
+                    Sem dados de atividade
+                  </div>
                 )}
               </div>
+
+              {/* Activity progress bar */}
+              {stats.total > 0 && (
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex-1 h-1.5 rounded-full bg-[hsl(var(--task-border))] overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pctDone}%` }}
+                      transition={{ duration: 0.8, delay: 0.5 }}
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-[hsl(var(--task-yellow))]"
+                    />
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-400">{pctDone}% Concluído</span>
+                </div>
+              )}
             </div>
 
-            {/* Pending tasks */}
-            <div className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-rose-400">Pendências</p>
-                <span className="text-[10px] text-[hsl(var(--task-text-muted))]">{pendingHighlights.length} tarefas</span>
+            {/* Legend */}
+            <div className="mt-3 flex items-center gap-4 text-[9px] text-[hsl(var(--task-text-muted))]">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[hsl(var(--task-yellow))]" />Concluídas</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[hsl(var(--task-purple))]" />Pendentes</span>
+            </div>
+          </motion.div>
+
+          {/* ── CENTER: Task Progress Ring ── */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-5 flex flex-col items-center justify-between"
+          >
+            <ProjectPerformanceGauge tasks={filteredTasks ?? tasks ?? []} footerHint="" />
+
+            {/* Mini stats under gauge */}
+            <div className="mt-2 grid grid-cols-2 gap-3 w-full">
+              <div className="rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2 text-center">
+                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Tarefas</p>
+                <p className="text-xl font-bold text-[hsl(var(--task-text))]">{stats.total - stats.done}</p>
               </div>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                {pendingHighlights.length === 0 ? (
-                  <p className="text-xs text-[hsl(var(--task-text-muted))] text-center py-4">Nenhuma pendência</p>
-                ) : (
-                  pendingHighlights.map((task, idx) => (
-                    <div
-                      key={`${task.title}-${idx}`}
-                      className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-medium text-[hsl(var(--task-text))] leading-tight">{task.title}</p>
-                        {task.statusKey === "overdue" && (
-                          <span className="shrink-0 flex h-2 w-2 rounded-full bg-rose-400 animate-pulse" />
-                        )}
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span className="rounded-md bg-[hsl(var(--task-border)/0.5)] px-2 py-0.5 text-[9px] text-[hsl(var(--task-text-muted))]">
-                          {task.deadlineLabel || "Sem prazo"}
-                        </span>
-                        <span className="rounded-md bg-[hsl(var(--task-border)/0.5)] px-2 py-0.5 text-[9px] text-[hsl(var(--task-text-muted))]">
-                          {task.consultant}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2 text-center">
+                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Concluídas</p>
+                <p className="text-xl font-bold text-emerald-400">{stats.done}</p>
               </div>
             </div>
-          </div>
+          </motion.div>
+
+          {/* ── RIGHT: Deadlines Sidebar ── */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+            className="rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-5 flex flex-col"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-4 w-4 text-[hsl(var(--task-yellow))]" />
+              <p className="text-sm font-semibold text-[hsl(var(--task-text))]">Prazos</p>
+            </div>
+
+            <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[380px] pr-1">
+              {pendingHighlights.length === 0 ? (
+                <p className="text-xs text-[hsl(var(--task-text-muted))] text-center py-8">Sem tarefas pendentes</p>
+              ) : (
+                pendingHighlights.slice(0, 6).map((task, idx) => (
+                  <div
+                    key={`${task.title}-${idx}`}
+                    className="group rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 transition hover:border-[hsl(var(--task-yellow)/0.3)]"
+                  >
+                    <div className="flex items-start gap-2">
+                      {/* Color dot */}
+                      <span className={`mt-1 shrink-0 h-2 w-2 rounded-full ${task.statusKey === "overdue" ? "bg-rose-400 animate-pulse" : "bg-[hsl(var(--task-yellow))]"}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-[hsl(var(--task-text))] leading-snug truncate">{task.title}</p>
+                        <p className="text-[10px] text-[hsl(var(--task-text-muted))] mt-0.5 truncate">{task.project}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-[9px]">
+                      <span className={`font-semibold ${task.statusKey === "overdue" ? "text-rose-400" : "text-[hsl(var(--task-text-muted))]"}`}>
+                        {task.deadlineLabel || "Sem prazo"}
+                      </span>
+                      {task.durationSeconds && task.durationSeconds > 0 && (
+                        <span className="text-[hsl(var(--task-text-muted))]">{formatDurationHHMM(task.durationSeconds)}</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Overdue count badge */}
+            {stats.overdue > 0 && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-rose-500/10 border border-rose-500/20 px-3 py-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-rose-400" />
+                <span className="text-[10px] font-semibold text-rose-400">{stats.overdue} tarefa{stats.overdue > 1 ? "s" : ""} atrasada{stats.overdue > 1 ? "s" : ""}</span>
+              </div>
+            )}
+          </motion.div>
         </div>
+
+        {/* ═══════════════════════════
+            FILTERS (compact row)
+            ═══════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.35 }}
+          ref={filtersBoxRef}
+        >
+          <TaskFilters
+            search={search}
+            setSearch={setSearch}
+            status={status}
+            setStatus={setStatus}
+            deadline={deadline}
+            setDeadline={setDeadline}
+            period={period}
+            setPeriod={setPeriod}
+            dateFrom={dateFrom}
+            setDateFrom={setDateFrom}
+            dateTo={dateTo}
+            setDateTo={setDateTo}
+            deadlineTo={deadlineTo}
+            setDeadlineTo={setDeadlineTo}
+            consultant={consultant}
+            setConsultant={setConsultant}
+            consultantOptions={consultantOptions}
+            searchRef={searchInputRef}
+            project={effectiveProjectFilter}
+            setProject={setProject}
+            projectOptions={projectOptions}
+            projectDisabled={Boolean(lockedProject)}
+          />
+          {hasActiveFilters && (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/5 px-3 py-1.5 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
+              >
+                <X className="h-3 w-3" />
+                Limpar filtros
+              </button>
+            </div>
+          )}
+        </motion.div>
+
+        {/* ═══════════════════════════
+            TASK LIST
+            ═══════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.45 }}
+        >
+          {(error || timesError) && (
+            <div className="mb-3 rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-2 text-xs text-rose-400">
+              {String(error || timesError)}
+            </div>
+          )}
+
+          {loading || loadingTimes ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="task-shimmer h-12 rounded-xl" />
+              ))}
+            </div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-6 py-20 text-center">
+              <Layers className="h-12 w-12 text-[hsl(var(--task-text-muted)/0.2)] mb-3" />
+              <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">Nenhuma tarefa encontrada</p>
+              <p className="text-xs text-[hsl(var(--task-text-muted)/0.5)] mt-1">Ajuste os filtros ou recarregue os dados</p>
+            </div>
+          ) : (
+            <>
+              <TaskListTable tasks={paginatedTasks} />
+
+              {filteredTasks.length > pageSize && (
+                <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[hsl(var(--task-text-muted))]">
+                  <span>
+                    {Math.min((page - 1) * pageSize + 1, filteredTasks.length)}–{Math.min(page * pageSize, filteredTasks.length)} de {filteredTasks.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 transition hover:border-[hsl(var(--task-yellow)/0.4)] disabled:opacity-30"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="px-3 text-xs font-medium text-[hsl(var(--task-text))]">
+                      {page} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 transition hover:border-[hsl(var(--task-yellow)/0.4)] disabled:opacity-30"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
       </div>
     </div>
   );
