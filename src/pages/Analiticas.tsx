@@ -1,15 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle } from "lucide-react";
-import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
 import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
 import AnalyticsTaskSummary from "@/modules/analytics/components/AnalyticsTaskSummary";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
+import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
+import type { ProjectAnalytics } from "@/modules/analytics/types";
 
 export default function AnaliticasPage() {
   const { session } = useAuth();
@@ -44,40 +45,45 @@ export default function AnaliticasPage() {
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
 
+  const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
+
   if (loading && tasks.length === 0) {
     return (
-      <div className="ana-page flex items-center justify-center p-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[hsl(var(--ana-purple))]" />
-        <span className="ml-3 text-sm text-[hsl(var(--ana-text-muted))]">Carregando análises...</span>
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-3 text-sm text-muted-foreground">Carregando análises...</span>
       </div>
     );
   }
 
   if (errorTasks) {
     return (
-      <div className="ana-page flex items-center justify-center p-12">
-        <div className="flex items-center gap-3 rounded-2xl bg-[hsl(var(--ana-red)/0.08)] border border-[hsl(var(--ana-red)/0.2)] p-6">
-          <AlertCircle className="h-5 w-5 text-[hsl(var(--ana-red))]" />
-          <p className="text-sm text-[hsl(var(--ana-red))]">{errorTasks}</p>
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-8">
+        <div className="flex items-center gap-3 rounded-xl bg-destructive/5 border border-destructive/20 p-6">
+          <AlertCircle className="h-5 w-5 text-destructive" />
+          <p className="text-sm text-destructive">{errorTasks}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="ana-page w-full">
+    <div className="min-h-[calc(100vh-3.5rem)] w-full bg-gradient-to-br from-[hsl(270_60%_10%)] to-[hsl(234_45%_6%)]">
       <div className="mx-auto w-full max-w-[1900px] space-y-6 p-5 md:p-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <h1 className="text-2xl font-bold text-[hsl(var(--ana-text))]">Analíticas</h1>
-          <p className="mt-1 text-sm text-[hsl(var(--ana-text-muted))]">
-            Visão geral de clientes, projetos, horas e desempenho.
-          </p>
-        </motion.div>
+        {/* Header with search */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Visão geral de clientes, projetos, horas e desempenho.
+            </p>
+          </div>
+          <AnalyticsSearch
+            projects={projects}
+            onSelect={setSelectedProject}
+            selected={selectedProject}
+          />
+        </div>
 
         {/* KPI Cards */}
         <AnalyticsKpiCards
@@ -85,9 +91,11 @@ export default function AnaliticasPage() {
           activeProjects={activeProjects}
           totalHours={totalHours}
           totalTasks={tasks.length}
+          doneCount={totalDone}
+          overdueCount={totalOverdue}
         />
 
-        {/* Charts row */}
+        {/* Charts */}
         <div className="grid gap-5 lg:grid-cols-5">
           <div className="lg:col-span-3">
             <AnalyticsPerformanceChart times={times} />
@@ -97,8 +105,12 @@ export default function AnaliticasPage() {
           </div>
         </div>
 
-        {/* Project list */}
-        <AnalyticsProjectList projects={projects} onToggleFavorite={toggleFavorite} />
+        {/* Projects */}
+        <AnalyticsProjectList
+          projects={projects}
+          onToggleFavorite={toggleFavorite}
+          selectedProject={selectedProject}
+        />
       </div>
     </div>
   );
