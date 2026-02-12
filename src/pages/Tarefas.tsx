@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import SyncIndicator from "@/components/SyncIndicator";
+
 import { ProjectPerformanceGauge } from "@/modules/tasks/ui/TaskCharts";
 import { TaskFilters } from "@/modules/tasks/ui/TaskFilters";
 import { TaskListTable } from "@/modules/tasks/ui/TaskListTable";
@@ -490,7 +490,7 @@ export default function TarefasPage() {
 
   return (
     <div className="task-page min-h-screen relative">
-      <SyncIndicator syncing={refreshing && tasks.length > 0} />
+      
       {/* Background — matching home page purple gradient */}
       <div
         className="pointer-events-none fixed inset-0"
