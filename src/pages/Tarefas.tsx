@@ -389,16 +389,16 @@ export default function TarefasPage() {
     return filteredTasks.slice(start, start + pageSize);
   }, [filteredTasks, page]);
 
-  // Stats
-  const totalOverall = totalCount ?? filteredTasks.length;
+  // Stats — always use filtered count so numbers match visible tasks
   const stats = useMemo(() => {
+    const total = filteredTasks.length;
     const done = filteredTasks.filter((t) => t.statusKey === "done").length;
     const overdue = filteredTasks.filter((t) => t.statusKey === "overdue").length;
     const pending = filteredTasks.filter((t) => t.statusKey === "pending" || t.statusKey === "unknown").length;
     const durations = filteredTasks.map((t) => t.durationSeconds).filter((v): v is number => typeof v === "number");
     const totalSeconds = durations.reduce((acc, curr) => acc + curr, 0);
-    return { total: totalOverall, done, overdue, pending, totalSeconds: totalSeconds || 0 };
-  }, [filteredTasks, totalOverall]);
+    return { total, done, overdue, pending, totalSeconds: totalSeconds || 0 };
+  }, [filteredTasks]);
 
   // Unique clients & projects
   const uniqueClients = useMemo(() => {
@@ -488,11 +488,24 @@ export default function TarefasPage() {
   ];
 
   return (
-    <div className="task-page min-h-screen bg-[hsl(var(--task-bg))]">
-      {/* Background blobs */}
+    <div className="task-page min-h-screen relative">
+      {/* Background — matching home page purple gradient */}
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, hsl(270 60% 10%) 0%, hsl(250 50% 8%) 25%, hsl(234 45% 7%) 50%, hsl(260 40% 9%) 75%, hsl(234 45% 6%) 100%)",
+        }}
+      />
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-[hsl(var(--task-yellow)/0.04)] blur-[120px]" />
-        <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-[hsl(var(--task-purple)/0.05)] blur-[120px]" />
+        <div
+          className="absolute top-[20%] left-[-10%] h-[600px] w-[600px] rounded-full opacity-20 blur-[160px]"
+          style={{ background: "radial-gradient(circle, hsl(270 80% 50%), transparent 70%)" }}
+        />
+        <div
+          className="absolute top-[60%] right-[-10%] h-[500px] w-[500px] rounded-full opacity-15 blur-[140px]"
+          style={{ background: "radial-gradient(circle, hsl(234 89% 50%), transparent 70%)" }}
+        />
       </div>
 
       <div className="relative z-10 w-full max-w-full px-4 py-5 sm:px-6 lg:px-8 overflow-x-hidden">
@@ -536,7 +549,7 @@ export default function TarefasPage() {
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
         <div className="mb-6 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_240px_320px]">
 
-          {/* LEFT: Summary Stats — Radial mini-gauges */}
+          {/* LEFT: Focus — Top performers */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -546,89 +559,91 @@ export default function TarefasPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">
-                  Resumo do Projeto
+                  Foco da Equipe
                 </p>
                 <h2 className="mt-1 text-xl font-extrabold text-[hsl(var(--task-text))] tracking-tight">
-                  Visão Geral
+                  Desempenho
                 </h2>
               </div>
+              <div className="text-right">
+                <p className="text-2xl font-extrabold text-[hsl(var(--task-text))]">{stats.total}</p>
+                <p className="text-[9px] text-[hsl(var(--task-text-muted))] uppercase tracking-wider">tarefas</p>
+              </div>
             </div>
 
-            {/* Mini radial gauges for each status */}
-            <div className="grid grid-cols-3 gap-3 mb-5">
-              {[
-                { label: "Concluídas", value: stats.done, color: "#22c55e", bg: "emerald" },
-                { label: "Em Andamento", value: stats.pending, color: "hsl(43 97% 52%)", bg: "yellow" },
-                { label: "Atrasadas", value: stats.overdue, color: "#f43f5e", bg: "rose" },
-              ].map((item) => {
-                const pctItem = stats.total > 0 ? Math.round((item.value / stats.total) * 100) : 0;
-                const circumference = 2 * Math.PI * 32;
-                const offset = circumference - (pctItem / 100) * circumference;
-                return (
-                  <motion.div
-                    key={item.label}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                    className="flex flex-col items-center rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3"
-                  >
-                    <div className="relative h-[72px] w-[72px]">
-                      <svg viewBox="0 0 72 72" className="h-full w-full -rotate-90">
-                        <circle cx="36" cy="36" r="32" fill="none" stroke="hsl(228 20% 12%)" strokeWidth="5" />
-                        <motion.circle
-                          cx="36" cy="36" r="32" fill="none"
-                          stroke={item.color}
-                          strokeWidth="5"
-                          strokeLinecap="round"
-                          strokeDasharray={circumference}
-                          initial={{ strokeDashoffset: circumference }}
-                          animate={{ strokeDashoffset: offset }}
-                          transition={{ duration: 1, delay: 0.5 }}
-                          style={{ filter: "drop-shadow(0 0 4px " + item.color + "40)" }}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-sm font-extrabold text-[hsl(var(--task-text))]">{item.value}</span>
-                      </div>
+            {/* Top performers list */}
+            <div className="space-y-2 flex-1 overflow-y-auto max-h-[320px] styled-scrollbar">
+              {(() => {
+                const performerMap = new Map<string, { total: number; done: number; overdue: number; hours: number }>();
+                filteredTasks.forEach((t) => {
+                  const name = (t.consultant || "").trim() || "Sem responsável";
+                  const cur = performerMap.get(name) ?? { total: 0, done: 0, overdue: 0, hours: 0 };
+                  cur.total += 1;
+                  if (t.statusKey === "done") cur.done += 1;
+                  if (t.statusKey === "overdue") cur.overdue += 1;
+                  cur.hours += (t.durationSeconds ?? 0) / 3600;
+                  performerMap.set(name, cur);
+                });
+                const performers = [...performerMap.entries()]
+                  .sort((a, b) => b[1].done - a[1].done || b[1].total - a[1].total)
+                  .slice(0, 6);
+                const maxTotal = Math.max(1, ...performers.map(([, d]) => d.total));
+
+                if (!performers.length) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <Users className="h-8 w-8 text-[hsl(var(--task-text-muted)/0.15)] mb-2" />
+                      <p className="text-xs text-[hsl(var(--task-text-muted))]">Sem dados</p>
                     </div>
-                    <span className="mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">{item.label}</span>
-                    <span className="text-[9px] font-bold" style={{ color: item.color }}>{pctItem}%</span>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  );
+                }
 
-            {/* Total + hours row */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] p-3 text-center">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] mb-1">Total</p>
-                <p className="text-2xl font-extrabold text-[hsl(var(--task-text))] leading-none">{stats.total}</p>
-              </div>
-              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] p-3 text-center">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] mb-1">Horas</p>
-                <p className="text-2xl font-extrabold text-[hsl(var(--task-text))] leading-none">
-                  {totalHoursLabel}<span className="text-xs font-medium text-[hsl(var(--task-text-muted))]">h</span>
-                </p>
-              </div>
+                return performers.map(([name, data], idx) => {
+                  const pctBar = (data.total / maxTotal) * 100;
+                  const pctDoneLocal = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
+                  const colors = ["#FCBD0F", "#9333ea", "#22c55e", "#06b6d4", "#f97316", "#6366f1"];
+                  const color = colors[idx % colors.length];
+                  return (
+                    <motion.div
+                      key={name}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + idx * 0.06 }}
+                      className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-3 hover:border-[hsl(var(--task-border-light))] transition"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                          style={{ backgroundColor: `${color}20`, color }}
+                        >
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                          <div className="flex items-center gap-2 text-[9px]">
+                            <span className="text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
+                            <span className="text-emerald-400">{data.done} feitas</span>
+                            {data.overdue > 0 && <span className="text-rose-400">{data.overdue} atrasadas</span>}
+                            {data.hours > 0 && <span className="text-[hsl(var(--task-text-muted))]">{data.hours.toFixed(1)}h</span>}
+                          </div>
+                        </div>
+                        <span className="text-sm font-extrabold" style={{ color }}>{pctDoneLocal}%</span>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="h-1.5 rounded-full bg-[hsl(var(--task-border))] overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pctBar}%` }}
+                          transition={{ duration: 0.8, delay: 0.4 + idx * 0.08 }}
+                          className="h-full rounded-full"
+                          style={{ background: `linear-gradient(90deg, ${color}, ${color}99)` }}
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                });
+              })()}
             </div>
-
-            {/* Progress bar */}
-            {stats.total > 0 && (
-              <div className="pt-3 border-t border-[hsl(var(--task-border))]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Progresso geral</span>
-                  <span className="text-sm font-extrabold text-emerald-400">{pctDone}%</span>
-                </div>
-                <div className="h-2.5 rounded-full bg-[hsl(var(--task-border))] overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pctDone}%` }}
-                    transition={{ duration: 1, delay: 0.6 }}
-                    className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--task-yellow))] via-emerald-400 to-emerald-500"
-                  />
-                </div>
-              </div>
-            )}
           </motion.div>
 
           {/* CENTER: Performance Gauge */}

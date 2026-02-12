@@ -21,7 +21,7 @@ function FormattedDescription({ text }: { text?: string }) {
       .replace(/on\w+="[^"]*"/gi, "");
     return (
       <div
-        className="text-xs text-[hsl(var(--task-text))] leading-relaxed prose-sm prose-invert max-w-none [&_br]:block [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-0.5"
+        className="text-xs text-[hsl(var(--task-text))] leading-relaxed max-w-none [&_br]:block [&_p]:mb-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_li]:text-[hsl(var(--task-text))] [&_strong]:text-[hsl(var(--task-yellow))] [&_b]:text-[hsl(var(--task-yellow))] [&_a]:text-[hsl(var(--task-purple))] [&_a]:underline"
         dangerouslySetInnerHTML={{ __html: sanitized }}
       />
     );
@@ -41,11 +41,11 @@ function FormattedDescription({ text }: { text?: string }) {
           const stepMatch = line.match(/^(\d+)[.)]\s*(.*)/);
           if (stepMatch) {
             return (
-              <div key={i} className="flex items-start gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[hsl(var(--task-yellow)/0.12)] text-[9px] font-bold text-[hsl(var(--task-yellow))]">
+              <div key={i} className="flex items-start gap-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--task-yellow)/0.12)] text-[10px] font-bold text-[hsl(var(--task-yellow))] border border-[hsl(var(--task-yellow)/0.2)]">
                   {stepMatch[1]}
                 </span>
-                <p className="text-xs text-[hsl(var(--task-text))] leading-relaxed">{stepMatch[2]}</p>
+                <p className="text-xs text-[hsl(var(--task-text))] leading-relaxed pt-0.5">{stepMatch[2]}</p>
               </div>
             );
           }
