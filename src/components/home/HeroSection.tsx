@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Sparkles, Zap, TrendingUp } from "lucide-react";
 
-const words = ["potencial", "crescimento", "futuro"];
+const words = ["potencial", "crescimento", "eficiência"];
 
 export default function HeroSection() {
   const [wordIdx, setWordIdx] = useState(0);
@@ -90,8 +90,7 @@ export default function HeroSection() {
               className="absolute -inset-x-3 -inset-y-2 -z-0 rounded-xl opacity-30 blur-xl"
               style={{ background: "hsl(270 80% 60%)" }}
             />
-          </span>
-          <br />
+          </span>{" "}
           do seu provedor
         </h1>
 
@@ -104,7 +103,7 @@ export default function HeroSection() {
         <div className="mt-10 flex flex-wrap justify-center gap-6 md:gap-10">
           {[
             { icon: Zap, label: "Alta Performance", value: "99.9%" },
-            { icon: TrendingUp, label: "Eficiência", value: "+47%" },
+            { icon: TrendingUp, label: "Eficiência", value: "100%" },
             { icon: Sparkles, label: "Satisfação", value: "4.9/5" },
           ].map((s, i) => (
             <div
