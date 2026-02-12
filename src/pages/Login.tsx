@@ -19,22 +19,16 @@ const features = [
   { icon: PieChart, label: "Análises", desc: "Gráficos detalhados por setor" },
 ];
 
-const miniStats = [
-  { value: "24", label: "Projetos", color: "hsl(234 89% 72%)" },
-  { value: "1.2k", label: "Horas", color: "hsl(280 80% 65%)" },
-  { value: "846", label: "Concluídas", color: "hsl(160 70% 50%)" },
-];
-
 /* ---------- donut ring (SVG) ---------- */
 const DonutChart = () => (
-  <svg viewBox="0 0 80 80" className="login-donut">
-    <circle cx="40" cy="40" r="32" fill="none" stroke="hsl(222 30% 15%)" strokeWidth="8" />
+  <svg viewBox="0 0 100 100" className="login-donut">
+    <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(222 30% 15%)" strokeWidth="9" />
     <circle
-      cx="40" cy="40" r="32" fill="none"
-      stroke="url(#donutGrad)" strokeWidth="8"
-      strokeDasharray="140 60"
+      cx="50" cy="50" r="40" fill="none"
+      stroke="url(#donutGrad)" strokeWidth="9"
+      strokeDasharray="251.3 0"
       strokeLinecap="round"
-      transform="rotate(-90 40 40)"
+      transform="rotate(-90 50 50)"
     />
     <defs>
       <linearGradient id="donutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -42,19 +36,19 @@ const DonutChart = () => (
         <stop offset="100%" stopColor="hsl(280 75% 60%)" />
       </linearGradient>
     </defs>
-    <text x="40" y="38" textAnchor="middle" fill="hsl(210 40% 98%)" fontSize="12" fontWeight="800">70%</text>
-    <text x="40" y="50" textAnchor="middle" fill="hsl(215 20% 55%)" fontSize="6">eficiência</text>
+    <text x="50" y="46" textAnchor="middle" fill="hsl(210 40% 98%)" fontSize="16" fontWeight="800">100%</text>
+    <text x="50" y="60" textAnchor="middle" fill="hsl(215 20% 55%)" fontSize="7">eficiência</text>
   </svg>
 );
 
 /* ---------- sparkline (SVG) ---------- */
 const Sparkline = () => {
   const points = [10, 30, 20, 45, 35, 55, 40, 60, 50, 70];
-  const w = 120, h = 40;
+  const w = 140, h = 45;
   const d = points.map((p, i) => `${(i / (points.length - 1)) * w},${h - (p / 70) * h}`).join(" ");
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="login-sparkline">
-      <polyline points={d} fill="none" stroke="url(#sparkGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={d} fill="none" stroke="url(#sparkGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       <defs>
         <linearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="hsl(234 89% 65%)" />
@@ -106,34 +100,22 @@ export default function LoginPage() {
       <div className="login-blob login-blob--3" />
 
       <div className="login-container">
-        {/* -------- LEFT: Analytics / Features -------- */}
-        <div className="login-analytics-side">
-          <div className="login-analytics-inner">
-            <h2 className="login-analytics-title">
-              Tudo sobre seu provedor
-              <br />
-              <span className="login-analytics-highlight">em um só lugar.</span>
+        {/* -------- LEFT: Overview Card -------- */}
+        <div className="login-overview-side">
+          <div className="login-overview-card">
+            <h2 className="login-overview-title">
+              Seu painel completo
+              <span className="login-overview-highlight"> após o login</span>
             </h2>
-            <p className="login-analytics-desc">
-              Após o login, você terá acesso a dashboards completos com métricas,
-              desempenho da equipe, tarefas e muito mais.
+            <p className="login-overview-desc">
+              Dashboards, métricas, desempenho da equipe, tarefas e muito mais — tudo em um só lugar.
             </p>
 
-            {/* Mini stats row */}
-            <div className="login-mini-stats">
-              {miniStats.map((s) => (
-                <div key={s.label} className="login-mini-stat">
-                  <span className="login-mini-stat-value" style={{ color: s.color }}>{s.value}</span>
-                  <span className="login-mini-stat-label">{s.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Charts row */}
-            <div className="login-charts-row">
-              <div className="login-chart-card">
-                <div className="login-chart-card-header">
-                  <Activity size={14} style={{ color: "hsl(234 89% 72%)" }} />
+            {/* Charts grid — equal sizing */}
+            <div className="login-charts-grid">
+              <div className="login-chart-cell">
+                <div className="login-chart-cell-header">
+                  <Activity size={14} />
                   <span>Desempenho semanal</span>
                 </div>
                 <div className="login-chart-bars">
@@ -147,9 +129,9 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="login-chart-card login-chart-card--small">
-                <div className="login-chart-card-header">
-                  <TrendingUp size={14} style={{ color: "hsl(280 80% 65%)" }} />
+              <div className="login-chart-cell">
+                <div className="login-chart-cell-header">
+                  <TrendingUp size={14} />
                   <span>Crescimento</span>
                 </div>
                 <Sparkline />
@@ -175,7 +157,6 @@ export default function LoginPage() {
         {/* -------- RIGHT: Login Form -------- */}
         <div className="login-form-side">
           <div className="login-form-inner">
-            {/* Logo inside card */}
             <div className="login-card-logo">
               <img
                 src="/resouce/ISP-Consulte-v3-branco.png"
