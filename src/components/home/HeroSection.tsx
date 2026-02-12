@@ -35,7 +35,7 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
         if (entry.isIntersecting && !visible.current) {
           visible.current = true;
           runAnimation();
-          interval = setInterval(runAnimation, 10000);
+          interval = setInterval(runAnimation, 15000);
         }
       },
       { threshold: 0.5 }
@@ -59,49 +59,18 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
   );
 }
 
-// Simple typewriter that runs once when triggered via key change
-function TypewriterWord({ text, runKey }: { text: string; runKey: number }) {
-  const [displayed, setDisplayed] = useState("");
-  const [showCursor, setShowCursor] = useState(false);
-
-  useEffect(() => {
-    if (runKey === 0) return;
-    setDisplayed("");
-    setShowCursor(true);
-    let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setDisplayed(text.slice(0, i));
-      if (i >= text.length) {
-        clearInterval(id);
-        setTimeout(() => setShowCursor(false), 600);
-      }
-    }, 55);
-    return () => clearInterval(id);
-  }, [runKey]); // only runKey — text doesn't change
-
-  return (
-    <span className="font-semibold text-white/90">
-      {displayed}
-      {showCursor && <span className="animate-pulse text-[hsl(270_90%_75%)]">|</span>}
-    </span>
-  );
-}
-
 const subtitleSegments = [
-  { text: "Capacitamos provedores", type: "keyword" as const, delay: 0 },
-  { text: " a crescerem na era digital com ", type: "plain" as const, delay: 1200 },
-  { text: "soluções inteligentes", type: "keyword" as const, delay: 1600 },
-  { text: " que otimizam operações, aumentam a ", type: "plain" as const, delay: 3000 },
-  { text: "eficiência", type: "keyword" as const, delay: 3400 },
-  { text: " e impulsionam ", type: "plain" as const, delay: 4200 },
-  { text: "resultados reais.", type: "keyword" as const, delay: 4600 },
+  { text: "Capacitamos provedores", highlight: true, delay: 0 },
+  { text: " a crescerem na era digital com ", highlight: false, delay: 300 },
+  { text: "soluções inteligentes", highlight: true, delay: 600 },
+  { text: " que otimizam operações, aumentam a ", highlight: false, delay: 900 },
+  { text: "eficiência", highlight: true, delay: 1200 },
+  { text: " e impulsionam ", highlight: false, delay: 1500 },
+  { text: "resultados reais.", highlight: true, delay: 1800 },
 ];
 
 function AnimatedSubtitle() {
   const ref = useRef<HTMLParagraphElement>(null);
-  // Each segment gets its own trigger key; incremented once per cycle at the right delay
-  const [triggers, setTriggers] = useState<number[]>(subtitleSegments.map(() => 0));
   const [shown, setShown] = useState<boolean[]>(subtitleSegments.map(() => false));
   const started = useRef(false);
 
@@ -109,16 +78,9 @@ function AnimatedSubtitle() {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     const runCycle = () => {
-      // Reset all
-      setTriggers(subtitleSegments.map(() => 0));
       setShown(subtitleSegments.map(() => false));
-
-      // Schedule each segment
       subtitleSegments.forEach((seg, i) => {
         const t = setTimeout(() => {
-          if (seg.type === "keyword") {
-            setTriggers((prev) => { const n = [...prev]; n[i] = prev[i] + 1; return n; });
-          }
           setShown((prev) => { const n = [...prev]; n[i] = true; return n; });
         }, seg.delay);
         timers.push(t);
@@ -130,7 +92,7 @@ function AnimatedSubtitle() {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
           runCycle();
-          const loop = setInterval(runCycle, 10000);
+          const loop = setInterval(runCycle, 15000);
           timers.push(loop as unknown as ReturnType<typeof setTimeout>);
         }
       },
@@ -142,19 +104,16 @@ function AnimatedSubtitle() {
 
   return (
     <p ref={ref} className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed md:text-lg">
-      {subtitleSegments.map((seg, i) => {
-        if (seg.type === "keyword") {
-          return <TypewriterWord key={i} text={seg.text} runKey={triggers[i]} />;
-        }
-        return (
-          <span
-            key={i}
-            className={`text-white/60 transition-opacity duration-400 ${shown[i] ? "opacity-100" : "opacity-0"}`}
-          >
-            {seg.text}
-          </span>
-        );
-      })}
+      {subtitleSegments.map((seg, i) => (
+        <span
+          key={i}
+          className={`transition-all duration-700 ease-out ${
+            shown[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+          } ${seg.highlight ? "font-semibold text-white/90" : "text-white/60"}`}
+        >
+          {seg.text}
+        </span>
+      ))}
     </p>
   );
 }
