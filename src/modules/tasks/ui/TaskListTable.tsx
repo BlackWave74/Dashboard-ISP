@@ -10,7 +10,7 @@ type TaskListTableProps = {
 const statusDot = (status: TaskView["statusKey"]) => {
   switch (status) {
     case "done": return "bg-emerald-400";
-    case "overdue": return "bg-rose-400";
+    case "overdue": return "bg-rose-400 animate-pulse";
     case "pending": return "bg-[hsl(var(--task-yellow))]";
     default: return "bg-[hsl(var(--task-text-muted))]";
   }
@@ -29,63 +29,68 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
   if (!tasks.length) return null;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[hsl(var(--task-border))]">
+    <div className="overflow-hidden rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
       {/* Header */}
-      <div className="grid grid-cols-[1fr_100px_110px_140px_140px_100px] gap-px bg-[hsl(var(--task-border))]">
+      <div className="hidden sm:grid grid-cols-[1fr_90px_100px_130px_130px_80px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
         {["Tarefa", "Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
-          <div key={h} className="bg-[hsl(var(--task-surface))] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">
+          <div key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--task-text-muted)/0.6)]">
             {h}
           </div>
         ))}
       </div>
 
       {/* Rows */}
-      <div className="divide-y divide-[hsl(var(--task-border))]">
+      <div className="divide-y divide-[hsl(var(--task-border)/0.5)]">
         {tasks.map((task, index) => {
           const key = task.raw.id ?? task.raw.task_id ?? `${task.title}-${index}`;
           return (
             <motion.div
               key={key}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03, duration: 0.25 }}
-              className="group grid grid-cols-[1fr_100px_110px_140px_140px_100px] bg-[hsl(var(--task-bg))] transition hover:bg-[hsl(var(--task-surface-hover))]"
+              transition={{ delay: index * 0.025, duration: 0.2 }}
+              className="group grid grid-cols-1 sm:grid-cols-[1fr_90px_100px_130px_130px_80px] bg-transparent transition-colors hover:bg-[hsl(var(--task-surface-hover))]"
             >
               {/* Task name */}
-              <div className="flex items-center gap-3 px-4 py-3">
+              <div className="flex items-center gap-3 px-4 py-3.5">
                 <span className={`h-2 w-2 shrink-0 rounded-full ${statusDot(task.statusKey)}`} />
-                <span className="text-sm font-medium text-[hsl(var(--task-text))] truncate">{task.title}</span>
+                <div className="min-w-0">
+                  <span className="text-sm font-medium text-[hsl(var(--task-text))] truncate block">{task.title}</span>
+                  <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate block sm:hidden">
+                    {task.project} • {task.consultant}
+                  </span>
+                </div>
               </div>
 
               {/* Status */}
-              <div className="flex items-center px-3 py-3">
-                <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${statusPill(task.statusKey)}`}>
+              <div className="hidden sm:flex items-center px-3 py-3">
+                <span className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[9px] font-bold ${statusPill(task.statusKey)}`}>
                   {STATUS_LABELS[task.statusKey]?.label ?? "—"}
                 </span>
               </div>
 
               {/* Deadline */}
-              <div className="flex items-center px-3 py-3">
-                <span className={`text-xs ${task.statusKey === "overdue" ? "text-rose-400 font-semibold" : task.deadlineIsSoon ? "text-[hsl(var(--task-yellow))]" : "text-[hsl(var(--task-text-muted))]"}`}>
+              <div className="hidden sm:flex items-center px-3 py-3">
+                <span className={`text-xs ${task.statusKey === "overdue" ? "text-rose-400 font-bold" : task.deadlineIsSoon ? "text-[hsl(var(--task-yellow))]" : "text-[hsl(var(--task-text-muted))]"}`}>
                   {task.deadlineLabel}
                 </span>
               </div>
 
               {/* Consultant */}
-              <div className="flex items-center gap-2 px-3 py-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.2)] text-[10px] font-bold text-[hsl(var(--task-purple))]">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-[9px] font-bold text-[hsl(var(--task-purple))]">
                   {task.consultant ? task.consultant.charAt(0).toUpperCase() : "?"}
                 </div>
                 <span className="text-xs text-[hsl(var(--task-text-muted))] truncate">{task.consultant}</span>
               </div>
 
               {/* Project */}
-              <div className="flex items-center px-3 py-3">
+              <div className="hidden sm:flex items-center px-3 py-3">
                 <span className="text-xs text-[hsl(var(--task-text-muted))] truncate">{task.project}</span>
               </div>
 
               {/* Duration */}
-              <div className="flex items-center px-3 py-3">
+              <div className="hidden sm:flex items-center px-3 py-3">
                 <span className="text-xs font-mono text-[hsl(var(--task-text-muted))]">
                   {formatDurationHHMM(task.durationSeconds)}
                 </span>

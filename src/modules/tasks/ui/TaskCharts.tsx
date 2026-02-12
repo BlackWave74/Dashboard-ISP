@@ -38,6 +38,15 @@ type Props = {
 
 const COLORS = ["#FCBD0F", "#9333ea", "#22c55e", "#f43f5e", "#06b6d4", "#6366f1", "#f97316", "#84cc16"];
 
+const tooltipStyle = {
+  background: "hsl(228 30% 6%)",
+  border: "1px solid hsl(228 20% 18%)",
+  borderRadius: 12,
+  fontSize: 11,
+  color: "hsl(210 40% 96%)",
+  boxShadow: "0 8px 30px -8px rgba(0,0,0,0.6)",
+};
+
 function groupTopN(tasks: TaskView[], key: (t: TaskView) => string | null | undefined, topN: number) {
   const map = new Map<string, number>();
   for (const t of tasks) {
@@ -45,15 +54,11 @@ function groupTopN(tasks: TaskView[], key: (t: TaskView) => string | null | unde
     map.set(k, (map.get(k) ?? 0) + 1);
   }
   const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]);
-
-  const main = sorted.slice(0, topN).map(([name, value]) => ({ name, value }));
-
-  return main;
+  return sorted.slice(0, topN).map(([name, value]) => ({ name, value }));
 }
 
 function groupByProjectDuration(tasks: TaskView[], topN: number) {
   const map = new Map<string, { seconds: number; count: number }>();
-
   tasks.forEach((t) => {
     const key = (t.project || "").trim() || "Sem projeto";
     const seconds = typeof t.durationSeconds === "number" ? Math.max(0, t.durationSeconds) : 0;
@@ -62,32 +67,24 @@ function groupByProjectDuration(tasks: TaskView[], topN: number) {
     curr.count += 1;
     map.set(key, curr);
   });
-
-  const sorted = [...map.entries()]
+  return [...map.entries()]
     .map(([name, { seconds, count }]) => ({ name, hours: seconds / 3600, count }))
-    .sort((a, b) => b.hours - a.hours || b.count - a.count);
-
-  const main = sorted.slice(0, topN);
-
-  return main;
+    .sort((a, b) => b.hours - a.hours || b.count - a.count)
+    .slice(0, topN);
 }
 
 function groupByDeadline(tasks: TaskView[], limit: TimelineRange) {
   const map = new Map<string, number>();
-
   for (const t of tasks) {
     const d = t.deadlineDate;
     if (!d) continue;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; // yyyy-mm-dd (local)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     map.set(key, (map.get(key) ?? 0) + 1);
   }
-
   const arr = [...map.entries()]
     .map(([iso, count]) => ({ iso, count }))
     .sort((a, b) => a.iso.localeCompare(b.iso));
-
   const last = arr.length > limit ? arr.slice(arr.length - limit) : arr;
-
   return last.map((x) => {
     const mmdd = `${x.iso.slice(8, 10)}/${x.iso.slice(5, 7)}`;
     return { iso: x.iso, date: mmdd, count: x.count };
@@ -112,10 +109,7 @@ export function TaskCharts({
   const lineByDeadline = useMemo(() => groupByDeadline(tasks, deadlineRange), [tasks, deadlineRange]);
   const todayIso = useMemo(() => {
     const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, "0");
-    const d = String(today.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   }, []);
 
   const gradientPairs = COLORS.map((c) => `${c}:${c}`);
@@ -125,7 +119,6 @@ export function TaskCharts({
     const p = (data?.payload as { count?: number; name?: string } | undefined) ?? {};
     const tasksCount = Number(p.count ?? 0);
     const projectName = String(p.name ?? "Projeto");
-
     const hours = `${num.toFixed(num >= 10 ? 0 : 1)}h`;
     return [`${hours} (tarefas: ${tasksCount})`, projectName];
   };
@@ -133,9 +126,7 @@ export function TaskCharts({
   const renderActiveDot = useCallback(
     (props: ActiveDotProps) => {
       const iso = String(props.payload?.iso ?? "");
-      const handleClick = () => {
-        if (iso) onPickDeadlineIso?.(iso);
-      };
+      const handleClick = () => { if (iso) onPickDeadlineIso?.(iso); };
       return <Dot {...props} r={5} onClick={handleClick} style={{ cursor: "pointer" }} />;
     },
     [onPickDeadlineIso]
@@ -148,86 +139,90 @@ export function TaskCharts({
 
   const lineTooltipFormatter: TooltipProps<number, string>["formatter"] = (value) => {
     const num = typeof value === "number" ? value : Number(value ?? 0);
-    const label = num === 1 ? "Total: 1 tarefa" : `Total: ${num} tarefas`;
-    return [label, undefined];
+    return [num === 1 ? "Total: 1 tarefa" : `Total: ${num} tarefas`, undefined];
   };
 
   const formatIsoDatePtBr = (iso: string) => {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
   };
 
   return (
-    <div className="h-full w-full" style={{ minHeight: 420 }}>
+    <div className="w-full">
       {!tasks.length && (
-        <div className="mb-4 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-4 py-3 text-sm text-[hsl(var(--task-text-muted))]">
-          Nenhuma tarefa neste recorte. Ajuste filtros ou recarregue a base para visualizar dados.
+        <div className="mb-4 task-card px-4 py-3 text-sm text-[hsl(var(--task-text-muted))]">
+          Nenhuma tarefa neste recorte. Ajuste filtros ou recarregue a base.
         </div>
       )}
 
       <div className="grid items-stretch gap-4 xl:grid-cols-3">
-        <div className="flex h-full flex-col rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-4">
-          <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--task-yellow))]">Distribuição por responsáveis</p>
-            <p className="mt-1 text-sm text-[hsl(var(--task-text-muted))]">Quem concentra mais tarefas neste recorte.</p>
+        {/* Pie: Consultants */}
+        <div className="task-card flex flex-col">
+          <div className="mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
+            <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Distribuição por consultor</p>
           </div>
-
-          <div className="mt-3 flex-1" style={{ minHeight: 320 }}>
+          <div className="flex-1" style={{ minHeight: 280 }}>
             {pieByConsultant.length ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={240}>
-                <PieChart>
-                  <Pie
-                    data={pieByConsultant}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={60}
-                    outerRadius={95}
-                    paddingAngle={2}
-                    className="cursor-pointer"
-                    onClick={(data: { name?: string; payload?: { name?: string } }) => {
-                      const name = String(data?.name ?? data?.payload?.name ?? "");
-                      if (name) onPickConsultant?.(name);
-                    }}
-                  >
-                    {pieByConsultant.map((entry, index) => (
-                      <Cell key={`${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: "rgba(2,6,23,0.95)", border: "1px solid rgba(148,163,184,0.2)" }}
-                    labelStyle={{ color: "#e2e8f0" }}
-                    itemStyle={{ color: "#e2e8f0" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="flex items-center gap-4 h-full">
+                <div className="flex-1" style={{ minHeight: 240 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieByConsultant}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        stroke="none"
+                        className="cursor-pointer"
+                        onClick={(data: { name?: string; payload?: { name?: string } }) => {
+                          const name = String(data?.name ?? data?.payload?.name ?? "");
+                          if (name) onPickConsultant?.(name);
+                        }}
+                      >
+                        {pieByConsultant.map((entry, index) => (
+                          <Cell key={`${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={tooltipStyle} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-2">
+                  {pieByConsultant.map((d, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate max-w-[80px]">{d.name}</span>
+                      <span className="ml-auto text-[10px] font-bold text-[hsl(var(--task-text))]">{d.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
-                Sem dados para este recorte.
+                Sem dados.
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/45 p-4">
-          <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-indigo-300">Top projetos</p>
-            <p className="mt-1 text-sm text-slate-400">Mais horas consumidas neste recorte.</p>
+        {/* Bar: Projects */}
+        <div className="task-card flex flex-col">
+          <div className="mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
+            <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Horas por projeto</p>
           </div>
-
-          <div className="mt-3 flex-1" style={{ minHeight: 320 }}>
+          <div className="flex-1" style={{ minHeight: 280 }}>
             {barByProject.length ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={240}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={barByProject}
                   layout="vertical"
-                  barCategoryGap="48%"
-                  barGap={14}
-                  margin={{ top: 10, right: 28, bottom: 14, left: 24 }}
-                  style={{ background: "transparent" }}
+                  barCategoryGap="40%"
+                  margin={{ top: 5, right: 30, bottom: 5, left: 5 }}
                 >
                   <defs>
                     {barByProject.map((_, idx) => {
@@ -240,33 +235,15 @@ export function TaskCharts({
                       );
                     })}
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" />
-                  <XAxis
-                    type="number"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "rgba(226,232,240,0.75)", fontSize: 11 }}
-                    tickFormatter={(v: number) => `${v.toFixed(v >= 10 ? 0 : 1)}h`}
-                  />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    hide
-                  />
-                  <Tooltip
-                    contentStyle={{ background: "rgba(2,6,23,0.95)", border: "1px solid rgba(148,163,184,0.2)" }}
-                    labelStyle={{ color: "#e2e8f0" }}
-                    itemStyle={{ color: "#e2e8f0" }}
-                    cursor={{ fill: "rgba(99,102,241,0.08)" }}
-                    formatter={formatBarTooltip}
-                    labelFormatter={() => ""}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" horizontal={false} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "hsl(215 15% 50%)", fontSize: 10 }} tickFormatter={(v: number) => `${v.toFixed(v >= 10 ? 0 : 1)}h`} />
+                  <YAxis dataKey="name" type="category" hide />
+                  <Tooltip contentStyle={tooltipStyle} formatter={formatBarTooltip} labelFormatter={() => ""} cursor={{ fill: "hsl(228 20% 10%)" }} />
                   <Bar
                     dataKey="hours"
-                    fill="#6366f1"
-                    radius={[0, 0, 0, 0]}
-                    barSize={24}
-                    minPointSize={14}
+                    radius={[0, 6, 6, 0]}
+                    barSize={22}
+                    minPointSize={12}
                     className="cursor-pointer"
                     onClick={(data: { name?: string; payload?: { name?: string } }) => {
                       const name = String(data?.name ?? data?.payload?.name ?? "");
@@ -276,82 +253,55 @@ export function TaskCharts({
                     {barByProject.map((_, idx) => (
                       <Cell key={idx} fill={`url(#barGrad-${idx})`} />
                     ))}
-                    <LabelList
-                      dataKey="hours"
-                      position="right"
-                      formatter={formatBarLabel}
-                      style={{ fill: "#e2e8f0", fontSize: 11 }}
-                    />
+                    <LabelList dataKey="hours" position="right" formatter={formatBarLabel} style={{ fill: "hsl(210 40% 90%)", fontSize: 10, fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
-                Sem dados para este recorte.
-              </div>
+              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">Sem dados.</div>
             )}
           </div>
         </div>
 
-        <div className="flex h-full flex-col rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-4">
-          <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-400">Linha do tempo</p>
-            <p className="mt-1 text-sm text-[hsl(var(--task-text-muted))]">Quantidade por data de prazo (últimos pontos).</p>
-            <div className="mt-2 flex justify-center gap-2">
+        {/* Line: Timeline */}
+        <div className="task-card flex flex-col">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-400">Linha do Tempo</p>
+              <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Tarefas por prazo</p>
+            </div>
+            <div className="flex gap-1">
               {[7, 30].map((range) => (
                 <button
                   key={range}
                   type="button"
                   onClick={() => setDeadlineRange(range as TimelineRange)}
-                  className={`rounded-md border px-3 py-1 text-xs transition ${
+                  className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition ${
                     deadlineRange === range
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                      : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-emerald-400/30 hover:text-emerald-300"
+                      ? "bg-emerald-500/15 text-emerald-300"
+                      : "text-[hsl(var(--task-text-muted))] hover:text-emerald-300"
                   }`}
                 >
-                  Últimos {range}d
+                  {range}d
                 </button>
               ))}
             </div>
           </div>
-
-          <div className="mt-3 flex-1" style={{ minHeight: 320 }}>
+          <div className="flex-1" style={{ minHeight: 280 }}>
             {lineByDeadline.length ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={240}>
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineByDeadline} margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" />
-                  <XAxis
-                    dataKey="iso"
-                    tick={{ fill: "rgba(226,232,240,0.75)", fontSize: 11 }}
-                    tickFormatter={(v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`}
-                  />
-                  <YAxis tick={{ fill: "rgba(226,232,240,0.6)", fontSize: 11 }} />
-                  <Tooltip
-                    contentStyle={{ background: "rgba(2,6,23,0.95)", border: "1px solid rgba(148,163,184,0.2)" }}
-                    labelStyle={{ color: "#e2e8f0" }}
-                    itemStyle={{ color: "#e2e8f0" }}
-                    formatter={lineTooltipFormatter}
-                    labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))}
-                  />
-                  <ReferenceLine
-                    x={todayIso}
-                    stroke="rgba(94,234,212,0.8)"
-                    strokeDasharray="4 4"
-                    label={{ position: "top", value: "Hoje", fill: "#cbd5e1", fontSize: 11 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={renderActiveDot}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" />
+                  <XAxis dataKey="iso" tick={{ fill: "hsl(215 15% 50%)", fontSize: 10 }} tickFormatter={(v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`} />
+                  <YAxis tick={{ fill: "hsl(215 15% 45%)", fontSize: 10 }} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={lineTooltipFormatter} labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))} />
+                  <ReferenceLine x={todayIso} stroke="hsl(160 84% 60%)" strokeDasharray="4 4" label={{ position: "top", value: "Hoje", fill: "hsl(215 20% 65%)", fontSize: 10 }} />
+                  <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
-                Nenhuma tarefa com prazo para montar a linha do tempo.
+                Sem dados de prazos.
               </div>
             )}
           </div>
@@ -361,31 +311,18 @@ export function TaskCharts({
   );
 }
 
+/* ═══ Performance Gauge ═══ */
+
 type AnyTask = Record<string, any>;
 
 function _isTaskDone(t: AnyTask): boolean {
   if (t?.statusKey === "done") return true;
-  if (t?.done === true) return true;
-  if (t?.completed === true) return true;
-  if (t?.isCompleted === true) return true;
-
+  if (t?.done === true || t?.completed === true || t?.isCompleted === true) return true;
   if (t?.status) {
     const s = String(t.status).trim().toLowerCase();
-    if (
-      s === "done" ||
-      s === "completed" ||
-      s === "concluida" ||
-      s === "concluído" ||
-      s === "concluída" ||
-      s === "finalizada" ||
-      s === "feita"
-    )
-      return true;
+    if (["done", "completed", "concluida", "concluído", "concluída", "finalizada", "feita"].includes(s)) return true;
   }
-
-  if (t?.completedAt) return true;
-  if (t?.finishedAt) return true;
-
+  if (t?.completedAt || t?.finishedAt) return true;
   return false;
 }
 
@@ -402,47 +339,35 @@ export function ProjectPerformanceGauge({
 }) {
   const total = Array.isArray(tasks) ? tasks.length : 0;
   const done = Array.isArray(tasks) ? tasks.filter(_isTaskDone).length : 0;
-
   const pct = total > 0 ? (done / total) * 100 : 0;
   const pctDone = Math.round(_clamp(pct, 0, 100));
 
-  // animação: "carrega" 0 -> pctDone (e o centro mostra o que falta)
   const [animValue, setAnimValue] = React.useState(0);
 
   React.useEffect(() => {
     const target = pctDone;
-
     setAnimValue(0);
-
-    const duration = 900; // ms
+    const duration = 900;
     const start = performance.now();
-
     let raf = 0;
     const tick = (now: number) => {
       const t = (now - start) / duration;
-      if (t >= 1) {
-        setAnimValue(target);
-        return;
-      }
-      // easing suave (easeOutCubic)
+      if (t >= 1) { setAnimValue(target); return; }
       const eased = 1 - Math.pow(1 - t, 3);
       setAnimValue(Math.round(target * eased));
       raf = requestAnimationFrame(tick);
     };
-
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [pctDone]);
 
   const animLeft = 100 - animValue;
-
-  // Recharts usa animValue (pro arco acompanhar a animação)
   const data = [{ name: "progresso", value: animValue }];
 
   return (
     <div className="tc-kpi">
       <div className="tc-kpi__chart">
-        <ResponsiveContainer width="100%" height="100%" minWidth={220} minHeight={220}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
           <RadialBarChart
             data={data}
             innerRadius="74%"
@@ -467,7 +392,7 @@ export function ProjectPerformanceGauge({
             <RadialBar
               dataKey="value"
               cornerRadius={999}
-              background={{ fill: "rgba(148,163,184,0.12)" }}
+              background={{ fill: "hsl(228 20% 12%)" }}
               isAnimationActive
               animationDuration={900}
               fill="url(#tcGaugeGradient)"
@@ -478,23 +403,22 @@ export function ProjectPerformanceGauge({
           </RadialBarChart>
         </ResponsiveContainer>
 
-        <div className="tc-kpi__center" aria-label="Percentual restante do projeto">
-          <div className="tc-kpi__label">FALTA</div>
-
+        <div className="tc-kpi__center" aria-label="Percentual do projeto">
           <div className="tc-kpi__value">
-            <span className="tc-kpi__num">{animLeft}</span>
+            <span className="tc-kpi__num">{animValue}</span>
             <span className="tc-kpi__pct">%</span>
           </div>
-
           <div className="tc-kpi__sub">
             {done}/{total} concluídas
           </div>
         </div>
       </div>
 
-      <div className="tc-kpi__footer">
-        <span className="tc-kpi__hint">{footerHint}</span>
-      </div>
+      {footerHint && (
+        <div className="tc-kpi__footer">
+          <span className="tc-kpi__hint">{footerHint}</span>
+        </div>
+      )}
     </div>
   );
 }
