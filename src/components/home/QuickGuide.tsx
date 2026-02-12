@@ -31,16 +31,19 @@ export default function QuickGuide() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-3">
         {steps.map((s, i) => (
           <div
             key={s.num}
-            className="group relative overflow-hidden rounded-2xl bg-card/40 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-card/70 hover:shadow-lg hover:shadow-primary/5 animate-fade-in"
-            style={{ animationDelay: `${i * 100}ms`, animationFillMode: "both" }}
+            className="group relative overflow-hidden rounded-2xl bg-card/30 p-7 transition-all duration-500 hover:-translate-y-2 hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/10"
+            style={{
+              opacity: 0,
+              animation: `fadeSlideUp 0.6s ease-out ${i * 120}ms forwards`,
+            }}
           >
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent transition-all duration-500 group-hover:via-primary/40" />
             <div className="mb-4 flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary shadow-md shadow-primary/10">
                 {s.num}
               </span>
               <p className="text-sm font-bold text-foreground">{s.label}</p>

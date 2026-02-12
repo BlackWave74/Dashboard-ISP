@@ -84,7 +84,7 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className="border-r border-sidebar-border/30 bg-sidebar">
+    <Sidebar className="!border-r-0 bg-sidebar">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 pt-6 pb-2">
         <img
@@ -122,7 +122,7 @@ export function AppSidebar() {
             </button>
 
             {(projectsOpen || isProjectsActive) && (
-              <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-sidebar-border pl-3">
+              <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-primary/20 pl-3">
                 <NavLink
                   to="/tarefas"
                   className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
@@ -159,7 +159,9 @@ export function AppSidebar() {
         </div>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/30 p-4 space-y-3">
+      <SidebarFooter className="!border-t-0 p-4 space-y-3">
+        {/* Subtle purple separator */}
+        <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent mb-1" />
         <UserAvatar name={session?.name} email={session?.email} />
         <button
           onClick={handleLogout}
