@@ -194,7 +194,9 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
     const startedAt = Date.now();
 
     const fetchTasks = async () => {
-      setLoading(true);
+      // Only show loading shimmer if we have no cached data to display
+      const hasCachedData = Boolean(cached?.data?.length);
+      if (!hasCachedData) setLoading(true);
       setError(null);
       setNoChanges(false);
       try {
