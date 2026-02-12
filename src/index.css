@@ -536,11 +536,11 @@ body {
 
 /* ===== Task Page Tokens ===== */
 :root {
-  --task-bg: 228 30% 4%;
-  --task-surface: 228 25% 8%;
-  --task-surface-hover: 228 25% 11%;
-  --task-border: 228 20% 14%;
-  --task-border-light: 228 18% 18%;
+  --task-bg: 260 35% 8%;
+  --task-surface: 258 30% 12%;
+  --task-surface-hover: 256 28% 16%;
+  --task-border: 260 22% 18%;
+  --task-border-light: 258 20% 24%;
   --task-text: 210 40% 96%;
   --task-text-muted: 215 15% 55%;
   --task-yellow: 43 97% 52%;
