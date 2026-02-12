@@ -1,7 +1,54 @@
-import { useState, useEffect } from "react";
-import { Sparkles, Zap, TrendingUp } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Sparkles, Zap, TrendingUp, CheckCircle2 } from "lucide-react";
 
 const words = ["potencial", "crescimento", "eficiência"];
+
+function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: number; suffix?: string; duration?: number }) {
+  const [count, setCount] = useState(0);
+  const [done, setDone] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const start = performance.now();
+          const animate = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.round(target * eased));
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            } else {
+              setDone(true);
+            }
+          };
+          requestAnimationFrame(animate);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return (
+    <div ref={ref} className="flex items-center gap-2">
+      <p className="text-lg font-bold text-white">
+        {count === target && suffix === "/5" ? "4.9" : count}
+        {suffix}
+      </p>
+      {done && (
+        <CheckCircle2
+          className="h-4 w-4 text-[hsl(160_84%_50%)] animate-scale-in"
+        />
+      )}
+    </div>
+  );
+}
 
 export default function HeroSection() {
   const [wordIdx, setWordIdx] = useState(0);
@@ -18,8 +65,14 @@ export default function HeroSection() {
     return () => clearInterval(interval);
   }, []);
 
+  const miniStats = [
+    { icon: Zap, label: "Alta Performance", target: 99, suffix: ".9%" },
+    { icon: TrendingUp, label: "Eficiência", target: 100, suffix: "%" },
+    { icon: Sparkles, label: "Satisfação", target: 49, suffix: "/5" },
+  ];
+
   return (
-    <section className="relative overflow-hidden rounded-3xl">
+    <section className="relative overflow-hidden rounded-3xl" style={{ minHeight: "520px" }}>
       {/* Animated background */}
       <div
         className="absolute inset-0 hero-hue-rotate"
@@ -53,12 +106,12 @@ export default function HeroSection() {
       />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center px-6 py-16 md:py-24">
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 py-16 md:py-24" style={{ minHeight: "520px" }}>
         {/* Logo */}
         <img
           src="/resouce/ISP-Consulte-v3-branco.png"
           alt="ISP Consulte"
-          className="mb-8 h-12 w-auto object-contain drop-shadow-lg md:h-14"
+          className="mb-8 h-16 w-auto object-contain drop-shadow-lg md:h-20"
         />
 
         {/* Badge */}
@@ -69,43 +122,41 @@ export default function HeroSection() {
           </span>
         </div>
 
-        {/* Title */}
-        <h1 className="max-w-4xl text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl lg:text-7xl">
-          Desbloqueando o{" "}
-          <span className="relative inline-block">
-            <span
-              className={`relative z-10 transition-all duration-400 ${
-                visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-              }`}
-              style={{
-                background: "linear-gradient(135deg, hsl(270 90% 75%), hsl(234 89% 72%), hsl(200 90% 70%))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {words[wordIdx]}
-            </span>
-            <span
-              className="absolute -inset-x-3 -inset-y-2 -z-0 rounded-xl opacity-30 blur-xl"
-              style={{ background: "hsl(270 80% 60%)" }}
-            />
-          </span>{" "}
-          do seu provedor
-        </h1>
+        {/* Title — fixed height to prevent layout shift */}
+        <div className="h-[120px] md:h-[160px] lg:h-[180px] flex items-center justify-center">
+          <h1 className="max-w-4xl text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl lg:text-7xl">
+            Desbloqueando o{" "}
+            <span className="relative inline-block min-w-[200px] md:min-w-[320px]">
+              <span
+                className={`relative z-10 transition-all duration-400 ${
+                  visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+                }`}
+                style={{
+                  background: "linear-gradient(135deg, hsl(270 90% 75%), hsl(234 89% 72%), hsl(200 90% 70%))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                {words[wordIdx]}
+              </span>
+              <span
+                className="absolute -inset-x-3 -inset-y-2 -z-0 rounded-xl opacity-30 blur-xl"
+                style={{ background: "hsl(270 80% 60%)" }}
+              />
+            </span>{" "}
+            do seu provedor
+          </h1>
+        </div>
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed text-white/60 md:text-lg">
           <span className="font-semibold text-white/90">Capacitamos provedores a crescerem</span>{" "}
           na era digital com soluções que otimizam operações, aumentam a eficiência e impulsionam resultados.
         </p>
 
-        {/* Mini stats */}
+        {/* Animated mini stats */}
         <div className="mt-10 flex flex-wrap justify-center gap-6 md:gap-10">
-          {[
-            { icon: Zap, label: "Alta Performance", value: "99.9%" },
-            { icon: TrendingUp, label: "Eficiência", value: "100%" },
-            { icon: Sparkles, label: "Satisfação", value: "4.9/5" },
-          ].map((s, i) => (
+          {miniStats.map((s, i) => (
             <div
               key={s.label}
               className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-3 backdrop-blur-sm"
@@ -116,7 +167,11 @@ export default function HeroSection() {
             >
               <s.icon className="h-5 w-5 text-[hsl(270_90%_75%)]" />
               <div>
-                <p className="text-lg font-bold text-white">{s.value}</p>
+                <AnimatedCounter
+                  target={s.target}
+                  suffix={s.suffix}
+                  duration={2000 + i * 300}
+                />
                 <p className="text-[11px] text-white/40">{s.label}</p>
               </div>
             </div>
