@@ -580,8 +580,8 @@ body {
   60% { transform: translateX(1px); }
 }
 .task-shake {
-  animation: task-shake 0.6s ease-in-out;
-  animation-delay: 1s;
+  animation: task-shake 0.6s ease-in-out 3;
+  animation-delay: 0.8s;
 }
 
 /* Activity heatmap square */
