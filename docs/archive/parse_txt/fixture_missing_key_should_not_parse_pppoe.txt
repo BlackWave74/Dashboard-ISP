@@ -1,0 +1,4 @@
+!module config:onu_wan.
+interface onu_1/1/2 pppoe pro dis 12345 sl 1 p 1 o 2
+onu set white phy addr sl 1 p 1 o 2 sn FHTTABC12345 ty AN5506-04-FA
+!module config:onu_wifi.

@@ -1,13 +1,12 @@
 {
-  "name": "painel-admin",
+  "name": "painel-admin-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "dotenv -e .env.local -- next dev frontend",
-    "build": "npm --prefix frontend run build && node ./scripts/copyNext.js",
-    "vercel-build": "npm --prefix frontend run build && node ./scripts/copyNext.js",
-    "start": "dotenv -e .env.local -- next start frontend",
-    "lint": "eslint"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.0",
@@ -21,7 +20,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "dotenv-cli": "^7.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
