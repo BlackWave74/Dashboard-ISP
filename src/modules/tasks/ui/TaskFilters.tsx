@@ -76,29 +76,30 @@ export function TaskFilters({
 
   return (
     <div className="space-y-3">
-      {/* Row 1: Search bar full width */}
-      <div className="relative w-full max-w-[480px]">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--task-text-muted))]" />
-        <input
-          ref={searchRef}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar tarefa..."
-          className="h-10 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-10 pr-8 text-sm text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-
-      {/* Row 2: Status chips + Period chips + Filters/Clear — all wrap nicely */}
+      {/* Row 1: Search + chips inline when space allows */}
       <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-auto sm:min-w-[220px] sm:max-w-[320px]">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--task-text-muted))]" />
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar tarefa..."
+            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-9 pr-8 text-sm text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+      {/* Status chips + Period chips + Filters/Clear — all in same row */}
+
         {/* Status chips */}
         <div className="flex items-center gap-1 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-0.5 overflow-x-auto">
           {statusChips.map((chip) => (
