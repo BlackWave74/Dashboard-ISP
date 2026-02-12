@@ -7,25 +7,25 @@ const benefits = [
 
 export default function BenefitsSection() {
   return (
-    <div className="rounded-2xl border border-[hsl(var(--dash-border))] p-6" style={{ background: "hsl(var(--dash-bg) / 0.55)" }}>
+    <div className="rounded-2xl border border-border bg-card/55 p-6">
       <div className="mx-auto max-w-4xl text-center">
-        <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "hsl(var(--dash-accent-indigo))" }}>Benefícios</p>
-        <h3 className="mt-2 text-2xl font-semibold" style={{ color: "hsl(var(--dash-text))" }}>Por que usar</h3>
-        <p className="mx-auto mt-2 max-w-2xl text-sm" style={{ color: "hsl(var(--dash-text-muted))" }}>
+        <p className="text-xs uppercase tracking-[0.2em] text-primary">Benefícios</p>
+        <h3 className="mt-2 text-2xl font-semibold text-foreground">Por que usar</h3>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
           Menos improviso, mais padrão. Um painel bonito é legal — mas o que importa é reduzir atrito no dia a dia.
         </p>
       </div>
 
       <div className="mx-auto mt-6 grid max-w-5xl gap-4 md:grid-cols-2">
         {benefits.map((b) => (
-          <div key={b.title} className="rounded-2xl border border-[hsl(var(--dash-border))] p-5 text-left" style={{ background: "hsl(var(--dash-surface) / 0.35)" }}>
-            <p className="text-sm font-semibold" style={{ color: "hsl(var(--dash-text))" }}>{b.title}</p>
-            <p className="mt-2 text-sm" style={{ color: "hsl(var(--dash-text-muted))" }}>{b.desc}</p>
+          <div key={b.title} className="rounded-2xl border border-border bg-muted/35 p-5 text-left transition-colors hover:bg-muted/50">
+            <p className="text-sm font-semibold text-foreground">{b.title}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{b.desc}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-6 text-center text-xs" style={{ color: "hsl(var(--dash-text-muted))" }}>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
         A Home é um "mapa do sistema": orienta o usuário e reforça propósito — não é um mural de recados.
       </p>
     </div>

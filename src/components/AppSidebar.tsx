@@ -1,4 +1,4 @@
-import { Home, ListTodo, UserPlus, Package, LogOut, Shield } from "lucide-react";
+import { Home, ListTodo, UserPlus, Package, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -31,15 +31,21 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-border">
-      <div className="flex items-center gap-2 px-4 py-5">
-        <Shield className="h-6 w-6 text-primary" />
-        <span className="text-lg font-bold text-foreground">ISP Consulte</span>
+    <Sidebar className="border-r border-sidebar-border bg-sidebar">
+      {/* Logo */}
+      <div className="flex items-center justify-center px-4 py-5">
+        <img
+          src="/resouce/ISP-Consulte-v3-branco.png"
+          alt="ISP Consulte"
+          className="h-9 w-auto object-contain"
+        />
       </div>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/50 text-xs uppercase tracking-wider">
+            Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -48,8 +54,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      activeClassName="bg-primary/15 text-primary font-medium"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -62,13 +68,13 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border p-4">
-        <div className="mb-2 truncate text-sm text-muted-foreground">
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        <div className="mb-2 truncate text-sm text-sidebar-foreground">
           {session?.name || session?.email || "Usuário"}
         </div>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut className="h-4 w-4" />
           Sair

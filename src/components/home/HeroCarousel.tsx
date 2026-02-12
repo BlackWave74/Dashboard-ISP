@@ -7,7 +7,7 @@ const slides = [
     title: "O que é este painel",
     desc: "Um ponto único para entender o fluxo do sistema e acessar o que importa no seu perfil.",
     points: ["Visão rápida do que fazer agora", "Menos troca de contexto", "Decisões com mais clareza"],
-    gradient: "from-[hsl(234,89%,55%,0.7)] via-[hsl(222,47%,6%)] to-[hsl(222,47%,4%)]",
+    gradient: "from-primary/70 via-background to-background",
   },
   {
     id: "s2",
@@ -15,7 +15,7 @@ const slides = [
     title: "Fluxos guiados",
     desc: "Processos com a mesma lógica e a mesma saída, para reduzir variação e erro.",
     points: ["Rotinas padronizadas por módulo", "Treinamento mais rápido", "Manutenção mais simples"],
-    gradient: "from-[hsl(160,84%,39%,0.6)] via-[hsl(222,47%,6%)] to-[hsl(222,47%,4%)]",
+    gradient: "from-emerald-500/60 via-background to-background",
   },
   {
     id: "s3",
@@ -23,7 +23,7 @@ const slides = [
     title: "Acesso por perfil",
     desc: "Cada usuário vê apenas o necessário para o seu trabalho, com rastreabilidade e controle.",
     points: ["Permissões por perfil", "Menos confusão para novos usuários", "Mais segurança operacional"],
-    gradient: "from-[hsl(38,92%,50%,0.6)] via-[hsl(222,47%,6%)] to-[hsl(222,47%,4%)]",
+    gradient: "from-amber-400/60 via-background to-background",
   },
 ];
 
@@ -36,7 +36,7 @@ export default function HeroCarousel() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[hsl(var(--dash-border))]" style={{ background: "hsl(var(--dash-surface) / 0.55)" }}>
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card/55">
       <div className="relative h-[22rem] md:h-[26rem]">
         {slides.map((slide, idx) => (
           <div
@@ -45,33 +45,32 @@ export default function HeroCarousel() {
           >
             {/* Background gradient */}
             <div
-              className={`absolute -inset-[120px] bg-gradient-to-br ${slide.gradient}`}
-              style={{ animation: "heroHue 18s linear infinite" }}
+              className={`absolute -inset-[120px] bg-gradient-to-br ${slide.gradient} hero-hue-rotate`}
               aria-hidden="true"
             />
 
             {/* Content panel */}
-            <div className="relative z-10 mx-auto mt-12 w-[min(680px,calc(100%-3rem))] rounded-xl border border-white/10 p-8 text-center" style={{ background: "hsl(var(--dash-bg) / 0.5)", backdropFilter: "blur(14px)" }}>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: "hsl(var(--dash-accent-indigo))" }}>
+            <div className="relative z-10 mx-auto mt-12 w-[min(680px,calc(100%-3rem))] rounded-xl border border-white/10 bg-background/50 p-8 text-center backdrop-blur-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
                 {slide.kicker}
               </p>
-              <p className="mt-2 text-3xl font-semibold md:text-4xl" style={{ color: "hsl(var(--dash-text))" }}>
+              <p className="mt-2 text-3xl font-semibold text-foreground md:text-4xl">
                 {slide.title}
               </p>
-              <p className="mx-auto mt-2 max-w-md text-sm" style={{ color: "hsl(var(--dash-text-muted))" }}>
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
                 {slide.desc}
               </p>
 
-              <div className="mx-auto mt-5 grid max-w-md gap-2 text-left text-sm" style={{ color: "hsl(var(--dash-text-muted))" }}>
+              <div className="mx-auto mt-5 grid max-w-md gap-2 text-left text-sm text-muted-foreground">
                 {slide.points.map((p) => (
                   <div key={p} className="flex items-start gap-2">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "hsl(var(--dash-accent-indigo))" }} />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>{p}</span>
                   </div>
                 ))}
               </div>
 
-              <p className="mt-6 text-sm" style={{ color: "hsl(var(--dash-text-muted))" }}>
+              <p className="mt-6 text-sm text-muted-foreground">
                 Você está na visão geral do sistema. Algumas ações aparecem apenas para perfis autorizados.
               </p>
             </div>
@@ -86,7 +85,7 @@ export default function HeroCarousel() {
             key={slide.id}
             type="button"
             onClick={() => setActive(idx)}
-            className={`h-2.5 w-2.5 rounded-full transition ${idx === active ? "bg-[hsl(var(--dash-accent-indigo))]" : "bg-[hsl(var(--dash-border))]"}`}
+            className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${idx === active ? "bg-primary scale-125" : "bg-border hover:bg-muted-foreground"}`}
             aria-label={`Slide ${idx + 1}`}
           />
         ))}
