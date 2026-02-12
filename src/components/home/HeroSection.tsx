@@ -59,44 +59,81 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
   );
 }
 
-const subtitleParts = [
-  { text: "Capacitamos provedores", highlight: true },
-  { text: " a crescerem na era digital com " },
-  { text: "soluções inteligentes", highlight: true },
-  { text: " que otimizam operações, aumentam a " },
-  { text: "eficiência", highlight: true },
-  { text: " e impulsionam " },
-  { text: "resultados reais.", highlight: true },
+// Typewriter effect for highlighted keywords
+function TypewriterWord({ text, start }: { text: string; start: boolean }) {
+  const [displayed, setDisplayed] = useState("");
+  const [showCursor, setShowCursor] = useState(false);
+
+  useEffect(() => {
+    if (!start) { setDisplayed(""); setShowCursor(false); return; }
+    setShowCursor(true);
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(id);
+        setTimeout(() => setShowCursor(false), 600);
+      }
+    }, 55);
+    return () => clearInterval(id);
+  }, [start, text]);
+
+  return (
+    <span className="font-semibold text-white/90">
+      {displayed}
+      {showCursor && <span className="animate-pulse text-[hsl(270_90%_75%)]">|</span>}
+    </span>
+  );
+}
+
+const subtitleSegments = [
+  { text: "Capacitamos provedores", type: "keyword" as const, delay: 0 },
+  { text: " a crescerem na era digital com ", type: "plain" as const, delay: 1200 },
+  { text: "soluções inteligentes", type: "keyword" as const, delay: 1600 },
+  { text: " que otimizam operações, aumentam a ", type: "plain" as const, delay: 3000 },
+  { text: "eficiência", type: "keyword" as const, delay: 3400 },
+  { text: " e impulsionam ", type: "plain" as const, delay: 4200 },
+  { text: "resultados reais.", type: "keyword" as const, delay: 4600 },
 ];
 
 function AnimatedSubtitle() {
   const ref = useRef<HTMLParagraphElement>(null);
-  const [revealed, setRevealed] = useState(false);
+  const [elapsed, setElapsed] = useState(-1); // -1 = not started
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setRevealed(true); },
+      ([entry]) => { if (entry.isIntersecting) setElapsed(0); },
       { threshold: 0.5 }
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (elapsed < 0) return;
+    const id = setInterval(() => setElapsed((e) => e + 100), 100);
+    const maxDelay = subtitleSegments[subtitleSegments.length - 1].delay + 2000;
+    const timeout = setTimeout(() => clearInterval(id), maxDelay);
+    return () => { clearInterval(id); clearTimeout(timeout); };
+  }, [elapsed >= 0]);
+
   return (
     <p ref={ref} className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed md:text-lg">
-      {subtitleParts.map((part, i) => (
-        <span
-          key={i}
-          className={`inline transition-all duration-500 ${
-            revealed
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-2"
-          } ${part.highlight ? "font-semibold text-white/90" : "text-white/60"}`}
-          style={{ transitionDelay: revealed ? `${i * 120}ms` : "0ms" }}
-        >
-          {part.text}
-        </span>
-      ))}
+      {subtitleSegments.map((seg, i) => {
+        const active = elapsed >= seg.delay;
+        if (seg.type === "keyword") {
+          return <TypewriterWord key={i} text={seg.text} start={active} />;
+        }
+        return (
+          <span
+            key={i}
+            className={`text-white/60 transition-opacity duration-400 ${active ? "opacity-100" : "opacity-0"}`}
+          >
+            {seg.text}
+          </span>
+        );
+      })}
     </p>
   );
 }
@@ -177,7 +214,7 @@ export default function HeroSection() {
         <div className="h-[120px] md:h-[160px] lg:h-[180px] flex items-center justify-center">
           <h1 className="max-w-4xl text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl lg:text-7xl">
             Desbloqueando o{" "}
-            <span className="relative inline-block min-w-[200px] md:min-w-[320px]">
+            <span className="relative inline-block">
               <span
                 className={`relative z-10 transition-all duration-400 ${
                   visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
