@@ -26,7 +26,7 @@ const features = [
 export default function FeaturesGrid() {
   return (
     <section>
-      <div className="mb-8 text-center">
+      <div className="mb-10 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
           Benefícios
         </p>
@@ -39,15 +39,17 @@ export default function FeaturesGrid() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {features.map((f) => (
+        {features.map((f, i) => (
           <div
             key={f.title}
-            className="group rounded-2xl bg-card/40 p-6 transition-all duration-300 hover:bg-card/70"
+            className="group relative overflow-hidden rounded-2xl bg-card/40 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-card/70 hover:shadow-lg hover:shadow-primary/5 animate-fade-in"
+            style={{ animationDelay: `${i * 80}ms`, animationFillMode: "both" }}
           >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
               <f.icon className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="text-base font-semibold text-foreground">{f.title}</h3>
+            <h3 className="text-base font-bold text-foreground">{f.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
           </div>
         ))}

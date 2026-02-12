@@ -84,7 +84,7 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className="border-r-0 bg-sidebar">
+    <Sidebar className="border-r border-sidebar-border/30 bg-sidebar">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 pt-6 pb-2">
         <img
@@ -159,7 +159,7 @@ export function AppSidebar() {
         </div>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/50 p-4 space-y-3">
+      <SidebarFooter className="border-t border-sidebar-border/30 p-4 space-y-3">
         <UserAvatar name={session?.name} email={session?.email} />
         <button
           onClick={handleLogout}

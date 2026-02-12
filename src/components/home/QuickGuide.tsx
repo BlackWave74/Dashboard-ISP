@@ -19,7 +19,7 @@ const steps = [
 export default function QuickGuide() {
   return (
     <section>
-      <div className="mb-8 text-center">
+      <div className="mb-10 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
           Primeiros passos
         </p>
@@ -32,23 +32,25 @@ export default function QuickGuide() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {steps.map((s) => (
+        {steps.map((s, i) => (
           <div
             key={s.num}
-            className="group rounded-2xl bg-card/40 p-6 transition-all duration-300 hover:bg-card/70"
+            className="group relative overflow-hidden rounded-2xl bg-card/40 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-card/70 hover:shadow-lg hover:shadow-primary/5 animate-fade-in"
+            style={{ animationDelay: `${i * 100}ms`, animationFillMode: "both" }}
           >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
             <div className="mb-4 flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary">
                 {s.num}
               </span>
-              <p className="text-sm font-semibold text-foreground">{s.label}</p>
+              <p className="text-sm font-bold text-foreground">{s.label}</p>
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-8 text-center text-xs text-muted-foreground">
+      <p className="mt-10 text-center text-xs text-muted-foreground">
         A Página Inicial é o mapa do sistema — orienta o usuário e reforça o propósito de cada módulo.
       </p>
     </section>
