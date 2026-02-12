@@ -4,7 +4,8 @@ import { useTasks } from "@/modules/tasks/api/useTasks";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
+import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
 import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
 import AnalyticsTaskSummary from "@/modules/analytics/components/AnalyticsTaskSummary";
@@ -72,20 +73,30 @@ export default function AnaliticasPage() {
   return (
     <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
       <div className="mx-auto w-full max-w-[1900px] space-y-6 p-5 md:p-8">
-        {/* Header with search */}
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {userName ? `Projetos de ${userName}` : "Visão geral de clientes, projetos, horas e desempenho."}
-            </p>
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex flex-wrap items-end justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] shadow-lg shadow-[hsl(262_83%_58%/0.25)]">
+              <BarChart3 className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
+              <p className="text-sm text-white/35">
+                {userName ? `Projetos de ${userName}` : "Visão geral de clientes, projetos, horas e desempenho."}
+              </p>
+            </div>
           </div>
           <AnalyticsSearch
             projects={projects}
             onSelect={setSelectedProject}
             selected={selectedProject}
           />
-        </div>
+        </motion.div>
 
         {/* KPI Cards */}
         <AnalyticsKpiCards

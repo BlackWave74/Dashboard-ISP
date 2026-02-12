@@ -1,32 +1,40 @@
 import { Star, TrendingUp, TrendingDown, Minus, Clock } from "lucide-react";
+import { motion } from "framer-motion";
 import type { ProjectAnalytics } from "../types";
 
 type Props = {
   project: ProjectAnalytics;
   onToggleFavorite: (id: number) => void;
+  index?: number;
 };
 
 const perfConfig = {
-  good: { label: "Bom", icon: TrendingUp, color: "from-emerald-500 to-primary", badge: "bg-emerald-500/15 text-emerald-400" },
-  neutral: { label: "Regular", icon: Minus, color: "from-amber-500 to-primary", badge: "bg-amber-500/15 text-amber-400" },
-  bad: { label: "Crítico", icon: TrendingDown, color: "from-[hsl(0_84%_60%)] to-amber-500", badge: "bg-[hsl(0_84%_60%/0.15)] text-[hsl(0_84%_60%)]" },
+  good: { label: "Bom", icon: TrendingUp, color: "from-emerald-500 to-[hsl(160_84%_39%)]", badge: "bg-emerald-500/15 text-emerald-400", accent: "hsl(160 84% 39%)" },
+  neutral: { label: "Regular", icon: Minus, color: "from-amber-500 to-[hsl(43_97%_52%)]", badge: "bg-amber-500/15 text-amber-400", accent: "hsl(43 97% 52%)" },
+  bad: { label: "Crítico", icon: TrendingDown, color: "from-[hsl(0_84%_60%)] to-amber-500", badge: "bg-[hsl(0_84%_60%/0.15)] text-[hsl(0_84%_60%)]", accent: "hsl(0 84% 60%)" },
 };
 
-export default function AnalyticsProjectCard({ project, onToggleFavorite }: Props) {
+export default function AnalyticsProjectCard({ project, onToggleFavorite, index = 0 }: Props) {
   const perf = perfConfig[project.performance];
   const PerfIcon = perf.icon;
   const totalTasks = project.tasksDone + project.tasksPending + project.tasksOverdue;
   const completionPct = totalTasks > 0 ? Math.round((project.tasksDone / totalTasks) * 100) : 0;
 
   return (
-    <div
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-5 transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.12] hover:shadow-2xl"
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.05 }}
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-5 transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.10] hover:shadow-2xl"
       style={{
         background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))",
       }}
     >
       {/* Top accent */}
-      <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${perf.color} opacity-50 transition-opacity group-hover:opacity-100`} />
+      <div
+        className="absolute inset-x-0 top-0 h-[2px] opacity-50 transition-opacity group-hover:opacity-100"
+        style={{ background: `linear-gradient(to right, ${perf.accent}, hsl(262 83% 58%))` }}
+      />
 
       {/* Corner glow */}
       <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-primary/5 blur-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -35,7 +43,7 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite }: Prop
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-primary/60 font-semibold">{project.clientName}</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-primary/50 font-semibold">{project.clientName || "Cliente"}</p>
             <h4 className="mt-0.5 truncate text-sm font-bold text-white/90">{project.projectName}</h4>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -64,12 +72,12 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite }: Prop
         <div className="mt-4 grid grid-cols-3 gap-2">
           {[
             { value: project.tasksDone, label: "Concluídas", color: "text-emerald-400", bg: "bg-emerald-500/10" },
-            { value: project.tasksPending, label: "Andamento", color: "text-amber-400", bg: "bg-amber-500/10" },
+            { value: project.tasksPending, label: "Andamento", color: "text-[hsl(262_83%_58%)]", bg: "bg-[hsl(262_83%_58%/0.1)]" },
             { value: project.tasksOverdue, label: "Atrasadas", color: "text-[hsl(0_84%_60%)]", bg: "bg-[hsl(0_84%_60%/0.1)]" },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl ${s.bg} border border-white/[0.04] px-3 py-2.5 text-center`}>
               <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] text-white/40">{s.label}</p>
+              <p className="text-[10px] text-white/35">{s.label}</p>
             </div>
           ))}
         </div>
@@ -77,27 +85,29 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite }: Prop
         {/* Progress */}
         <div className="mt-3 space-y-1">
           <div className="flex justify-between text-[10px]">
-            <span className="text-white/40">Conclusão</span>
-            <span className="font-bold text-white/70">{completionPct}%</span>
+            <span className="text-white/35">Conclusão</span>
+            <span className="font-bold text-white/60">{completionPct}%</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-violet-500 transition-all duration-700 ease-out"
-              style={{ width: `${completionPct}%` }}
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${completionPct}%` }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+              className="h-full rounded-full bg-gradient-to-r from-primary to-[hsl(262_83%_58%)]"
             />
           </div>
         </div>
 
         {/* Hours */}
         <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/[0.03] border border-white/[0.04] px-3 py-2">
-          <Clock className="h-3.5 w-3.5 text-white/30" />
-          <span className="text-xs text-white/40">Horas</span>
+          <Clock className="h-3.5 w-3.5 text-white/25" />
+          <span className="text-xs text-white/35">Horas</span>
           <span className="ml-auto text-sm font-bold text-white/80">{Math.round(project.hoursUsed)}h</span>
           {project.hoursContracted > 0 && (
-            <span className="text-xs text-white/30">/ {project.hoursContracted}h</span>
+            <span className="text-xs text-white/25">/ {project.hoursContracted}h</span>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
