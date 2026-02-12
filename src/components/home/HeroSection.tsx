@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Sparkles, Zap, TrendingUp, PartyPopper } from "lucide-react";
 
-const words = ["potencial", "crescimento", "eficiência"];
+const words = ["potencial", "crescimento", "sucesso"];
 
 function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: number; suffix?: string; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -47,7 +47,7 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
   return (
     <div ref={ref} className="flex items-center gap-2">
       <p className={`text-lg font-bold text-white transition-transform ${done ? "animate-[celebrate_0.5s_ease-out]" : ""}`}>
-        {count === target && suffix === "/5" ? "4.9" : count}
+        {suffix === "/5" ? (count / 10).toFixed(1) : count}
         {suffix}
       </p>
       {done && (
@@ -134,7 +134,7 @@ export default function HeroSection() {
         {/* Title — fixed height to prevent layout shift */}
         <div className="h-[120px] md:h-[160px] lg:h-[180px] flex items-center justify-center">
           <h1 className="max-w-4xl text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl lg:text-7xl">
-            Desbloqueando a{" "}
+            Desbloqueando o{" "}
             <span className="relative inline-block min-w-[200px] md:min-w-[320px]">
               <span
                 className={`relative z-10 transition-all duration-400 ${
@@ -171,7 +171,7 @@ export default function HeroSection() {
               className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-3 backdrop-blur-sm"
               style={{
                 opacity: 0,
-                animation: `fadeSlideUp 0.6s ease-out ${600 + i * 150}ms forwards`,
+                animation: `fadeSlideUp 0.6s ease-out 600ms forwards`,
               }}
             >
               <s.icon className="h-5 w-5 text-[hsl(270_90%_75%)]" />
@@ -179,7 +179,7 @@ export default function HeroSection() {
                 <AnimatedCounter
                   target={s.target}
                   suffix={s.suffix}
-                  duration={2000 + i * 300}
+                  duration={2000}
                 />
                 <p className="text-[11px] text-white/40">{s.label}</p>
               </div>
