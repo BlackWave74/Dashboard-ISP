@@ -547,7 +547,7 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
-        <div className="mb-6 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1.2fr_280px_340px]">
+        <div className="mb-6 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_240px_320px]">
 
           {/* LEFT: Focus — Top performers */}
           <motion.div
@@ -558,9 +558,16 @@ export default function TarefasPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-extrabold text-[hsl(var(--task-text))] tracking-tight">
-                  Desempenho da Equipe
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">
+                  Foco da Equipe
+                </p>
+                <h2 className="mt-1 text-xl font-extrabold text-[hsl(var(--task-text))] tracking-tight">
+                  Desempenho
                 </h2>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-extrabold text-[hsl(var(--task-text))]">{stats.total}</p>
+                <p className="text-[9px] text-[hsl(var(--task-text-muted))] uppercase tracking-wider">tarefas</p>
               </div>
             </div>
 
@@ -613,12 +620,12 @@ export default function TarefasPage() {
                           {name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-[hsl(var(--task-text))] truncate">{name}</p>
-                          <div className="flex items-center gap-2 text-[11px] flex-wrap">
-                            <span className="text-[hsl(var(--task-text-muted))] font-medium">{data.total} tarefas</span>
-                            <span className="text-emerald-400 font-semibold">{data.done} feitas</span>
-                            {data.pending > 0 && <span className="text-[hsl(var(--task-yellow))] font-semibold">{data.pending} em andamento</span>}
-                            {data.overdue > 0 && <span className="text-rose-400 font-semibold">{data.overdue} atrasadas</span>}
+                          <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                          <div className="flex items-center gap-2 text-[9px] flex-wrap">
+                            <span className="text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
+                            <span className="text-emerald-400">{data.done} feitas</span>
+                            {data.pending > 0 && <span className="text-[hsl(var(--task-yellow))]">{data.pending} em andamento</span>}
+                            {data.overdue > 0 && <span className="text-rose-400">{data.overdue} atrasadas</span>}
                           </div>
                         </div>
                         <span className="text-sm font-extrabold" style={{ color }}>{pctDoneLocal}%</span>
@@ -680,7 +687,7 @@ export default function TarefasPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="task-card flex flex-col deadline-pulse"
+            className="task-card flex flex-col"
           >
             <div className="flex items-center gap-2 mb-4">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--task-yellow)/0.15)]">

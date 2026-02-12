@@ -106,7 +106,7 @@ export function TaskFilters({
               key={chip.value}
               type="button"
               onClick={() => setStatus(chip.value)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
                 status === chip.value
                   ? "bg-[hsl(var(--task-yellow))] text-[hsl(var(--task-bg))] shadow-sm"
                   : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
@@ -124,7 +124,7 @@ export function TaskFilters({
               key={chip.value}
               type="button"
               onClick={() => setPeriod(chip.value)}
-              className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${
+              className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
                 period === chip.value
                   ? "bg-[hsl(var(--task-purple))] text-white shadow-sm"
                   : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"

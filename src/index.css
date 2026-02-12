@@ -632,16 +632,3 @@ body {
   background-size: 200% 100%;
   animation: task-shimmer 1.5s ease-in-out infinite;
 }
-
-/* Deadline card periodic shake */
-@keyframes deadline-pulse {
-  0%, 92% { transform: translateX(0); }
-  93% { transform: translateX(-2px) rotate(-0.3deg); }
-  95% { transform: translateX(2px) rotate(0.3deg); }
-  97% { transform: translateX(-1px); }
-  99% { transform: translateX(1px); }
-  100% { transform: translateX(0); }
-}
-.deadline-pulse {
-  animation: deadline-pulse 6s ease-in-out infinite;
-}
