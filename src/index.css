@@ -545,24 +545,54 @@ body {
   border-color: hsl(var(--task-border-light));
 }
 
-/* Custom scrollbar for deadline panel */
+/* Styled scrollbar */
+.styled-scrollbar::-webkit-scrollbar,
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
+.styled-scrollbar::-webkit-scrollbar-track,
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: hsl(var(--task-surface));
+  border-radius: 6px;
 }
+.styled-scrollbar::-webkit-scrollbar-thumb,
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--task-border));
-  border-radius: 4px;
+  background: linear-gradient(180deg, hsl(var(--task-yellow) / 0.4), hsl(var(--task-purple) / 0.4));
+  border-radius: 6px;
+  border: 1px solid hsl(var(--task-border));
 }
+.styled-scrollbar::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--task-border-light));
+  background: linear-gradient(180deg, hsl(var(--task-yellow) / 0.6), hsl(var(--task-purple) / 0.6));
 }
 
 /* Progress ring animation */
 @keyframes task-ring-fill {
   from { stroke-dashoffset: 283; }
+}
+
+/* Overdue shake animation */
+@keyframes task-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-2px) rotate(-0.5deg); }
+  30% { transform: translateX(2px) rotate(0.5deg); }
+  45% { transform: translateX(-1px); }
+  60% { transform: translateX(1px); }
+}
+.task-shake {
+  animation: task-shake 0.6s ease-in-out;
+  animation-delay: 1s;
+}
+
+/* Activity heatmap square */
+.activity-square {
+  border-radius: 3px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.activity-square:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 8px hsl(var(--task-yellow) / 0.4);
+  z-index: 2;
 }
 
 /* Task card shimmer */
