@@ -307,6 +307,13 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+.login-overview-subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: hsl(var(--login-text-muted));
+  text-align: center;
+  margin-top: 0.25rem;
+}
 .login-overview-desc {
   margin-top: 0.5rem;
   font-size: 0.8rem;
