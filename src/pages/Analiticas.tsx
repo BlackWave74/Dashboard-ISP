@@ -10,7 +10,7 @@ import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards"
 
 import AnalyticsCompletionGauge from "@/modules/analytics/components/AnalyticsCompletionGauge";
 import AnalyticsPerformanceSummary from "@/modules/analytics/components/AnalyticsPerformanceSummary";
-import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
+
 
 import AnalyticsTasksByProjectChart from "@/modules/analytics/components/AnalyticsTasksByProjectChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
@@ -133,8 +133,6 @@ export default function AnaliticasPage() {
           </div>
         </div>
 
-        {/* Row 2: Performance timeline */}
-        <AnalyticsPerformanceChart times={userTimes} />
 
         {/* Row 3: Tasks by project */}
         <AnalyticsTasksByProjectChart projects={projects} />
