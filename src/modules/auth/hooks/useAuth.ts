@@ -149,7 +149,10 @@ export function useAuth() {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (!supabaseUrl || !anon) {
-        return { success: false, message: "Configuração do Supabase ausente." };
+        return {
+          success: false,
+          message: "Conexão com o servidor não configurada. Verifique as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.",
+        };
       }
 
       try {
