@@ -501,10 +501,10 @@ export default function TarefasPage() {
         <motion.div {...fadeUp} className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
-              Painel de Projetos
+              Visão Geral de Atividades
             </h1>
             <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">
-              Acompanhe clientes, tarefas e desempenho em um só lugar.
+              Gerencie suas tarefas, acompanhe prazos e monitore o progresso dos projetos.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -525,8 +525,8 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ KPI CARDS ═══ */}
-        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <KpiCard icon={Users} label="Clientes" value={uniqueClients.size} color="yellow" delay={0} />
+        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <KpiCard icon={Users} label="Clientes Atendidos" value={uniqueClients.size} color="yellow" delay={0} />
           <KpiCard icon={FolderKanban} label="Projetos Ativos" value={uniqueProjects.size} color="purple" delay={0.05} />
           <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0.1} />
           <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.15} />
@@ -546,12 +546,12 @@ export default function TarefasPage() {
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">
-                  Visão do Projeto
-                </p>
-                <h2 className="mt-1 text-2xl font-extrabold text-[hsl(var(--task-text))] tracking-tight">
-                  Atividade Mensal
-                </h2>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">
+                Resumo do Projeto
+              </p>
+              <h2 className="mt-1 text-2xl font-extrabold text-[hsl(var(--task-text))] tracking-tight">
+                Atividade Mensal
+              </h2>
               </div>
               <div className="flex items-center gap-3 text-[9px] text-[hsl(var(--task-text-muted))]">
                 <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[hsl(var(--task-yellow))]" />Concluídas</span>
@@ -562,7 +562,7 @@ export default function TarefasPage() {
             {/* 3 Hero Stats */}
             <div className="flex items-end gap-8 mb-6">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">Total</p>
+              <p className="text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">Horas</p>
                 <p className="text-4xl font-extrabold text-[hsl(var(--task-text))] leading-none">
                   {totalHoursLabel}<span className="text-base font-medium text-[hsl(var(--task-text-muted))] ml-1">h</span>
                 </p>
@@ -638,7 +638,7 @@ export default function TarefasPage() {
             className="task-card flex flex-col items-center justify-center"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))] mb-2">
-              Desempenho
+              Progresso das Tarefas
             </p>
             <div className="flex-1 flex items-center justify-center w-full">
               <ProjectPerformanceGauge tasks={filteredTasks ?? []} footerHint="" />
@@ -669,8 +669,8 @@ export default function TarefasPage() {
                 <Clock className="h-3.5 w-3.5 text-[hsl(var(--task-yellow))]" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[hsl(var(--task-text))]">Prazos & Pendências</p>
-                <p className="text-[10px] text-[hsl(var(--task-text-muted))]">Próximas entregas</p>
+                <p className="text-sm font-bold text-[hsl(var(--task-text))]">Prazos</p>
+                <p className="text-[10px] text-[hsl(var(--task-text-muted))]">Próximas entregas pendentes</p>
               </div>
             </div>
 
@@ -733,7 +733,7 @@ export default function TarefasPage() {
             className="flex items-center gap-2 mb-3 text-sm font-semibold text-[hsl(var(--task-text))] hover:text-[hsl(var(--task-yellow))] transition"
           >
             <BarChart3 className="h-4 w-4" />
-            Gráficos Detalhados
+            Análise Detalhada
             <ChevronDown className={`h-4 w-4 transition-transform ${showCharts ? "rotate-180" : ""}`} />
           </button>
 
@@ -802,9 +802,9 @@ export default function TarefasPage() {
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-[hsl(var(--task-text))]">
-              Tarefas
+              Lista de Atividades
               <span className="ml-2 text-xs font-normal text-[hsl(var(--task-text-muted))]">
-                ({filteredTasks.length} resultado{filteredTasks.length !== 1 ? "s" : ""})
+                {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa encontrada" : "tarefas encontradas"}
               </span>
             </h3>
           </div>
@@ -822,10 +822,10 @@ export default function TarefasPage() {
               ))}
             </div>
           ) : filteredTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-6 py-20 text-center">
-              <Layers className="h-12 w-12 text-[hsl(var(--task-text-muted)/0.15)] mb-3" />
-              <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">Nenhuma tarefa encontrada</p>
-              <p className="text-xs text-[hsl(var(--task-text-muted)/0.5)] mt-1">Ajuste os filtros ou recarregue os dados</p>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-6 py-16 text-center">
+              <Layers className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.15)] mb-3" />
+              <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">Nenhuma atividade encontrada</p>
+              <p className="text-xs text-[hsl(var(--task-text-muted)/0.5)] mt-1">Tente ajustar os filtros ou atualizar os dados.</p>
             </div>
           ) : (
             <>
