@@ -42,10 +42,7 @@ export default function QuickGuide() {
         </p>
       </div>
 
-      {/* Steps with connecting line */}
       <div className="relative grid gap-5 md:grid-cols-3">
-        {/* Connector line (desktop) */}
-        <div className="pointer-events-none absolute top-[1.75rem] left-[16.7%] right-[16.7%] hidden h-px bg-gradient-to-r from-[hsl(270_80%_55%/0.3)] via-[hsl(270_80%_55%/0.5)] to-[hsl(270_80%_55%/0.3)] md:block" style={{ zIndex: 0 }} />
 
         {steps.map((s, i) => (
           <div
