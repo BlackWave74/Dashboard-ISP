@@ -6,14 +6,10 @@ import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
-import SyncIndicator from "@/components/SyncIndicator";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
-
 import AnalyticsCompletionGauge from "@/modules/analytics/components/AnalyticsCompletionGauge";
 import AnalyticsPerformanceSummary from "@/modules/analytics/components/AnalyticsPerformanceSummary";
-
-
-import AnalyticsTasksByProjectChart from "@/modules/analytics/components/AnalyticsTasksByProjectChart";
+import AnalyticsStatusDonut from "@/modules/analytics/components/AnalyticsStatusDonut";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
 import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
 import type { ProjectAnalytics } from "@/modules/analytics/types";
@@ -39,7 +35,6 @@ export default function AnaliticasPage() {
   });
 
   const loading = loadingTasks || loadingTimes || loadingHours;
-  const hasCachedData = tasks.length > 0;
 
   const {
     projects,
@@ -57,7 +52,7 @@ export default function AnaliticasPage() {
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
 
-  if (loading && !hasCachedData) {
+  if (loading && tasks.length === 0) {
     return (
       <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -79,7 +74,6 @@ export default function AnaliticasPage() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
-      <SyncIndicator syncing={loading && hasCachedData} />
       <div className="mx-auto w-full max-w-[1900px] space-y-5 p-5 md:p-8">
         {/* Header */}
         <motion.div
@@ -116,29 +110,26 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Row 1: Completion gauge + Performance summary */}
+        {/* Row 1: Completion gauge + Status donut + Performance summary */}
         <div className="grid gap-5 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <AnalyticsCompletionGauge
-              done={totalDone}
-              total={userTaskCount}
-              activeProjects={activeProjects}
-              totalHours={totalHours}
-            />
-          </div>
-          <div className="lg:col-span-2">
-            <AnalyticsPerformanceSummary
-              projects={projects}
-              totalDone={totalDone}
-              totalTasks={userTaskCount}
-              totalHours={totalHours}
-            />
-          </div>
+          <AnalyticsCompletionGauge
+            done={totalDone}
+            total={userTaskCount}
+            activeProjects={activeProjects}
+            totalHours={totalHours}
+          />
+          <AnalyticsStatusDonut
+            done={totalDone}
+            pending={totalPending}
+            overdue={totalOverdue}
+          />
+          <AnalyticsPerformanceSummary
+            projects={projects}
+            totalDone={totalDone}
+            totalTasks={userTaskCount}
+            totalHours={totalHours}
+          />
         </div>
-
-
-        {/* Row 3: Tasks by project */}
-        <AnalyticsTasksByProjectChart projects={projects} />
 
         {/* Projects list */}
         <AnalyticsProjectList
