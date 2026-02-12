@@ -141,7 +141,7 @@ export default function AnaliticasPage() {
 
         {/* Row 3: Hours by project + Tasks by project */}
         <div className="grid gap-5 lg:grid-cols-2">
-          <AnalyticsProjectHoursChart projects={projects} />
+          <AnalyticsProjectHoursChart projects={projects} times={userTimes} />
           <AnalyticsTasksByProjectChart projects={projects} />
         </div>
 

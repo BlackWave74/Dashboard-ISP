@@ -79,7 +79,7 @@ export default function AnalyticsTasksByProjectChart({ projects }: Props) {
               tickLine={false}
               width={30}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(270 20% 15% / 0.4)" }} />
             <Legend
               wrapperStyle={{ fontSize: 11, color: "hsl(270 10% 50%)" }}
               iconType="circle"
