@@ -16,8 +16,9 @@ function classifyTask(task: TaskRecord): "done" | "overdue" | "pending" {
 }
 
 export function useAnalyticsData(
-  tasks: TaskRecord[],
-  projectHours: ProjectHours[]
+  allTasks: TaskRecord[],
+  projectHours: ProjectHours[],
+  userName?: string
 ) {
   const [favorites, setFavorites] = useState<Set<number>>(() => {
     try {
@@ -40,6 +41,32 @@ export function useAnalyticsData(
     });
   }, []);
 
+  // Filter tasks by user — match responsible_name to session name
+  const tasks = useMemo(() => {
+    if (!userName) return allTasks;
+    const normalizedUser = userName.toLowerCase().trim();
+    return allTasks.filter((t) => {
+      const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "").toLowerCase().trim();
+      return responsible === normalizedUser || responsible.includes(normalizedUser) || normalizedUser.includes(responsible);
+    });
+  }, [allTasks, userName]);
+
+  // Get project IDs from user's tasks
+  const userProjectIds = useMemo(() => {
+    const ids = new Set<number>();
+    tasks.forEach((t) => {
+      const pid = Number(t.project_id);
+      if (pid) ids.add(pid);
+    });
+    return ids;
+  }, [tasks]);
+
+  // Filter project hours to only user's projects
+  const filteredProjectHours = useMemo(() => {
+    if (!userName) return projectHours;
+    return projectHours.filter((ph) => userProjectIds.has(ph.projectId));
+  }, [projectHours, userProjectIds, userName]);
+
   const tasksByProject = useMemo(() => {
     const map = new Map<number, { done: number; pending: number; overdue: number }>();
     tasks.forEach((t) => {
@@ -53,7 +80,7 @@ export function useAnalyticsData(
   }, [tasks]);
 
   const projects: ProjectAnalytics[] = useMemo(() => {
-    return projectHours.map((ph) => {
+    return filteredProjectHours.map((ph) => {
       const taskStats = tasksByProject.get(ph.projectId) ?? { done: 0, pending: 0, overdue: 0 };
       const totalTasks = taskStats.done + taskStats.pending + taskStats.overdue;
       const completionRate = totalTasks > 0 ? taskStats.done / totalTasks : 0;
@@ -67,7 +94,7 @@ export function useAnalyticsData(
         clientId: ph.clientId,
         clientName: ph.clientName,
         hoursUsed: ph.hours,
-        hoursContracted: 0, // placeholder - would come from contract data
+        hoursContracted: 0,
         isActive: taskStats.pending > 0 || taskStats.overdue > 0,
         isFavorite: favorites.has(ph.projectId),
         tasksDone: taskStats.done,
@@ -76,18 +103,19 @@ export function useAnalyticsData(
         performance,
       };
     });
-  }, [projectHours, tasksByProject, favorites]);
+  }, [filteredProjectHours, tasksByProject, favorites]);
 
   const uniqueClients = useMemo(() => {
     const set = new Set<number>();
-    projectHours.forEach((p) => set.add(p.clientId));
+    filteredProjectHours.forEach((p) => set.add(p.clientId));
     return set.size;
-  }, [projectHours]);
+  }, [filteredProjectHours]);
 
   const totalDone = useMemo(() => tasks.filter((t) => classifyTask(t) === "done").length, [tasks]);
   const totalPending = useMemo(() => tasks.filter((t) => classifyTask(t) === "pending").length, [tasks]);
   const totalOverdue = useMemo(() => tasks.filter((t) => classifyTask(t) === "overdue").length, [tasks]);
-  const totalHours = useMemo(() => projectHours.reduce((s, p) => s + p.hours, 0), [projectHours]);
+  const totalHours = useMemo(() => filteredProjectHours.reduce((s, p) => s + p.hours, 0), [filteredProjectHours]);
+  const userTaskCount = tasks.length;
 
   return {
     projects,
@@ -97,5 +125,6 @@ export function useAnalyticsData(
     totalOverdue,
     totalHours,
     toggleFavorite,
+    userTaskCount,
   };
 }
