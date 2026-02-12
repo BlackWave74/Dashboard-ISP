@@ -39,6 +39,17 @@
   --login-accent-glow: 234 89% 72%;
   --login-text: 210 40% 98%;
   --login-text-muted: 215 20% 65%;
+
+  /* Dashboard Home tokens */
+  --dash-bg: 222 47% 4%;
+  --dash-surface: 222 40% 8%;
+  --dash-surface-light: 222 30% 12%;
+  --dash-border: 222 25% 16%;
+  --dash-text: 210 40% 98%;
+  --dash-text-muted: 215 20% 60%;
+  --dash-accent-indigo: 234 89% 64%;
+  --dash-accent-emerald: 160 84% 39%;
+  --dash-accent-amber: 38 92% 50%;
 }
 
 /* ===== Login Page Styles ===== */
@@ -467,4 +478,13 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
+}
+
+@keyframes heroHue {
+  0%   { filter: saturate(1.08) hue-rotate(0deg); }
+  100% { filter: saturate(1.08) hue-rotate(22deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="heroHue"] { animation: none !important; }
 }
