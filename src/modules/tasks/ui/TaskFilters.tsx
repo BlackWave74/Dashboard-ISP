@@ -77,7 +77,7 @@ export function TaskFilters({
   return (
     <div className="space-y-3">
       {/* Row 1: Search bar full width */}
-      <div className="relative w-full max-w-[480px]">
+      <div className="relative w-full max-w-[480px] mx-auto sm:mx-0">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--task-text-muted))]" />
         <input
           ref={searchRef}
@@ -98,7 +98,7 @@ export function TaskFilters({
       </div>
 
       {/* Row 2: Status chips + Period chips + Filters/Clear — all wrap nicely */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
         {/* Status chips */}
         <div className="flex items-center gap-1 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-0.5 overflow-x-auto">
           {statusChips.map((chip) => (
