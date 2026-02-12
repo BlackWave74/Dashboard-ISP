@@ -104,14 +104,14 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
   if (!tasks.length) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
+    <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
       {/* Header */}
-      <div className="hidden sm:grid grid-cols-[1fr_120px_100px_150px_150px_90px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+      <div className="hidden sm:grid grid-cols-[minmax(200px,2fr)_100px_100px_140px_140px_80px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))] min-w-[760px]">
         <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
           Tarefa
         </div>
         {["Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
-          <div key={h} className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">
+          <div key={h} className="px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">
             {h}
           </div>
         ))}
@@ -131,7 +131,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.025, duration: 0.2 }}
                 onClick={() => setExpandedId(isExpanded ? null : key)}
-                className={`group grid grid-cols-1 sm:grid-cols-[1fr_120px_100px_150px_150px_90px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
+                className={`group grid grid-cols-1 sm:grid-cols-[minmax(200px,2fr)_100px_100px_140px_140px_80px] min-w-[760px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
               >
                 {/* Task name */}
                 <div className="flex items-center gap-3 px-4 py-3.5">
