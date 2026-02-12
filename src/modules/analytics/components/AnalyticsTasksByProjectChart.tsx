@@ -31,18 +31,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function AnalyticsTasksByProjectChart({ projects }: Props) {
   const data = useMemo(() => {
     return [...projects]
-      .filter((p) => p.tasksDone + p.tasksPending + p.tasksOverdue > 0)
+      .filter((p) => {
+        const total = (Number(p.tasksDone) || 0) + (Number(p.tasksPending) || 0) + (Number(p.tasksOverdue) || 0);
+        return total > 0;
+      })
       .sort((a, b) => {
-        const totalA = a.tasksDone + a.tasksPending + a.tasksOverdue;
-        const totalB = b.tasksDone + b.tasksPending + b.tasksOverdue;
+        const totalA = (Number(a.tasksDone) || 0) + (Number(a.tasksPending) || 0) + (Number(a.tasksOverdue) || 0);
+        const totalB = (Number(b.tasksDone) || 0) + (Number(b.tasksPending) || 0) + (Number(b.tasksOverdue) || 0);
         return totalB - totalA;
       })
       .slice(0, 10)
       .map((p) => ({
         name: p.projectName.length > 14 ? p.projectName.slice(0, 14) + "…" : p.projectName,
-        Concluídas: p.tasksDone,
-        Andamento: p.tasksPending,
-        Atrasadas: p.tasksOverdue,
+        Concluídas: Number(p.tasksDone) || 0,
+        Andamento: Number(p.tasksPending) || 0,
+        Atrasadas: Number(p.tasksOverdue) || 0,
       }));
   }, [projects]);
 
@@ -90,29 +93,18 @@ export default function AnalyticsTasksByProjectChart({ projects }: Props) {
               stackId="a"
               fill="hsl(160 84% 39%)"
               radius={[0, 0, 0, 0]}
-              isAnimationActive={true}
-              animationDuration={1200}
-              animationEasing="ease-out"
             />
             <Bar
               dataKey="Andamento"
               stackId="a"
               fill="hsl(262 83% 58%)"
               radius={[0, 0, 0, 0]}
-              isAnimationActive={true}
-              animationDuration={1200}
-              animationEasing="ease-out"
-              animationBegin={200}
             />
             <Bar
               dataKey="Atrasadas"
               stackId="a"
               fill="hsl(0 84% 60%)"
               radius={[4, 4, 0, 0]}
-              isAnimationActive={true}
-              animationDuration={1200}
-              animationEasing="ease-out"
-              animationBegin={400}
             />
           </BarChart>
         </ResponsiveContainer>
