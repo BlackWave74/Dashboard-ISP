@@ -11,6 +11,7 @@ import {
   Settings,
   HelpCircle,
   MoreVertical,
+  PanelLeft,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -19,6 +20,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 function UserAvatar({ name, email }: { name?: string; email?: string }) {
@@ -66,6 +68,18 @@ function SidebarNavItem({ to, icon: Icon, label, end }: NavItemProps) {
   );
 }
 
+function ToggleButton() {
+  const { toggleSidebar } = useSidebar();
+  return (
+    <button
+      onClick={toggleSidebar}
+      className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70"
+    >
+      <PanelLeft className="h-4 w-4" />
+    </button>
+  );
+}
+
 export function AppSidebar() {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
@@ -94,13 +108,14 @@ export function AppSidebar() {
         background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
       }}
     >
-      {/* Logo */}
-      <div className="flex items-center px-4 pt-5 pb-1">
+      {/* Logo + toggle */}
+      <div className="flex items-center justify-between px-4 pt-5 pb-1">
         <img
           src="/resouce/ISP-Consulte-v3-branco.png"
           alt="ISP Consulte"
           className="h-9 w-auto object-contain"
         />
+        <ToggleButton />
       </div>
 
       <SidebarContent className="px-3 pt-5">

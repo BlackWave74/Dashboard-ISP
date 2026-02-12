@@ -1,29 +1,37 @@
-import { Activity, Database, ListChecks, ShieldCheck } from "lucide-react";
+import { Activity, Database, ListChecks, ShieldCheck, Zap, TrendingUp } from "lucide-react";
 
 const stats = [
   {
     icon: Activity,
     title: "Alta Eficiência",
     desc: "Processos otimizados para máxima produtividade no dia a dia.",
-    featured: false,
+    value: "100%",
+    color: "from-[hsl(270_80%_55%)] to-[hsl(234_89%_55%)]",
+    glow: "hsl(270 80% 55% / 0.2)",
   },
   {
     icon: Database,
     title: "Controle de Dados",
     desc: "Informações organizadas e acessíveis em tempo real.",
-    featured: true,
+    value: "Real-time",
+    color: "from-[hsl(160_84%_39%)] to-[hsl(180_70%_40%)]",
+    glow: "hsl(160 84% 39% / 0.2)",
   },
   {
     icon: ListChecks,
     title: "Gestão de Tarefas",
     desc: "Acompanhe demandas, prazos e entregas de forma visual.",
-    featured: false,
+    value: "+47%",
+    color: "from-[hsl(38_92%_50%)] to-[hsl(25_90%_55%)]",
+    glow: "hsl(38 92% 50% / 0.2)",
   },
   {
     icon: ShieldCheck,
     title: "Resultados Confiáveis",
     desc: "Rastreabilidade e padrão para decisões mais seguras.",
-    featured: false,
+    value: "4.9/5",
+    color: "from-[hsl(234_89%_64%)] to-[hsl(200_90%_55%)]",
+    glow: "hsl(234 89% 64% / 0.2)",
   },
 ];
 
@@ -33,48 +41,33 @@ export default function StatsCards() {
       {stats.map((s, i) => (
         <div
           key={s.title}
-          className={`group relative overflow-hidden rounded-2xl p-6 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
-            s.featured
-              ? "bg-gradient-to-br from-primary/40 via-primary/15 to-card/80 shadow-xl shadow-primary/15 scale-[1.02]"
-              : "bg-card/40 hover:bg-card/60 hover:shadow-primary/10"
-          }`}
+          className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card/30 p-6 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:border-border/70 hover:shadow-2xl"
           style={{
             opacity: 0,
             animation: `fadeSlideUp 0.6s ease-out ${i * 150}ms forwards`,
           }}
         >
-          {/* Top glow line */}
-          <div className={`absolute inset-x-0 top-0 h-px ${
-            s.featured
-              ? "bg-gradient-to-r from-transparent via-primary/80 to-transparent"
-              : "bg-gradient-to-r from-transparent via-primary/20 to-transparent"
-          }`} />
+          {/* Corner glow on hover */}
+          <div
+            className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
+            style={{ background: s.glow }}
+          />
 
-          {/* Left accent line for featured */}
-          {s.featured && (
-            <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-primary/60 to-transparent" />
-          )}
+          {/* Top accent */}
+          <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${s.color} opacity-40 transition-opacity duration-500 group-hover:opacity-100`} />
 
-          {/* Corner glow for featured */}
-          {s.featured && (
-            <div
-              className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full opacity-40 blur-3xl"
-              style={{ background: "hsl(270 80% 55%)" }}
-              aria-hidden="true"
-            />
-          )}
-
-          <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-300 ${
-            s.featured
-              ? "bg-primary/30 shadow-md shadow-primary/20"
-              : "bg-primary/10 group-hover:bg-primary/20 group-hover:shadow-md group-hover:shadow-primary/10"
-          }`}>
-            <s.icon className={`h-5 w-5 transition-transform duration-300 group-hover:scale-110 ${
-              s.featured ? "text-primary-foreground" : "text-primary"
-            }`} />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+                <s.icon className="h-5 w-5 text-white" />
+              </div>
+              <span className={`text-lg font-bold bg-gradient-to-r ${s.color} bg-clip-text text-transparent`}>
+                {s.value}
+              </span>
+            </div>
+            <p className="text-sm font-bold text-foreground">{s.title}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{s.desc}</p>
           </div>
-          <p className="text-base font-bold text-foreground">{s.title}</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
         </div>
       ))}
     </section>
