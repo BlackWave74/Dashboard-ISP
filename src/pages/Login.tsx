@@ -105,15 +105,6 @@ export default function LoginPage() {
       <div className="login-blob login-blob--2" />
       <div className="login-blob login-blob--3" />
 
-      {/* Centered Logo */}
-      <div className="login-top-logo">
-        <img
-          src="/resouce/ISP-Consulte-v3-branco.png"
-          alt="ISP Consulte"
-          className="login-top-logo-img"
-        />
-      </div>
-
       <div className="login-container">
         {/* -------- LEFT: Analytics / Features -------- */}
         <div className="login-analytics-side">
@@ -184,8 +175,8 @@ export default function LoginPage() {
         {/* -------- RIGHT: Login Form -------- */}
         <div className="login-form-side">
           <div className="login-form-inner">
-            {/* Mobile logo */}
-            <div className="login-mobile-logo">
+            {/* Logo inside card */}
+            <div className="login-card-logo">
               <img
                 src="/resouce/ISP-Consulte-v3-branco.png"
                 alt="ISP Consulte"
@@ -194,7 +185,7 @@ export default function LoginPage() {
             </div>
 
             <div className="login-heading">
-              <h1 className="login-title">Bem-vindo de volta</h1>
+              <h1 className="login-title">Bem-vindo de volta!</h1>
               <p className="login-subtitle">
                 Entre com suas credenciais para continuar.
               </p>
