@@ -77,16 +77,14 @@
   background: radial-gradient(circle, hsl(234 89% 60% / 0.08), transparent 70%);
 }
 
-/* Centered top logo */
-.login-top-logo {
-  position: relative;
-  z-index: 20;
+/* Logo inside card */
+.login-card-logo {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
-.login-top-logo-img {
-  height: 44px;
+.login-logo-img {
+  height: 40px;
   width: auto;
   object-fit: contain;
 }
@@ -131,19 +129,6 @@
   box-shadow: 0 20px 60px -15px hsl(234 89% 20% / 0.4);
 }
 
-.login-mobile-logo {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
-}
-@media (min-width: 1024px) {
-  .login-mobile-logo { display: none; }
-}
-.login-logo-img {
-  height: 36px;
-  width: auto;
-  object-fit: contain;
-}
 
 .login-heading { margin-bottom: 1.5rem; }
 .login-title {
