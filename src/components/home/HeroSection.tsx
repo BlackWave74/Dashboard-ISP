@@ -13,11 +13,6 @@ export default function HeroSection({ name }: HeroSectionProps) {
         style={{ background: "radial-gradient(circle, hsl(234 89% 55% / 0.5), transparent 70%)" }}
         aria-hidden="true"
       />
-      <div
-        className="pointer-events-none absolute -top-20 right-0 h-[300px] w-[400px] rounded-full opacity-20 blur-[100px]"
-        style={{ background: "radial-gradient(circle, hsl(280 70% 50% / 0.4), transparent 70%)" }}
-        aria-hidden="true"
-      />
 
       {greeting && (
         <p className="relative z-10 mb-4 text-sm font-medium text-muted-foreground">
@@ -26,11 +21,7 @@ export default function HeroSection({ name }: HeroSectionProps) {
       )}
 
       <h1 className="relative z-10 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-foreground md:text-6xl">
-        Desbloqueando o{" "}
-        <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          potencial
-        </span>{" "}
-        do seu provedor
+        Desbloqueando o potencial do seu provedor
       </h1>
 
       <p className="relative z-10 mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
