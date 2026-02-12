@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Sparkles, Zap, TrendingUp, PartyPopper } from "lucide-react";
 
 const words = ["potencial", "crescimento", "sucesso"];
@@ -56,6 +56,48 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
         />
       )}
     </div>
+  );
+}
+
+const subtitleParts = [
+  { text: "Capacitamos provedores", highlight: true },
+  { text: " a crescerem na era digital com " },
+  { text: "soluções inteligentes", highlight: true },
+  { text: " que otimizam operações, aumentam a " },
+  { text: "eficiência", highlight: true },
+  { text: " e impulsionam " },
+  { text: "resultados reais.", highlight: true },
+];
+
+function AnimatedSubtitle() {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setRevealed(true); },
+      { threshold: 0.5 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <p ref={ref} className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed md:text-lg">
+      {subtitleParts.map((part, i) => (
+        <span
+          key={i}
+          className={`inline transition-all duration-500 ${
+            revealed
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-2"
+          } ${part.highlight ? "font-semibold text-white/90" : "text-white/60"}`}
+          style={{ transitionDelay: revealed ? `${i * 120}ms` : "0ms" }}
+        >
+          {part.text}
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -158,10 +200,7 @@ export default function HeroSection() {
           </h1>
         </div>
 
-        <p className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed text-white/60 md:text-lg">
-          <span className="font-semibold text-white/90">Capacitamos provedores a crescerem</span>{" "}
-          na era digital com soluções que otimizam operações, aumentam a eficiência e impulsionam resultados.
-        </p>
+        <AnimatedSubtitle />
 
         {/* Animated mini stats */}
         <div className="mt-10 flex flex-wrap justify-center gap-6 md:gap-10">
