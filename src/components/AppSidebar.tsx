@@ -59,11 +59,11 @@ function SidebarNavItem({ to, icon: Icon, label, end }: NavItemProps) {
     <NavLink
       to={to}
       end={end}
-      className="group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white"
+      className="group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap"
       activeClassName="!bg-white/[0.15] !text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)] hover:!bg-white/[0.15] hover:!text-white"
     >
       <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
     </NavLink>
   );
 }
@@ -113,7 +113,7 @@ export function AppSidebar() {
         <img
           src="/resouce/ISP-Consulte-v3-branco.png"
           alt="ISP Consulte"
-          className="h-9 w-auto object-contain"
+          className="h-9 w-auto object-contain transition-all duration-500 hover:brightness-125 hover:drop-shadow-[0_0_8px_hsl(234_89%_64%/0.5)]"
         />
         <ToggleButton />
       </div>
@@ -188,7 +188,7 @@ export function AppSidebar() {
         <UserAvatar name={session?.name} email={session?.email} />
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/40 transition-all duration-200 hover:bg-[hsl(0_84%_60%/0.15)] hover:text-[hsl(0_84%_70%)]"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400"
         >
           <LogOut className="h-[18px] w-[18px]" />
           Sair
