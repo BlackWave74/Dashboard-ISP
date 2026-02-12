@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storage } from "@/modules/shared/storage";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 
 export type UserRole = "admin" | "consultor" | "gerente" | "coordenador" | "cliente";
 export type AccessArea = "home" | "comodato" | "integracoes" | "tarefas" | "usuarios";
@@ -62,8 +63,8 @@ export function useAuth() {
 
   const refreshSession = useCallback(
     async (stored: AuthSession): Promise<AuthSession | null> => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = SUPABASE_URL;
+      const anon = SUPABASE_ANON_KEY;
       if (!supabaseUrl || !anon || !stored.refreshToken) return null;
       try {
         const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
@@ -146,12 +147,12 @@ export function useAuth() {
       }
       loginAttemptRef.current = now;
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = SUPABASE_URL;
+      const anon = SUPABASE_ANON_KEY;
       if (!supabaseUrl || !anon) {
         return {
           success: false,
-          message: "Conexão com o servidor não configurada. Verifique as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.",
+          message: "Conexão com o servidor não configurada.",
         };
       }
 
