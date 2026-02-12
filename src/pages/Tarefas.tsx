@@ -495,7 +495,7 @@ export default function TarefasPage() {
         <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-[hsl(var(--task-purple)/0.05)] blur-[120px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-[1800px] px-4 py-5 sm:px-6 lg:px-8">
+      <div className="relative z-10 w-full max-w-full px-4 py-5 sm:px-6 lg:px-8 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
         <motion.div {...fadeUp} className="mb-6 flex items-center justify-between">
@@ -525,17 +525,15 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ KPI CARDS ═══ */}
-        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-          <KpiCard icon={Users} label="Clientes Atendidos" value={uniqueClients.size} color="yellow" delay={0} />
-          <KpiCard icon={FolderKanban} label="Projetos Ativos" value={uniqueProjects.size} color="purple" delay={0.05} />
-          <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0.1} />
-          <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.15} />
-          <KpiCard icon={CheckCircle2} label="Concluídas" value={stats.done} color="green" delay={0.2} />
-          <KpiCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="red" delay={0.25} />
+        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0} />
+          <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.05} />
+          <KpiCard icon={CheckCircle2} label="Concluídas" value={stats.done} color="green" delay={0.1} />
+          <KpiCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="red" delay={0.15} />
         </motion.div>
 
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
-        <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_280px_320px]">
+        <div className="mb-6 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_240px] xl:grid-cols-[1fr_240px_280px]">
 
           {/* LEFT: Project Overview + Activity */}
           <motion.div

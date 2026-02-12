@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, type ComponentProps } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import type { TooltipProps } from "recharts";
 import {
   ResponsiveContainer,
@@ -21,10 +21,11 @@ import {
   PolarAngleAxis,
   type DotProps,
 } from "recharts";
+import { Info, X } from "lucide-react";
 import { type TaskView } from "@/modules/tasks/types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type ActiveDotProps = DotProps & { payload?: { iso?: string } };
-
 type BarProject = { name: string; hours: number; count?: number };
 type TimelineRange = 7 | 30;
 
@@ -38,13 +39,14 @@ type Props = {
 
 const COLORS = ["#FCBD0F", "#9333ea", "#22c55e", "#f43f5e", "#06b6d4", "#6366f1", "#f97316", "#84cc16"];
 
-const tooltipStyle = {
-  background: "hsl(228 30% 6%)",
+const tooltipStyle: React.CSSProperties = {
+  background: "hsl(228 25% 8%)",
   border: "1px solid hsl(228 20% 18%)",
   borderRadius: 12,
-  fontSize: 11,
-  color: "hsl(210 40% 96%)",
+  fontSize: 12,
+  color: "#e2e8f0",
   boxShadow: "0 8px 30px -8px rgba(0,0,0,0.6)",
+  padding: "8px 12px",
 };
 
 function groupTopN(tasks: TaskView[], key: (t: TaskView) => string | null | undefined, topN: number) {
@@ -91,6 +93,33 @@ function groupByDeadline(tasks: TaskView[], limit: TimelineRange) {
   });
 }
 
+/* ─── Chart Info Modal ─── */
+function ChartInfoButton({ title, description }: { title: string; description: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex h-6 w-6 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] transition hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-yellow))]"
+        title="Mais informações"
+      >
+        <Info className="h-3.5 w-3.5" />
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[hsl(var(--task-text))]">{title}</DialogTitle>
+            <DialogDescription className="text-[hsl(var(--task-text-muted))] text-sm leading-relaxed mt-2">
+              {description}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export function TaskCharts({
   tasks,
   barProjectsOverride,
@@ -112,15 +141,13 @@ export function TaskCharts({
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   }, []);
 
-  const gradientPairs = COLORS.map((c) => `${c}:${c}`);
-
   const formatBarTooltip: TooltipProps<number, string>["formatter"] = (value, _name, data) => {
     const num = typeof value === "number" ? value : Number(value ?? 0);
     const p = (data?.payload as { count?: number; name?: string } | undefined) ?? {};
     const tasksCount = Number(p.count ?? 0);
     const projectName = String(p.name ?? "Projeto");
     const hours = `${num.toFixed(num >= 10 ? 0 : 1)}h`;
-    return [`${hours} (tarefas: ${tasksCount})`, projectName];
+    return [`${hours} (${tasksCount} tarefas)`, projectName];
   };
 
   const renderActiveDot = useCallback(
@@ -132,14 +159,14 @@ export function TaskCharts({
     [onPickDeadlineIso]
   );
 
-  const formatBarLabel: NonNullable<ComponentProps<typeof LabelList>["formatter"]> = (value) => {
+  const formatBarLabel: NonNullable<React.ComponentProps<typeof LabelList>["formatter"]> = (value) => {
     const num = typeof value === "number" ? value : Number(value ?? 0);
     return `${num.toFixed(num >= 10 ? 0 : 1)}h`;
   };
 
   const lineTooltipFormatter: TooltipProps<number, string>["formatter"] = (value) => {
     const num = typeof value === "number" ? value : Number(value ?? 0);
-    return [num === 1 ? "Total: 1 tarefa" : `Total: ${num} tarefas`, undefined];
+    return [num === 1 ? "1 tarefa" : `${num} tarefas`, "Total"];
   };
 
   const formatIsoDatePtBr = (iso: string) => {
@@ -156,25 +183,32 @@ export function TaskCharts({
         </div>
       )}
 
-      <div className="grid items-stretch gap-4 xl:grid-cols-3">
+      {/* Grid: 3 charts side by side */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {/* Pie: Consultants */}
-        <div className="task-card flex flex-col">
-          <div className="mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
-            <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Distribuição por consultor</p>
+        <div className="task-card flex flex-col min-h-0">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
+              <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Distribuição por consultor</p>
+            </div>
+            <ChartInfoButton
+              title="Distribuição por Responsável"
+              description="Este gráfico mostra como as tarefas estão distribuídas entre os consultores responsáveis. Clique em uma fatia para filtrar as tarefas pelo consultor selecionado. Os 6 consultores com mais tarefas são exibidos."
+            />
           </div>
-          <div className="flex-1" style={{ minHeight: 280 }}>
+          <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
             {pieByConsultant.length ? (
-              <div className="flex items-center gap-4 h-full">
-                <div className="flex-1" style={{ minHeight: 240 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+              <div className="flex items-center gap-3 h-full">
+                <div className="flex-1 min-w-0" style={{ minHeight: 200 }}>
+                  <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                       <Pie
                         data={pieByConsultant}
                         dataKey="value"
                         nameKey="name"
-                        innerRadius={55}
-                        outerRadius={85}
+                        innerRadius={50}
+                        outerRadius={75}
                         paddingAngle={3}
                         stroke="none"
                         className="cursor-pointer"
@@ -187,15 +221,19 @@ export function TaskCharts({
                           <Cell key={`${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={tooltipStyle} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        itemStyle={{ color: "#e2e8f0" }}
+                        labelStyle={{ color: "#e2e8f0" }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5 shrink-0">
                   {pieByConsultant.map((d, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate max-w-[80px]">{d.name}</span>
+                      <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate max-w-[70px]">{d.name}</span>
                       <span className="ml-auto text-[10px] font-bold text-[hsl(var(--task-text))]">{d.value}</span>
                     </div>
                   ))}
@@ -210,39 +248,49 @@ export function TaskCharts({
         </div>
 
         {/* Bar: Projects */}
-        <div className="task-card flex flex-col">
-          <div className="mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
-            <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Horas por projeto</p>
+        <div className="task-card flex flex-col min-h-0">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
+              <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Horas por projeto</p>
+            </div>
+            <ChartInfoButton
+              title="Horas por Projeto"
+              description="Visualize o total de horas alocadas em cada projeto. Os 5 projetos com mais horas são exibidos. Clique em uma barra para filtrar as tarefas pelo projeto selecionado. O rótulo ao lado mostra o total em horas."
+            />
           </div>
-          <div className="flex-1" style={{ minHeight: 280 }}>
+          <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
             {barByProject.length ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart
                   data={barByProject}
                   layout="vertical"
                   barCategoryGap="40%"
-                  margin={{ top: 5, right: 30, bottom: 5, left: 5 }}
+                  margin={{ top: 5, right: 40, bottom: 5, left: 5 }}
                 >
                   <defs>
-                    {barByProject.map((_, idx) => {
-                      const colors = gradientPairs[idx % gradientPairs.length].split(":");
-                      return (
-                        <linearGradient key={idx} id={`barGrad-${idx}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor={colors[0]} />
-                          <stop offset="100%" stopColor={colors[1]} />
-                        </linearGradient>
-                      );
-                    })}
+                    {barByProject.map((_, idx) => (
+                      <linearGradient key={idx} id={`barGrad-${idx}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={COLORS[idx % COLORS.length]} />
+                        <stop offset="100%" stopColor={COLORS[idx % COLORS.length]} stopOpacity={0.7} />
+                      </linearGradient>
+                    ))}
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" horizontal={false} />
-                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "hsl(215 15% 50%)", fontSize: 10 }} tickFormatter={(v: number) => `${v.toFixed(v >= 10 ? 0 : 1)}h`} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: number) => `${v.toFixed(v >= 10 ? 0 : 1)}h`} />
                   <YAxis dataKey="name" type="category" hide />
-                  <Tooltip contentStyle={tooltipStyle} formatter={formatBarTooltip} labelFormatter={() => ""} cursor={{ fill: "hsl(228 20% 10%)" }} />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    itemStyle={{ color: "#e2e8f0" }}
+                    labelStyle={{ color: "#e2e8f0" }}
+                    formatter={formatBarTooltip}
+                    labelFormatter={() => ""}
+                    cursor={{ fill: "hsl(228 20% 10%)" }}
+                  />
                   <Bar
                     dataKey="hours"
                     radius={[0, 6, 6, 0]}
-                    barSize={22}
+                    barSize={20}
                     minPointSize={12}
                     className="cursor-pointer"
                     onClick={(data: { name?: string; payload?: { name?: string } }) => {
@@ -253,7 +301,7 @@ export function TaskCharts({
                     {barByProject.map((_, idx) => (
                       <Cell key={idx} fill={`url(#barGrad-${idx})`} />
                     ))}
-                    <LabelList dataKey="hours" position="right" formatter={formatBarLabel} style={{ fill: "hsl(210 40% 90%)", fontSize: 10, fontWeight: 600 }} />
+                    <LabelList dataKey="hours" position="right" formatter={formatBarLabel} style={{ fill: "#e2e8f0", fontSize: 10, fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -264,19 +312,19 @@ export function TaskCharts({
         </div>
 
         {/* Line: Timeline */}
-        <div className="task-card flex flex-col">
+        <div className="task-card flex flex-col min-h-0">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-400">Linha do Tempo</p>
               <p className="mt-0.5 text-xs text-[hsl(var(--task-text-muted))]">Tarefas por prazo</p>
             </div>
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1">
               {[7, 30].map((range) => (
                 <button
                   key={range}
                   type="button"
                   onClick={() => setDeadlineRange(range as TimelineRange)}
-                  className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition ${
+                  className={`rounded-lg px-2 py-1 text-[10px] font-bold transition ${
                     deadlineRange === range
                       ? "bg-emerald-500/15 text-emerald-300"
                       : "text-[hsl(var(--task-text-muted))] hover:text-emerald-300"
@@ -285,17 +333,27 @@ export function TaskCharts({
                   {range}d
                 </button>
               ))}
+              <ChartInfoButton
+                title="Linha do Tempo de Prazos"
+                description="Mostra a quantidade de tarefas agrupadas por data de prazo. A linha verde indica a tendência de entregas. A linha tracejada marca o dia atual. Clique em um ponto para filtrar tarefas pela data selecionada."
+              />
             </div>
           </div>
-          <div className="flex-1" style={{ minHeight: 280 }}>
+          <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
             {lineByDeadline.length ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={lineByDeadline} margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" />
-                  <XAxis dataKey="iso" tick={{ fill: "hsl(215 15% 50%)", fontSize: 10 }} tickFormatter={(v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`} />
-                  <YAxis tick={{ fill: "hsl(215 15% 45%)", fontSize: 10 }} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={lineTooltipFormatter} labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))} />
-                  <ReferenceLine x={todayIso} stroke="hsl(160 84% 60%)" strokeDasharray="4 4" label={{ position: "top", value: "Hoje", fill: "hsl(215 20% 65%)", fontSize: 10 }} />
+                  <XAxis dataKey="iso" tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`} />
+                  <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    itemStyle={{ color: "#e2e8f0" }}
+                    labelStyle={{ color: "#e2e8f0" }}
+                    formatter={lineTooltipFormatter}
+                    labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))}
+                  />
+                  <ReferenceLine x={todayIso} stroke="hsl(160 84% 60%)" strokeDasharray="4 4" label={{ position: "top", value: "Hoje", fill: "#94a3b8", fontSize: 10 }} />
                   <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} />
                 </LineChart>
               </ResponsiveContainer>
@@ -361,13 +419,12 @@ export function ProjectPerformanceGauge({
     return () => cancelAnimationFrame(raf);
   }, [pctDone]);
 
-  const animLeft = 100 - animValue;
   const data = [{ name: "progresso", value: animValue }];
 
   return (
     <div className="tc-kpi">
       <div className="tc-kpi__chart">
-        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={180} minHeight={180}>
           <RadialBarChart
             data={data}
             innerRadius="74%"
