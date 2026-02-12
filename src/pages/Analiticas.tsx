@@ -20,7 +20,7 @@ export default function AnaliticasPage() {
   const now = new Date();
 
   const { tasks, loading: loadingTasks, error: errorTasks } = useTasks({ accessToken, period: "all" });
-  const { times, loading: loadingTimes } = useElapsedTimes({ accessToken, period: "all" });
+  const { times, loading: loadingTimes } = useElapsedTimes({ accessToken, period: "180d" });
 
   const startIso = useMemo(() => {
     const d = new Date();
