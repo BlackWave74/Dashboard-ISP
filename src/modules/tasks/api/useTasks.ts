@@ -21,8 +21,8 @@ type UseTasksParams = {
   dateTo?: string;
 };
 
-const CACHE_KEY = "cache:tasks:v2";
-const CACHE_TTL_MS = 15 * 60 * 1000;
+const CACHE_KEY = "cache:tasks:v3";
+const CACHE_TTL_MS = 5 * 60 * 1000;
 const RELOAD_COOLDOWN_MS = 4000;
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_TASKS_TIMEOUT_MS ?? "8000");
 const PAGE_SIZE = 1000;
