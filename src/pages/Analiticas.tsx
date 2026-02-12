@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
-import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
-import AnalyticsPerformanceChart from "@/modules/analytics/components/AnalyticsPerformanceChart";
 import AnalyticsTaskSummary from "@/modules/analytics/components/AnalyticsTaskSummary";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
 import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
@@ -19,8 +17,7 @@ export default function AnaliticasPage() {
   const userName = session?.name;
   const now = new Date();
 
-  const { tasks, loading: loadingTasks, error: errorTasks } = useTasks({ accessToken, period: "all" });
-  const { times, loading: loadingTimes } = useElapsedTimes({ accessToken, period: "180d" });
+  const { tasks, loading: loadingTasks, error: errorTasks } = useTasks({ accessToken, period: "180d" });
 
   const startIso = useMemo(() => {
     const d = new Date();
@@ -33,7 +30,7 @@ export default function AnaliticasPage() {
     endIso: now.toISOString(),
   });
 
-  const loading = loadingTasks || loadingTimes || loadingHours;
+  const loading = loadingTasks || loadingHours;
 
   const {
     projects,
@@ -87,7 +84,7 @@ export default function AnaliticasPage() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
               <p className="text-sm text-white/35">
-                {userName ? `Projetos de ${userName}` : "Visão geral de clientes, projetos, horas e desempenho."}
+                {userName ? `Projetos de ${userName}` : "Visão geral de desempenho dos projetos."}
               </p>
             </div>
           </div>
@@ -98,7 +95,7 @@ export default function AnaliticasPage() {
           />
         </motion.div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards — 3 cards only */}
         <AnalyticsKpiCards
           clients={uniqueClients}
           activeProjects={activeProjects}
@@ -108,15 +105,8 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Charts */}
-        <div className="grid gap-5 lg:grid-cols-5">
-          <div className="lg:col-span-3">
-            <AnalyticsPerformanceChart times={times} />
-          </div>
-          <div className="lg:col-span-2">
-            <AnalyticsTaskSummary done={totalDone} pending={totalPending} overdue={totalOverdue} />
-          </div>
-        </div>
+        {/* Task Summary — full width */}
+        <AnalyticsTaskSummary done={totalDone} pending={totalPending} overdue={totalOverdue} />
 
         {/* Projects */}
         <AnalyticsProjectList
