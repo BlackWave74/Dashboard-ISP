@@ -501,10 +501,10 @@ export default function TarefasPage() {
         <motion.div {...fadeUp} className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
-              Visão Geral de Atividades
+              Painel de Atividades
             </h1>
             <p className="mt-0.5 text-sm text-[hsl(var(--task-text-muted))]">
-              Gerencie suas tarefas, acompanhe prazos e monitore o progresso dos projetos.
+              Acompanhe o progresso, prazos e desempenho das suas atividades em tempo real.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -525,11 +525,12 @@ export default function TarefasPage() {
         </motion.div>
 
         {/* ═══ KPI CARDS ═══ */}
-        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0} />
-          <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.05} />
-          <KpiCard icon={CheckCircle2} label="Concluídas" value={stats.done} color="green" delay={0.1} />
-          <KpiCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="red" delay={0.15} />
+        <motion.div variants={stagger} initial="initial" animate="animate" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <KpiCard icon={Layers} label="Total de Tarefas" value={stats.total} color="purple" delay={0} />
+          <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0.05} />
+          <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.1} />
+          <KpiCard icon={CheckCircle2} label="Concluídas" value={stats.done} color="green" delay={0.15} />
+          <KpiCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="red" delay={0.2} />
         </motion.div>
 
         {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
@@ -583,22 +584,30 @@ export default function TarefasPage() {
                   const pendH = maxBarValue > 0 ? (bar.pending / maxBarValue) * 100 : 0;
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                      <span className="text-[9px] font-bold text-[hsl(var(--task-text-muted))]">
-                        {bar.total > 0 ? `${Math.round((bar.done / bar.total) * 100)}%` : ""}
+                      <span className="text-[9px] font-bold text-[hsl(var(--task-text))]">
+                        {bar.total > 0 ? bar.total : ""}
                       </span>
-                      <div className="w-full flex items-end gap-[3px] h-[140px]">
+                      <div className="relative w-full flex items-end gap-[3px] h-[140px]">
                         <motion.div
                           initial={{ height: 0 }}
                           animate={{ height: `${Math.max(doneH, 6)}%` }}
                           transition={{ delay: i * 0.06 + 0.4, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                          className="flex-1 rounded-t-md bg-gradient-to-t from-[hsl(var(--task-yellow))] to-[hsl(var(--task-yellow)/0.7)]"
-                        />
+                          className="flex-1 rounded-t-md bg-gradient-to-t from-[hsl(var(--task-yellow))] to-[hsl(var(--task-yellow)/0.7)] relative group/bar"
+                        >
+                          <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] font-bold text-[hsl(var(--task-yellow))] opacity-0 group-hover/bar:opacity-100 transition-opacity">
+                            {bar.done}
+                          </span>
+                        </motion.div>
                         <motion.div
                           initial={{ height: 0 }}
                           animate={{ height: `${Math.max(pendH, 6)}%` }}
                           transition={{ delay: i * 0.06 + 0.5, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                          className="flex-1 rounded-t-md bg-gradient-to-t from-[hsl(var(--task-purple))] to-[hsl(var(--task-purple)/0.6)]"
-                        />
+                          className="flex-1 rounded-t-md bg-gradient-to-t from-[hsl(var(--task-purple))] to-[hsl(var(--task-purple)/0.6)] relative group/bar"
+                        >
+                          <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] font-bold text-[hsl(var(--task-purple))] opacity-0 group-hover/bar:opacity-100 transition-opacity">
+                            {bar.pending}
+                          </span>
+                        </motion.div>
                       </div>
                       <span className="text-[10px] font-medium text-[hsl(var(--task-text-muted))] capitalize">{bar.month}</span>
                     </div>

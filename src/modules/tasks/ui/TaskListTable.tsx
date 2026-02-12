@@ -31,7 +31,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
       {/* Header */}
-      <div className="hidden sm:grid grid-cols-[1fr_90px_100px_130px_130px_80px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+      <div className="hidden sm:grid grid-cols-[1fr_120px_100px_130px_130px_80px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
         {["Tarefa", "Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
           <div key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--task-text-muted)/0.6)]">
             {h}
@@ -49,7 +49,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.025, duration: 0.2 }}
-              className="group grid grid-cols-1 sm:grid-cols-[1fr_90px_100px_130px_130px_80px] bg-transparent transition-colors hover:bg-[hsl(var(--task-surface-hover))]"
+              className="group grid grid-cols-1 sm:grid-cols-[1fr_120px_100px_130px_130px_80px] bg-transparent transition-colors hover:bg-[hsl(var(--task-surface-hover))]"
             >
               {/* Task name */}
               <div className="flex items-center gap-3 px-4 py-3.5">

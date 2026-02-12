@@ -21,9 +21,10 @@ import {
   PolarAngleAxis,
   type DotProps,
 } from "recharts";
-import { Info, X } from "lucide-react";
+import { Info, TrendingUp, CheckCircle2, AlertTriangle, Hourglass } from "lucide-react";
 import { type TaskView } from "@/modules/tasks/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { motion } from "framer-motion";
 
 type ActiveDotProps = DotProps & { payload?: { iso?: string } };
 type BarProject = { name: string; hours: number; count?: number };
@@ -93,30 +94,103 @@ function groupByDeadline(tasks: TaskView[], limit: TimelineRange) {
   });
 }
 
-/* ─── Chart Info Modal ─── */
-function ChartInfoButton({ title, description }: { title: string; description: string }) {
+/* ─── Chart Info Modal (centered, attractive) ─── */
+function ChartInfoButton({ title, description, tasks }: { title: string; description: string; tasks?: TaskView[] }) {
   const [open, setOpen] = useState(false);
+
+  const stats = useMemo(() => {
+    if (!tasks?.length) return null;
+    const done = tasks.filter((t) => t.statusKey === "done").length;
+    const pending = tasks.filter((t) => t.statusKey === "pending" || t.statusKey === "unknown").length;
+    const overdue = tasks.filter((t) => t.statusKey === "overdue").length;
+    return { total: tasks.length, done, pending, overdue };
+  }, [tasks]);
+
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-6 w-6 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] transition hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-yellow))]"
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] transition hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-yellow))]"
         title="Mais informações"
       >
-        <Info className="h-3.5 w-3.5" />
+        <Info className="h-4 w-4" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[hsl(var(--task-text))]">{title}</DialogTitle>
-            <DialogDescription className="text-[hsl(var(--task-text-muted))] text-sm leading-relaxed mt-2">
+        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto">
+          <DialogHeader className="text-center items-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--task-yellow)/0.15)]">
+              <Info className="h-5 w-5 text-[hsl(var(--task-yellow))]" />
+            </div>
+            <DialogTitle className="text-[hsl(var(--task-text))] text-center text-lg">{title}</DialogTitle>
+            <DialogDescription className="text-[hsl(var(--task-text-muted))] text-sm leading-relaxed mt-2 text-center">
               {description}
             </DialogDescription>
           </DialogHeader>
+
+          {stats && (
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-3 text-center">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto mb-1" />
+                <p className="text-lg font-extrabold text-emerald-400">{stats.done}</p>
+                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Concluídas</p>
+              </div>
+              <div className="rounded-xl border border-[hsl(var(--task-yellow)/0.2)] bg-[hsl(var(--task-yellow)/0.05)] px-3 py-3 text-center">
+                <Hourglass className="h-4 w-4 text-[hsl(var(--task-yellow))] mx-auto mb-1" />
+                <p className="text-lg font-extrabold text-[hsl(var(--task-yellow))]">{stats.pending}</p>
+                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Em Andamento</p>
+              </div>
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-3 text-center">
+                <AlertTriangle className="h-4 w-4 text-rose-400 mx-auto mb-1" />
+                <p className="text-lg font-extrabold text-rose-400">{stats.overdue}</p>
+                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Atrasadas</p>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/* ─── Custom Pie label with connecting lines ─── */
+const RADIAN = Math.PI / 180;
+function renderCustomPieLabel({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  name,
+  value,
+  index,
+}: {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  name: string;
+  value: number;
+  index: number;
+}) {
+  const radius = outerRadius + 10;
+  const x1 = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y1 = cy + radius * Math.sin(-midAngle * RADIAN);
+  const radius2 = outerRadius + 28;
+  const x2 = cx + radius2 * Math.cos(-midAngle * RADIAN);
+  const y2 = cy + radius2 * Math.sin(-midAngle * RADIAN);
+  const textAnchor = x2 > cx ? "start" : "end";
+  const color = COLORS[index % COLORS.length];
+
+  return (
+    <g>
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={1} opacity={0.6} />
+      <circle cx={x2} cy={y2} r={2} fill={color} />
+      <text x={x2 + (x2 > cx ? 4 : -4)} y={y2} textAnchor={textAnchor} fill="#94a3b8" fontSize={9} dominantBaseline="central">
+        {name.length > 10 ? `${name.slice(0, 10)}…` : name} ({value})
+      </text>
+    </g>
   );
 }
 
@@ -185,8 +259,13 @@ export function TaskCharts({
 
       {/* Grid: 3 charts side by side */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        {/* Pie: Consultants */}
-        <div className="task-card flex flex-col min-h-0">
+        {/* Pie: Consultants with label lines */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="task-card flex flex-col min-h-0"
+        >
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
@@ -194,61 +273,60 @@ export function TaskCharts({
             </div>
             <ChartInfoButton
               title="Distribuição por Responsável"
-              description="Este gráfico mostra como as tarefas estão distribuídas entre os consultores responsáveis. Clique em uma fatia para filtrar as tarefas pelo consultor selecionado. Os 6 consultores com mais tarefas são exibidos."
+              description="Este gráfico mostra como as tarefas estão distribuídas entre os consultores responsáveis. Clique em uma fatia para filtrar as tarefas pelo consultor selecionado."
+              tasks={tasks}
             />
           </div>
-          <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
+          <div className="flex-1" style={{ minHeight: 240, maxHeight: 300 }}>
             {pieByConsultant.length ? (
-              <div className="flex items-center gap-3 h-full">
-                <div className="flex-1 min-w-0" style={{ minHeight: 200 }}>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={pieByConsultant}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={50}
-                        outerRadius={75}
-                        paddingAngle={3}
-                        stroke="none"
-                        className="cursor-pointer"
-                        onClick={(data: { name?: string; payload?: { name?: string } }) => {
-                          const name = String(data?.name ?? data?.payload?.name ?? "");
-                          if (name) onPickConsultant?.(name);
-                        }}
-                      >
-                        {pieByConsultant.map((entry, index) => (
-                          <Cell key={`${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={tooltipStyle}
-                        itemStyle={{ color: "#e2e8f0" }}
-                        labelStyle={{ color: "#e2e8f0" }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-1.5 shrink-0">
-                  {pieByConsultant.map((d, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate max-w-[70px]">{d.name}</span>
-                      <span className="ml-auto text-[10px] font-bold text-[hsl(var(--task-text))]">{d.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={pieByConsultant}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={45}
+                    outerRadius={68}
+                    paddingAngle={3}
+                    stroke="none"
+                    className="cursor-pointer"
+                    label={(props: any) => renderCustomPieLabel({ 
+                      cx: props.cx, cy: props.cy, midAngle: props.midAngle,
+                      innerRadius: props.innerRadius, outerRadius: props.outerRadius,
+                      name: props.name ?? "", value: props.value ?? 0, index: props.index ?? 0 
+                    })}
+                    labelLine={false}
+                    onClick={(data: { name?: string; payload?: { name?: string } }) => {
+                      const name = String(data?.name ?? data?.payload?.name ?? "");
+                      if (name) onPickConsultant?.(name);
+                    }}
+                  >
+                    {pieByConsultant.map((entry, index) => (
+                      <Cell key={`${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    itemStyle={{ color: "#e2e8f0" }}
+                    labelStyle={{ color: "#e2e8f0" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
                 Sem dados.
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Bar: Projects */}
-        <div className="task-card flex flex-col min-h-0">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="task-card flex flex-col min-h-0"
+        >
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
@@ -256,7 +334,8 @@ export function TaskCharts({
             </div>
             <ChartInfoButton
               title="Horas por Projeto"
-              description="Visualize o total de horas alocadas em cada projeto. Os 5 projetos com mais horas são exibidos. Clique em uma barra para filtrar as tarefas pelo projeto selecionado. O rótulo ao lado mostra o total em horas."
+              description="Visualize o total de horas alocadas em cada projeto. Os 5 projetos com mais horas são exibidos. Clique em uma barra para filtrar as tarefas."
+              tasks={tasks}
             />
           </div>
           <div className="flex-1" style={{ minHeight: 220, maxHeight: 280 }}>
@@ -309,10 +388,15 @@ export function TaskCharts({
               <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">Sem dados.</div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Line: Timeline */}
-        <div className="task-card flex flex-col min-h-0">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="task-card flex flex-col min-h-0"
+        >
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-400">Linha do Tempo</p>
@@ -335,7 +419,8 @@ export function TaskCharts({
               ))}
               <ChartInfoButton
                 title="Linha do Tempo de Prazos"
-                description="Mostra a quantidade de tarefas agrupadas por data de prazo. A linha verde indica a tendência de entregas. A linha tracejada marca o dia atual. Clique em um ponto para filtrar tarefas pela data selecionada."
+                description="Mostra a quantidade de tarefas agrupadas por data de prazo. A linha verde indica a tendência de entregas. A linha tracejada marca o dia atual."
+                tasks={tasks}
               />
             </div>
           </div>
@@ -363,7 +448,7 @@ export function TaskCharts({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -422,9 +507,9 @@ export function ProjectPerformanceGauge({
   const data = [{ name: "progresso", value: animValue }];
 
   return (
-    <div className="tc-kpi">
-      <div className="tc-kpi__chart">
-        <ResponsiveContainer width="100%" height="100%" minWidth={180} minHeight={180}>
+    <div className="relative flex flex-col items-center justify-center w-full">
+      <div className="relative" style={{ width: 180, height: 180 }}>
+        <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
             data={data}
             innerRadius="74%"
@@ -454,27 +539,22 @@ export function ProjectPerformanceGauge({
               animationDuration={900}
               fill="url(#tcGaugeGradient)"
               stroke="none"
-              className="tc-gauge-arc"
               style={{ filter: "url(#tcGlow)" }}
             />
           </RadialBarChart>
         </ResponsiveContainer>
 
-        <div className="tc-kpi__center" aria-label="Percentual do projeto">
-          <div className="tc-kpi__value">
-            <span className="tc-kpi__num">{animValue}</span>
-            <span className="tc-kpi__pct">%</span>
-          </div>
-          <div className="tc-kpi__sub">
-            {done}/{total} concluídas
-          </div>
+        {/* Centered percentage */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-3xl font-extrabold text-[hsl(var(--task-text))] leading-none">{animValue}<span className="text-base font-bold text-[hsl(var(--task-text-muted))]">%</span></span>
+          <span className="text-[10px] text-[hsl(var(--task-text-muted))] mt-1">{done}/{total} concluídas</span>
         </div>
       </div>
 
       {footerHint && (
-        <div className="tc-kpi__footer">
-          <span className="tc-kpi__hint">{footerHint}</span>
-        </div>
+        <p className="mt-2 text-[10px] text-[hsl(var(--task-text-muted))] text-center max-w-[200px]">
+          {footerHint}
+        </p>
       )}
     </div>
   );
