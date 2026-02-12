@@ -84,7 +84,7 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className="!border-r border-r-foreground/10 bg-sidebar">
+    <Sidebar className="!border-r-0 bg-sidebar shadow-2xl shadow-background/80">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 pt-6 pb-2">
         <img
