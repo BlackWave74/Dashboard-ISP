@@ -7,32 +7,41 @@ function AnimatedCounter({ target, suffix = "%", duration = 2000 }: { target: nu
   const [count, setCount] = useState(0);
   const [done, setDone] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
+  const visible = useRef(false);
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+
+    const runAnimation = () => {
+      setDone(false);
+      setCount(0);
+      const start = performance.now();
+      const animate = (now: number) => {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setCount(Math.round(target * eased));
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          setDone(true);
+        }
+      };
+      requestAnimationFrame(animate);
+    };
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
-          const start = performance.now();
-          const animate = (now: number) => {
-            const elapsed = now - start;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(target * eased));
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            } else {
-              setDone(true);
-            }
-          };
-          requestAnimationFrame(animate);
+        if (entry.isIntersecting && !visible.current) {
+          visible.current = true;
+          runAnimation();
+          interval = setInterval(runAnimation, 8000);
         }
       },
       { threshold: 0.5 }
     );
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); clearInterval(interval); };
   }, [target, duration]);
 
   return (
@@ -125,7 +134,7 @@ export default function HeroSection() {
         {/* Title — fixed height to prevent layout shift */}
         <div className="h-[120px] md:h-[160px] lg:h-[180px] flex items-center justify-center">
           <h1 className="max-w-4xl text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl lg:text-7xl">
-            Desbloqueando o{" "}
+            Desbloqueando a{" "}
             <span className="relative inline-block min-w-[200px] md:min-w-[320px]">
               <span
                 className={`relative z-10 transition-all duration-400 ${
