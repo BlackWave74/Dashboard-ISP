@@ -17,6 +17,7 @@ type Props = {
   projects: ProjectOption[];
   consultants: string[];
   isAdmin: boolean;
+  myProjectIds?: Set<number>;
 };
 
 const PERIODS: { key: AnalyticsFilterState["period"]; label: string }[] = [
@@ -40,12 +41,14 @@ function CustomSelect({
   options,
   placeholder,
   icon: Icon,
+  mineIds,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   placeholder: string;
   icon?: React.ComponentType<{ className?: string }>;
+  mineIds?: Set<string>;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -59,6 +62,13 @@ function CustomSelect({
   }, []);
 
   const selected = options.find((o) => o.value === value);
+  const sortedOptions = mineIds
+    ? [...options].sort((a, b) => {
+        const aM = mineIds.has(a.value) ? 0 : 1;
+        const bM = mineIds.has(b.value) ? 0 : 1;
+        return aM - bM || a.label.localeCompare(b.label);
+      })
+    : options;
 
   return (
     <div ref={ref} className="relative">
@@ -82,7 +92,7 @@ function CustomSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 top-full z-50 mt-1 max-h-60 min-w-[200px] overflow-auto rounded-xl border border-white/[0.08] p-1 shadow-xl shadow-black/40"
+            className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[240px] overflow-auto rounded-xl border border-white/[0.08] p-1 shadow-xl shadow-black/40"
             style={{ background: "hsl(260 30% 12%)" }}
           >
             {/* "All" option */}
@@ -94,7 +104,44 @@ function CustomSelect({
             >
               {placeholder}
             </button>
-            {options.map((o) => (
+            {/* Mine first if provided */}
+            {mineIds && sortedOptions.length > 0 && (
+              <>
+                <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(262_83%_58%/0.6)]">Meus</div>
+                {sortedOptions.filter(o => mineIds.has(o.value)).map((o) => (
+                  <button
+                    key={o.value}
+                    onClick={() => { onChange(o.value); setOpen(false); }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                      value === o.value
+                        ? "bg-[hsl(262_83%_58%/0.15)] text-white/90"
+                        : "text-white/50 hover:bg-white/[0.05] hover:text-white/70"
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(262_83%_58%)]" />
+                    <span className="truncate">{o.label}</span>
+                  </button>
+                ))}
+                {sortedOptions.some(o => !mineIds.has(o.value)) && (
+                  <div className="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-white/20">Outros</div>
+                )}
+                {sortedOptions.filter(o => !mineIds.has(o.value)).map((o) => (
+                  <button
+                    key={o.value}
+                    onClick={() => { onChange(o.value); setOpen(false); }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                      value === o.value
+                        ? "bg-[hsl(262_83%_58%/0.15)] text-white/90"
+                        : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                    }`}
+                  >
+                    <span className="truncate">{o.label}</span>
+                  </button>
+                ))}
+              </>
+            )}
+            {/* Normal list when no mineIds */}
+            {!mineIds && options.map((o) => (
               <button
                 key={o.value}
                 onClick={() => { onChange(o.value); setOpen(false); }}
@@ -104,7 +151,7 @@ function CustomSelect({
                     : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
                 }`}
               >
-                {o.label}
+                <span className="truncate">{o.label}</span>
               </button>
             ))}
           </motion.div>
@@ -114,7 +161,7 @@ function CustomSelect({
   );
 }
 
-export default function AnalyticsFilters({ filters, onChange, projects, consultants, isAdmin }: Props) {
+export default function AnalyticsFilters({ filters, onChange, projects, consultants, isAdmin, myProjectIds }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const activeCount =
@@ -213,6 +260,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
                     options={projects.map((p) => ({ value: String(p.id), label: p.name }))}
                     placeholder="Todos os projetos"
                     icon={FolderKanban}
+                    mineIds={myProjectIds ? new Set([...myProjectIds].map(String)) : undefined}
                   />
                 </div>
               )}
