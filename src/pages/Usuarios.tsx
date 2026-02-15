@@ -76,7 +76,7 @@ export default function UsuariosPage() {
     try {
       const base = SUPABASE_URL.replace(/\/$/, "");
       const res = await fetch(
-        `${base}/rest/v1/users?select=id,auth_user_id,email,name,user_profile,allowed_areas,active&order=name.asc&limit=200`,
+        `${base}/rest/v1/users?select=id,auth_user_id,email,name,user_profile,active&order=name.asc&limit=200`,
         {
           headers: {
             apikey: SUPABASE_ANON_KEY,
@@ -97,7 +97,7 @@ export default function UsuariosPage() {
           name: String(u.name ?? ""),
           user_profile: String(u.user_profile ?? "Consultor"),
           
-          allowed_areas: Array.isArray(u.allowed_areas) ? u.allowed_areas as AccessArea[] : undefined,
+          
           active: u.active !== false,
         })));
       }
