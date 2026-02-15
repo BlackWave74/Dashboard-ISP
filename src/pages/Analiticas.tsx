@@ -214,6 +214,7 @@ export default function AnaliticasPage() {
           projects={projectOptions}
           consultants={consultants}
           isAdmin={isAdmin}
+          myProjectIds={myProjectIds}
         />
 
         {/* KPI Cards */}
