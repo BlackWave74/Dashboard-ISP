@@ -624,8 +624,9 @@ export default function TarefasPage() {
                 return performers.map(([name, data], idx) => {
                   const pctBar = data.total > 0 ? (data.done / data.total) * 100 : 0;
                   const pctDoneLocal = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
-                  const colors = ["#FCBD0F", "#9333ea", "#22c55e", "#06b6d4", "#f97316", "#6366f1"];
-                  const color = colors[idx % colors.length];
+                  // Paleta restrita: roxo, amarelo, branco-muted — sem excesso cromático
+                  const palette = ["hsl(262 83% 58%)", "hsl(45 97% 54%)", "hsl(220 14% 70%)"];
+                  const color = palette[idx % palette.length];
                   return (
                     <motion.div
                       key={name}
@@ -644,9 +645,9 @@ export default function TarefasPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-[hsl(var(--task-text))] truncate">{name}</p>
                           <div className="flex items-center gap-2.5 text-[11px] flex-wrap mt-0.5">
-                            <span className="text-emerald-400 font-medium">{data.done} feitas</span>
+                            <span className="text-[hsl(var(--task-purple))] font-medium">{data.done} feitas</span>
                             {data.pending > 0 && <span className="text-[hsl(var(--task-yellow))] font-medium">{data.pending} em andamento</span>}
-                            {data.overdue > 0 && <span className="text-rose-400 font-medium">{data.overdue} atrasadas</span>}
+                            {data.overdue > 0 && <span className="text-rose-400/80 font-medium">{data.overdue} atrasadas</span>}
                           </div>
                         </div>
                         <span className="text-sm font-extrabold" style={{ color }}>{pctDoneLocal}%</span>
@@ -698,7 +699,7 @@ export default function TarefasPage() {
               </div>
               <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] px-3 py-2.5 text-center">
                 <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Feitas</p>
-                <p className="text-xl font-extrabold text-emerald-400">{stats.done}</p>
+                <p className="text-xl font-extrabold text-[hsl(var(--task-purple))]">{stats.done}</p>
               </div>
             </div>
           </motion.div>
