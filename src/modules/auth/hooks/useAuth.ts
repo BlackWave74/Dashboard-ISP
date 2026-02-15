@@ -3,7 +3,7 @@ import { storage } from "@/modules/shared/storage";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 
 export type UserRole = "admin" | "consultor" | "gerente" | "coordenador" | "cliente";
-export type AccessArea = "home" | "comodato" | "integracoes" | "tarefas" | "usuarios";
+export type AccessArea = "home" | "comodato" | "integracoes" | "tarefas" | "usuarios" | "analiticas";
 
 export type AuthSession = {
   name: string;
@@ -31,11 +31,11 @@ type AuthResult = {
 };
 
 export const ACCESS_RULES: Record<UserRole, Record<AccessArea, boolean>> = {
-  admin: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true },
-  gerente: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true },
-  coordenador: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true },
-  consultor: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false },
-  cliente: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false },
+  admin: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true },
+  gerente: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true },
+  coordenador: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true },
+  consultor: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false, analiticas: false },
+  cliente: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false, analiticas: false },
 };
 
 const SESSION_KEY = "auth_session";
@@ -46,6 +46,33 @@ const normalizeRole = (value?: string): UserRole => {
   if (role === "gerente") return "gerente";
   if (role === "coordenador") return "coordenador";
   if (role === "cliente") return "cliente";
+  return "consultor";
+};
+
+/** Fetch role from user_roles table (uses the external Supabase) */
+const fetchUserRole = async (
+  accessToken: string,
+  authUserId: string
+): Promise<UserRole> => {
+  const base = SUPABASE_URL.replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${base}/rest/v1/user_roles?user_id=eq.${authUserId}&select=role&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res.ok) return "consultor";
+    const rows = await res.json();
+    if (Array.isArray(rows) && rows.length > 0) {
+      return normalizeRole(rows[0].role);
+    }
+  } catch {
+    // fallback
+  }
   return "consultor";
 };
 
@@ -79,7 +106,6 @@ export function useAuth() {
         if (!response.ok) return null;
         const user = data?.user;
         const metadata = user?.user_metadata ?? {};
-        const role = normalizeRole(metadata.user_profile);
         const metaObj = metadata as Record<string, unknown>;
         const clientName = metaObj?.["client_name"] as string | undefined;
         const allowedAreas = Array.isArray(metaObj?.["allowed_areas"])
@@ -87,6 +113,10 @@ export function useAuth() {
           : null;
         const expiresIn = Number(data?.expires_in ?? 0);
         const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
+
+        // Fetch role from user_roles table
+        const role = await fetchUserRole(data?.access_token, user?.id);
+
         const refreshed: AuthSession = {
           name: metadata.name || user?.email || stored.name,
           email: user?.email ?? stored.email,
@@ -173,7 +203,6 @@ export function useAuth() {
 
         const user = data?.user;
         const metadata = user?.user_metadata ?? {};
-        const role = normalizeRole(metadata.user_profile);
         const metaObj = metadata as Record<string, unknown>;
         const clientName = metaObj?.["client_name"] as string | undefined;
         const allowedAreas = Array.isArray(metaObj?.["allowed_areas"])
@@ -181,6 +210,10 @@ export function useAuth() {
           : null;
         const expiresIn = Number(data?.expires_in ?? 0);
         const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
+
+        // Fetch role from user_roles table
+        const role = await fetchUserRole(data?.access_token, user?.id);
+
         const authSession: AuthSession = {
           name: metadata.name || user?.email || "Usuário",
           email: user?.email ?? email,
