@@ -4,7 +4,7 @@ import {
   FolderKanban,
   ListTodo,
   BarChart3,
-  UserPlus,
+  Users,
   Package,
   LogOut,
   ChevronDown,
@@ -12,6 +12,7 @@ import {
   HelpCircle,
   MoreVertical,
   PanelLeft,
+  Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -89,6 +90,11 @@ export function AppSidebar() {
       location.pathname.startsWith(p)
     );
   });
+  const [adminOpen, setAdminOpen] = useState(() => {
+    return ["/usuarios", "/configuracoes"].some((p) =>
+      location.pathname.startsWith(p)
+    );
+  });
 
   const handleLogout = () => {
     logout();
@@ -98,6 +104,12 @@ export function AppSidebar() {
   const isProjectsActive = ["/tarefas", "/analiticas"].some((p) =>
     location.pathname.startsWith(p)
   );
+
+  const isAdminActive = ["/usuarios", "/configuracoes"].some((p) =>
+    location.pathname.startsWith(p)
+  );
+
+  const showAdminSection = canAccess("usuarios");
 
   return (
     <Sidebar
@@ -166,21 +178,65 @@ export function AppSidebar() {
               </div>
             )}
 
-            {canAccess("usuarios") && (
-              <SidebarNavItem to="/usuarios" icon={UserPlus} label="Usuários" />
-            )}
             <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />
           </nav>
         </div>
 
-        {/* MANAGE section */}
+        {/* ADMIN section — only for admins */}
+        {showAdminSection && (
+          <div className="mb-5">
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
+              Administração
+            </p>
+            <nav className="flex flex-col gap-0.5">
+              <button
+                onClick={() => setAdminOpen((o) => !o)}
+                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
+                  isAdminActive
+                    ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
+                    : "text-white/60 hover:bg-white/[0.08] hover:text-white"
+                }`}
+              >
+                <Shield className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                <span className="flex-1 text-left">Painel Admin</span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${
+                    adminOpen ? "rotate-0" : "-rotate-90"
+                  }`}
+                />
+              </button>
+
+              {(adminOpen || isAdminActive) && (
+                <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
+                  <NavLink
+                    to="/usuarios"
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                    activeClassName="!text-white !bg-white/[0.1]"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Usuários</span>
+                  </NavLink>
+                  <NavLink
+                    to="/configuracoes"
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                    activeClassName="!text-white !bg-white/[0.1]"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Configurações</span>
+                  </NavLink>
+                </div>
+              )}
+            </nav>
+          </div>
+        )}
+
+        {/* SUPPORT section */}
         <div>
           <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
-            Gerenciar
+            Suporte
           </p>
           <nav className="flex flex-col gap-0.5">
-            <SidebarNavItem to="/configuracoes" icon={Settings} label="Configurações" />
-            <SidebarNavItem to="/suporte" icon={HelpCircle} label="Suporte" />
+            <SidebarNavItem to="/suporte" icon={HelpCircle} label="Ajuda" />
           </nav>
         </div>
       </SidebarContent>

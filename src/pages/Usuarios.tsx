@@ -1,10 +1,10 @@
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useAuth, type AccessArea, ACCESS_RULES } from "@/modules/auth/hooks/useAuth";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth, type AccessArea } from "@/modules/auth/hooks/useAuth";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import {
-  UserPlus,
+  Users,
   Search,
   RefreshCw,
   Pencil,
@@ -16,6 +16,13 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  CheckCircle2,
+  UserPlus,
+  Mail,
+  User,
+  Key,
+  Building,
+  Lock,
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -23,21 +30,17 @@ const perfis = ["Administrador", "Consultor"] as const;
 type Perfil = (typeof perfis)[number];
 
 const ALL_AREAS: AccessArea[] = ["home", "comodato", "integracoes", "tarefas", "usuarios"];
+const AREA_LABELS: Record<AccessArea, string> = { home: "Início", comodato: "Comodato", integracoes: "Integrações", tarefas: "Tarefas", usuarios: "Usuários" };
 
 type UserRow = {
   id: string;
+  auth_user_id: string;
   email: string;
-  created_at?: string;
-  user_metadata?: { name?: string; user_profile?: string; allowed_areas?: AccessArea[]; client_name?: string };
-  public?: Record<string, unknown>;
-};
-
-type RawUser = {
-  auth_user_id?: string;
-  id?: string;
-  email?: string;
-  user_metadata?: Record<string, unknown>;
-  public?: Record<string, unknown>;
+  name: string;
+  user_profile: string;
+  client_name?: string;
+  allowed_areas?: AccessArea[];
+  active?: boolean;
 };
 
 /* ─── Helpers ─── */
@@ -46,248 +49,86 @@ const safeJson = async (res: Response) => {
   try { return text ? JSON.parse(text) : null; } catch { return { raw: text }; }
 };
 
-const inferClientName = (name: string) => {
-  const parts = name.trim().split(/[-_:]/). map(s => s.trim()).filter(Boolean);
-  const last = parts.length > 1 ? parts[parts.length - 1].split(/\s+/)[0] : "";
-  if (last) return last;
-  const words = name.trim().split(/\s+/);
-  return words.length > 1 ? words[words.length - 1] : "";
-};
-
-/* ─── Styles ─── */
-const inputClass = "h-9 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-sm text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.6)] focus:ring-1 focus:ring-[hsl(var(--task-purple)/0.2)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]";
-const selectClass = `${inputClass} appearance-none cursor-pointer`;
-const btnPrimary = "flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50";
-const btnSecondary = "flex items-center gap-1.5 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-purple)/0.4)] hover:text-[hsl(var(--task-text))]";
-
+/* ─── Component ─── */
 export default function UsuariosPage() {
   const navigate = useNavigate();
-  const { session, loadingSession, canAccess } = useAuth();
+  const { session, loadingSession } = useAuth();
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
 
-  // Redirect non-admins
   useEffect(() => {
     if (!loadingSession && !session) { navigate("/login"); return; }
     if (!loadingSession && session && !isAdmin) { navigate("/"); return; }
   }, [loadingSession, session, isAdmin, navigate]);
 
-  /* ─── Form state ─── */
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    name: "",
-    perfil: "Consultor" as Perfil,
-    clientName: "",
-    allowedAreas: ["home", "tarefas"] as AccessArea[],
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
-
-  /* ─── Users list state ─── */
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [filter, setFilter] = useState("");
-  const [page, setPage] = useState(1);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-
-  /* ─── Edit state ─── */
+  const [feedback, setFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", perfil: "Consultor" as Perfil, password: "", clientName: "", allowedAreas: [] as AccessArea[] });
-  const [editAreasOpen, setEditAreasOpen] = useState(false);
-  const editAreasRef = useRef<HTMLDivElement>(null);
-  const [createAreasOpen, setCreateAreasOpen] = useState(false);
-  const createAreasRef = useRef<HTMLDivElement>(null);
 
-  const suggestedClient = useMemo(() => inferClientName(form.name), [form.name]);
-
-  useEffect(() => {
-    if (form.perfil === "Administrador" || form.clientName.trim()) return;
-    if (suggestedClient) setForm(p => ({ ...p, clientName: suggestedClient }));
-  }, [suggestedClient, form.perfil, form.clientName]);
-
-  const ready = useMemo(() => {
-    const basic = form.email.trim() && form.password.trim().length >= 8 && form.name.trim();
-    return form.perfil === "Administrador" ? basic : basic && form.clientName.trim().length > 0;
-  }, [form]);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    if (!createAreasOpen) return;
-    const handler = (e: MouseEvent) => { if (createAreasRef.current && !createAreasRef.current.contains(e.target as Node)) setCreateAreasOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [createAreasOpen]);
-
-  useEffect(() => {
-    if (!editAreasOpen) return;
-    const handler = (e: MouseEvent) => { if (editAreasRef.current && !editAreasRef.current.contains(e.target as Node)) setEditAreasOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [editAreasOpen]);
-
-  /* ─── API calls ─── */
   const token = session?.accessToken;
-  const headers = useMemo(() => ({
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }), [token]);
 
-  const loadUsers = useCallback(async (p = 1) => {
+  /* ─── Load users from public.users table via REST API ─── */
+  const loadUsers = useCallback(async () => {
     if (!token) return;
     setLoadingList(true);
     setFeedback(null);
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-users?page=${p}&per_page=50`, { headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY } });
-      const data = await safeJson(res);
-      if (!res.ok) throw new Error(data?.error ?? "Falha ao listar usuários.");
-      const raw = Array.isArray(data?.users) ? (data.users as RawUser[]) : [];
-      setUsers(raw.map(item => ({
-        id: item.auth_user_id ?? item.id ?? "",
-        email: item.email ?? "",
-        user_metadata: (item.user_metadata ?? {}) as UserRow["user_metadata"],
-        public: item.public ?? {},
-      })));
-      setPage(p);
+      const base = SUPABASE_URL.replace(/\/$/, "");
+      const res = await fetch(
+        `${base}/rest/v1/users?select=id,auth_user_id,email,name,user_profile,client_name,allowed_areas,active&order=name.asc&limit=200`,
+        {
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!res.ok) {
+        const data = await safeJson(res);
+        throw new Error(data?.message ?? data?.error ?? `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setUsers(data.map((u: Record<string, unknown>) => ({
+          id: String(u.id ?? u.auth_user_id ?? ""),
+          auth_user_id: String(u.auth_user_id ?? u.id ?? ""),
+          email: String(u.email ?? ""),
+          name: String(u.name ?? ""),
+          user_profile: String(u.user_profile ?? "Consultor"),
+          client_name: u.client_name ? String(u.client_name) : undefined,
+          allowed_areas: Array.isArray(u.allowed_areas) ? u.allowed_areas as AccessArea[] : undefined,
+          active: u.active !== false,
+        })));
+      }
     } catch (err) {
-      setFeedback({ type: "error", message: err instanceof Error ? err.message : "Falha ao listar." });
+      setFeedback({ type: "error", message: err instanceof Error ? err.message : "Falha ao carregar usuários." });
     } finally {
       setLoadingList(false);
     }
   }, [token]);
 
-  useEffect(() => { if (!loadingSession && token && isAdmin) loadUsers(1); }, [loadingSession, token, isAdmin, loadUsers]);
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!ready || !token) return;
-    setFeedback(null);
-    setSubmitting(true);
-    try {
-      const body = {
-        email: form.email.trim(),
-        password: form.password.trim(),
-        name: form.name.trim(),
-        user_profile: form.perfil,
-        auth: {
-          user_metadata: {
-            name: form.name.trim(),
-            user_profile: form.perfil,
-            client_name: form.perfil === "Administrador" ? undefined : form.clientName.trim(),
-            allowed_areas: form.allowedAreas,
-          },
-        },
-        public: {
-          name: form.name.trim(),
-          user_profile: form.perfil,
-          client_name: form.perfil === "Administrador" ? undefined : form.clientName.trim(),
-          allowed_areas: form.allowedAreas,
-        },
-      };
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-users`, {
-        method: "POST",
-        headers: { ...headers, apikey: SUPABASE_ANON_KEY },
-        body: JSON.stringify(body),
-      });
-      const data = await safeJson(res);
-      if (!res.ok) throw new Error(data?.error ?? "Falha ao criar usuário.");
-      setFeedback({ type: "ok", message: "Usuário criado com sucesso." });
-      setForm(p => ({ ...p, password: "", email: "", name: "", clientName: "" }));
-      loadUsers(1);
-    } catch (err) {
-      setFeedback({ type: "error", message: err instanceof Error ? err.message : "Erro." });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleRemove = async (id: string) => {
-    if (!token) return;
-    setFeedback(null);
-    setRemovingId(id);
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-users`, {
-        method: "DELETE",
-        headers: { ...headers, apikey: SUPABASE_ANON_KEY },
-        body: JSON.stringify({ target_auth_user_id: id }),
-      });
-      const data = await safeJson(res);
-      if (!res.ok) throw new Error(data?.error ?? "Erro ao remover.");
-      setUsers(prev => prev.filter(u => u.id !== id));
-      setFeedback({ type: "ok", message: "Usuário removido." });
-    } catch (err) {
-      setFeedback({ type: "error", message: err instanceof Error ? err.message : "Erro." });
-    } finally {
-      setRemovingId(null);
-    }
-  };
-
-  const startEdit = (user: UserRow) => {
-    setEditingId(user.id);
-    const perfil = (user.user_metadata?.user_profile as Perfil) || "Consultor";
-    setEditForm({
-      name: user.user_metadata?.name || "",
-      perfil,
-      password: "",
-      clientName: user.user_metadata?.client_name || (user.public?.client_name as string) || "",
-      allowedAreas: perfil === "Administrador" ? ALL_AREAS : (user.user_metadata?.allowed_areas || ["home", "tarefas"]),
-    });
-    setEditAreasOpen(false);
-  };
-
-  const cancelEdit = () => { setEditingId(null); setEditAreasOpen(false); };
-
-  const saveEdit = async () => {
-    if (!editingId || !token) return;
-    setFeedback(null);
-    setSubmitting(true);
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-users`, {
-        method: "PATCH",
-        headers: { ...headers, apikey: SUPABASE_ANON_KEY },
-        body: JSON.stringify({
-          target_auth_user_id: editingId,
-          auth: {
-            user_metadata: {
-              name: editForm.name,
-              user_profile: editForm.perfil,
-              allowed_areas: editForm.perfil === "Administrador" ? ALL_AREAS : editForm.allowedAreas,
-              client_name: editForm.perfil === "Administrador" ? undefined : editForm.clientName.trim() || undefined,
-            },
-            ...(editForm.password.trim() ? { password: editForm.password.trim() } : {}),
-          },
-          public: {
-            name: editForm.name,
-            user_profile: editForm.perfil,
-            allowed_areas: editForm.perfil === "Administrador" ? ALL_AREAS : editForm.allowedAreas,
-            client_name: editForm.perfil === "Administrador" ? undefined : editForm.clientName.trim() || undefined,
-          },
-        }),
-      });
-      const data = await safeJson(res);
-      if (!res.ok) throw new Error(data?.error ?? "Erro ao atualizar.");
-      setUsers(prev => prev.map(u => u.id !== editingId ? u : {
-        ...u,
-        user_metadata: { ...(u.user_metadata ?? {}), name: editForm.name, user_profile: editForm.perfil },
-        public: data?.public ?? u.public,
-      }));
-      setFeedback({ type: "ok", message: "Perfil atualizado." });
-      cancelEdit();
-    } catch (err) {
-      setFeedback({ type: "error", message: err instanceof Error ? err.message : "Erro." });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  useEffect(() => {
+    if (!loadingSession && token && isAdmin) loadUsers();
+  }, [loadingSession, token, isAdmin, loadUsers]);
 
   const filteredUsers = useMemo(() => {
     const term = filter.trim().toLowerCase();
     if (!term) return users;
-    return users.filter(u => {
-      const name = (u.user_metadata?.name ?? "").toLowerCase();
-      const profile = (u.user_metadata?.user_profile ?? "").toLowerCase();
-      return u.email.toLowerCase().includes(term) || name.includes(term) || profile.includes(term);
-    });
+    return users.filter(u =>
+      u.email.toLowerCase().includes(term) ||
+      u.name.toLowerCase().includes(term) ||
+      u.user_profile.toLowerCase().includes(term) ||
+      (u.client_name ?? "").toLowerCase().includes(term)
+    );
   }, [filter, users]);
+
+  const stats = useMemo(() => ({
+    total: users.length,
+    admins: users.filter(u => u.user_profile === "Administrador" || u.user_profile === "admin").length,
+    consultors: users.filter(u => u.user_profile === "Consultor" || u.user_profile === "consultor").length,
+    active: users.filter(u => u.active !== false).length,
+  }), [users]);
 
   if (loadingSession || (!session && !loadingSession)) {
     return (
@@ -301,244 +142,211 @@ export default function UsuariosPage() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
-      <div className="mx-auto w-full max-w-[1400px] space-y-6 p-5 md:p-8">
+      <div className="mx-auto w-full max-w-[1400px] space-y-5 p-5 md:p-8">
 
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="flex items-center gap-3 mb-1">
+        {/* ═══ HEADER ═══ */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+          className="flex flex-wrap items-end justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] shadow-lg shadow-[hsl(262_83%_58%/0.25)]">
               <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-[hsl(var(--task-text))]">Gestão de Usuários</h1>
-              <p className="text-sm text-[hsl(var(--task-text-muted))]">Criar, editar e gerenciar acessos dos usuários do sistema.</p>
+              <p className="text-sm text-[hsl(var(--task-text-muted))]">Gerencie acessos e permissões do sistema.</p>
             </div>
           </div>
-        </motion.div>
-
-        {/* Feedback */}
-        {feedback && (
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
-            className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm ${
-              feedback.type === "ok"
-                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                : "border border-rose-500/30 bg-rose-500/10 text-rose-300"
-            }`}
+          <button onClick={() => loadUsers()} disabled={loadingList}
+            className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-purple)/0.4)] hover:text-[hsl(var(--task-purple))] disabled:opacity-40"
           >
-            {feedback.type === "error" && <AlertCircle className="h-4 w-4 shrink-0" />}
-            {feedback.message}
-          </motion.div>
-        )}
-
-        {/* Create user form */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-6"
-        >
-          <div className="flex items-center gap-2 mb-5">
-            <UserPlus className="h-5 w-5 text-[hsl(var(--task-purple))]" />
-            <h2 className="text-lg font-bold text-[hsl(var(--task-text))]">Criar novo usuário</h2>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-xs font-medium text-[hsl(var(--task-text-muted))]">
-                E-mail
-                <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} type="email" required className={inputClass} placeholder="usuario@empresa.com" />
-              </label>
-              <label className="flex flex-col gap-1 text-xs font-medium text-[hsl(var(--task-text-muted))]">
-                Senha
-                <input value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} type="password" required className={inputClass} placeholder="Mínimo 8 caracteres" />
-              </label>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-xs font-medium text-[hsl(var(--task-text-muted))]">
-                Nome completo
-                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className={inputClass} placeholder="Nome e sobrenome" />
-              </label>
-              <label className="flex flex-col gap-1 text-xs font-medium text-[hsl(var(--task-text-muted))]">
-                Perfil
-                <select value={form.perfil} onChange={e => setForm(p => ({
-                  ...p,
-                  perfil: e.target.value as Perfil,
-                  allowedAreas: e.target.value === "Administrador" ? ALL_AREAS : p.allowedAreas,
-                }))} className={selectClass}>
-                  {perfis.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </label>
-            </div>
-
-            {form.perfil !== "Administrador" && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-1 text-xs font-medium text-[hsl(var(--task-text-muted))]">
-                  Cliente (associação)
-                  <input value={form.clientName} onChange={e => setForm(p => ({ ...p, clientName: e.target.value }))} required className={inputClass} placeholder="Ex.: Loga, Dinâmica..." />
-                  {suggestedClient && <span className="text-[10px] text-[hsl(var(--task-text-muted)/0.5)]">Sugerido: <strong>{suggestedClient}</strong></span>}
-                </label>
-                <div className="flex flex-col gap-1 text-xs font-medium text-[hsl(var(--task-text-muted))]">
-                  Acessos permitidos
-                  <div className="relative" ref={createAreasRef}>
-                    <button type="button" onClick={() => setCreateAreasOpen(o => !o)}
-                      className={`${inputClass} w-full text-left flex items-center justify-between`}
-                    >
-                      <span>{form.allowedAreas.length} selecionados</span>
-                      <span className="text-[hsl(var(--task-text-muted))]">▼</span>
-                    </button>
-                    {createAreasOpen && (
-                      <div className="absolute left-0 z-30 mt-1 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2 shadow-xl">
-                        {ALL_AREAS.map(area => (
-                          <label key={area} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-[hsl(var(--task-text))] hover:bg-[hsl(var(--task-bg))] cursor-pointer">
-                            <input type="checkbox" checked={form.allowedAreas.includes(area)}
-                              onChange={e => setForm(p => {
-                                const set = new Set(p.allowedAreas);
-                                e.target.checked ? set.add(area) : set.delete(area);
-                                return { ...p, allowedAreas: Array.from(set) as AccessArea[] };
-                              })}
-                            />
-                            <span className="capitalize">{area}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-[hsl(var(--task-text-muted)/0.5)]">Após criar, o usuário já pode logar.</p>
-              <button type="submit" disabled={!ready || submitting} className={btnPrimary}>
-                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                <UserPlus className="h-4 w-4" />
-                Criar usuário
-              </button>
-            </div>
-          </form>
+            <RefreshCw className={`h-3.5 w-3.5 ${loadingList ? "animate-spin" : ""}`} />
+            Atualizar
+          </button>
         </motion.div>
 
-        {/* Users list */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-6"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div>
-              <h2 className="text-lg font-bold text-[hsl(var(--task-text))]">Usuários cadastrados</h2>
-              <p className="text-xs text-[hsl(var(--task-text-muted))]">Busca por e-mail, nome ou perfil.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
-                <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filtrar..." className={`${inputClass} pl-8 w-44`} />
-              </div>
-              <button type="button" onClick={() => loadUsers(page)} className={btnSecondary}>
-                <RefreshCw className={`h-3.5 w-3.5 ${loadingList ? "animate-spin" : ""}`} />
-                {loadingList ? "..." : "Atualizar"}
+        {/* ═══ FEEDBACK ═══ */}
+        <AnimatePresence>
+          {feedback && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm ${
+                feedback.type === "ok"
+                  ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                  : "border border-rose-500/20 bg-rose-500/10 text-rose-300"
+              }`}
+            >
+              {feedback.type === "ok" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+              <span className="flex-1">{feedback.message}</span>
+              <button onClick={() => setFeedback(null)} className="text-white/30 hover:text-white/60">
+                <X className="h-3.5 w-3.5" />
               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ STATS ═══ */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+        >
+          {[
+            { label: "Total", value: stats.total, icon: Users, color: "purple" },
+            { label: "Administradores", value: stats.admins, icon: Shield, color: "yellow" },
+            { label: "Consultores", value: stats.consultors, icon: User, color: "blue" },
+            { label: "Ativos", value: stats.active, icon: CheckCircle2, color: "green" },
+          ].map((s, i) => (
+            <div key={s.label} className="task-card flex items-center gap-3 p-3 sm:p-4">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                s.color === "purple" ? "bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]" :
+                s.color === "yellow" ? "bg-[hsl(var(--task-yellow)/0.15)] text-[hsl(var(--task-yellow))]" :
+                s.color === "blue" ? "bg-[hsl(220_90%_56%/0.15)] text-[hsl(220_90%_56%)]" :
+                "bg-emerald-500/15 text-emerald-400"
+              }`}>
+                <s.icon className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">{s.label}</p>
+                <p className="text-xl font-extrabold text-[hsl(var(--task-text))]">{s.value}</p>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* ═══ USER LIST ═══ */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="task-card overflow-hidden"
+        >
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 pb-3 border-b border-[hsl(var(--task-border))]">
+            <h2 className="text-base font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
+              <Users className="h-4 w-4 text-[hsl(var(--task-purple))]" />
+              Usuários Cadastrados
+              <span className="text-xs font-normal text-[hsl(var(--task-text-muted))]">({filteredUsers.length})</span>
+            </h2>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+              <input
+                value={filter} onChange={e => setFilter(e.target.value)}
+                placeholder="Buscar por nome, e-mail..."
+                className="h-8 w-56 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-purple)/0.15)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]"
+              />
             </div>
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center gap-2 mb-3 text-xs text-[hsl(var(--task-text-muted))]">
-            <span>Página {page}</span>
-            <button onClick={() => loadUsers(Math.max(1, page - 1))} disabled={page <= 1} className={`${btnSecondary} !px-2 !py-1 disabled:opacity-30`}>
-              <ChevronLeft className="h-3 w-3" />
-            </button>
-            <button onClick={() => loadUsers(page + 1)} className={`${btnSecondary} !px-2 !py-1`}>
-              <ChevronRight className="h-3 w-3" />
-            </button>
-            <span className="text-[hsl(var(--task-text-muted)/0.4)]">(50/página)</span>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto rounded-xl border border-[hsl(var(--task-border))]">
-            {/* Header */}
-            <div className="grid grid-cols-[1fr_1.2fr_auto] gap-3 border-b border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--task-text-muted))]">
-              <span>E-mail</span>
-              <span className="text-center">Perfil / Nome</span>
-              <span className="text-center">Ações</span>
+          {/* Loading state */}
+          {loadingList && users.length === 0 && (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--task-purple))]" />
+              <span className="ml-2 text-sm text-[hsl(var(--task-text-muted))]">Carregando...</span>
             </div>
+          )}
 
-            {/* Rows */}
-            <div className="divide-y divide-[hsl(var(--task-border)/0.5)]">
-              {filteredUsers.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[hsl(var(--task-text-muted))]">
-                  {loadingList ? "Carregando..." : "Nenhum usuário encontrado."}
-                </div>
-              ) : filteredUsers.map(user => (
-                <div key={user.id} className="grid grid-cols-[1fr_1.2fr_auto] items-center gap-3 px-4 py-3 hover:bg-[hsl(var(--task-bg)/0.5)] transition">
-                  <span className="truncate text-sm text-[hsl(var(--task-text))]">{user.email}</span>
+          {/* Empty state */}
+          {!loadingList && filteredUsers.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Users className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.15)] mb-3" />
+              <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">
+                {users.length === 0 ? "Nenhum usuário encontrado na tabela." : "Nenhum resultado para o filtro."}
+              </p>
+              {users.length === 0 && (
+                <p className="text-xs text-[hsl(var(--task-text-muted)/0.5)] mt-1 max-w-xs">
+                  Verifique se a tabela <code className="text-[hsl(var(--task-purple))]">public.users</code> existe e tem dados. As políticas RLS devem permitir leitura para admins.
+                </p>
+              )}
+            </div>
+          )}
 
-                  {editingId === user.id ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} placeholder="Nome" className={`${inputClass} min-w-[140px] flex-1`} />
-                      <select value={editForm.perfil} onChange={e => setEditForm(p => ({ ...p, perfil: e.target.value as Perfil }))} className={`${selectClass} min-w-[130px]`}>
-                        {perfis.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                      <input value={editForm.password} onChange={e => setEditForm(p => ({ ...p, password: e.target.value }))} type="password" placeholder="Nova senha (opcional)" className={`${inputClass} min-w-[160px] flex-1`} />
-                      {editForm.perfil !== "Administrador" && (
-                        <input value={editForm.clientName} onChange={e => setEditForm(p => ({ ...p, clientName: e.target.value }))} placeholder="Cliente" className={`${inputClass} min-w-[130px] flex-1`} />
+          {/* User cards */}
+          {filteredUsers.length > 0 && (
+            <div className="divide-y divide-[hsl(var(--task-border)/0.4)]">
+              {filteredUsers.map((user, idx) => {
+                const initials = (user.name || user.email || "U")
+                  .split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+                const isEditing = editingId === user.auth_user_id;
+                const profileColor = (user.user_profile === "Administrador" || user.user_profile === "admin")
+                  ? "text-[hsl(var(--task-yellow))] bg-[hsl(var(--task-yellow)/0.1)] border-[hsl(var(--task-yellow)/0.2)]"
+                  : "text-[hsl(var(--task-purple))] bg-[hsl(var(--task-purple)/0.1)] border-[hsl(var(--task-purple)/0.2)]";
+
+                return (
+                  <motion.div
+                    key={user.auth_user_id || user.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx * 0.03, 0.3) }}
+                    className="flex items-center gap-4 px-4 py-3.5 hover:bg-[hsl(var(--task-bg)/0.4)] transition group"
+                  >
+                    {/* Avatar */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-xs font-bold text-[hsl(var(--task-purple))]">
+                      {initials}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-[hsl(var(--task-text))] truncate">{user.name || "Sem nome"}</p>
+                        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${profileColor}`}>
+                          {user.user_profile || "Consultor"}
+                        </span>
+                        {user.active === false && (
+                          <span className="inline-flex items-center rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
+                            Inativo
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 text-[11px] text-[hsl(var(--task-text-muted))]">
+                        <span className="flex items-center gap-1 truncate">
+                          <Mail className="h-3 w-3 shrink-0" />
+                          {user.email}
+                        </span>
+                        {user.client_name && (
+                          <span className="flex items-center gap-1 truncate">
+                            <Building className="h-3 w-3 shrink-0" />
+                            {user.client_name}
+                          </span>
+                        )}
+                      </div>
+                      {/* Areas badges */}
+                      {user.allowed_areas && user.allowed_areas.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {user.allowed_areas.map(area => (
+                            <span key={area} className="rounded-md bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] px-1.5 py-0.5 text-[9px] text-[hsl(var(--task-text-muted))] capitalize">
+                              {AREA_LABELS[area] || area}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      <span className="text-sm font-semibold text-[hsl(var(--task-text))]">{user.user_metadata?.name || "Sem nome"}</span>
-                      <span className="rounded-md border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-2 py-0.5 text-xs text-[hsl(var(--task-text-muted))]">
-                        {user.user_metadata?.user_profile || "Consultor"}
+
+                    {/* Info badge — shows on hover */}
+                    <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[10px] text-[hsl(var(--task-text-muted)/0.5)]">
+                        ID: {(user.auth_user_id || user.id).slice(0, 8)}…
                       </span>
                     </div>
-                  )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
 
-                  <div className="flex items-center justify-center gap-2">
-                    {editingId === user.id ? (
-                      <>
-                        {editForm.perfil !== "Administrador" && (
-                          <div className="relative" ref={editAreasRef}>
-                            <button type="button" onClick={() => setEditAreasOpen(o => !o)}
-                              className={`${btnSecondary} !text-[10px]`}
-                            >
-                              {editForm.allowedAreas.length} acessos ▼
-                            </button>
-                            {editAreasOpen && (
-                              <div className="absolute right-0 z-30 mt-1 w-48 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2 shadow-xl">
-                                {ALL_AREAS.map(area => (
-                                  <label key={area} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-[hsl(var(--task-text))] hover:bg-[hsl(var(--task-bg))] cursor-pointer">
-                                    <input type="checkbox" checked={editForm.allowedAreas.includes(area)}
-                                      onChange={e => setEditForm(p => {
-                                        const set = new Set(p.allowedAreas);
-                                        e.target.checked ? set.add(area) : set.delete(area);
-                                        return { ...p, allowedAreas: Array.from(set) as AccessArea[] };
-                                      })}
-                                    />
-                                    <span className="capitalize">{area}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <button onClick={saveEdit} disabled={submitting} className="flex items-center gap-1 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50">
-                          <Save className="h-3 w-3" />
-                          {submitting ? "..." : "Salvar"}
-                        </button>
-                        <button onClick={cancelEdit} className={btnSecondary}>
-                          <X className="h-3 w-3" /> Cancelar
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => startEdit(user)} className="flex items-center gap-1 rounded-lg border border-[hsl(var(--task-purple)/0.3)] bg-[hsl(var(--task-purple)/0.1)] px-3 py-1.5 text-xs font-medium text-[hsl(var(--task-purple))] hover:bg-[hsl(var(--task-purple)/0.2)] transition">
-                          <Pencil className="h-3 w-3" /> Editar
-                        </button>
-                        <button onClick={() => handleRemove(user.id)} disabled={removingId === user.id}
-                          className="flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-400 hover:bg-rose-500/20 transition disabled:opacity-50"
-                        >
-                          <Trash2 className="h-3 w-3" /> {removingId === user.id ? "..." : "Remover"}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+        {/* ═══ INFO CARD ═══ */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
+          className="rounded-xl border border-[hsl(var(--task-border)/0.5)] bg-[hsl(var(--task-surface)/0.4)] p-4"
+        >
+          <div className="flex items-start gap-3">
+            <Lock className="h-4 w-4 shrink-0 text-[hsl(var(--task-yellow))] mt-0.5" />
+            <div className="text-xs text-[hsl(var(--task-text-muted))] space-y-1">
+              <p className="font-semibold text-[hsl(var(--task-text))]">Operações administrativas</p>
+              <p>
+                A criação, edição e remoção de usuários requer uma <strong>Edge Function</strong> no Supabase com acesso à <code className="text-[hsl(var(--task-purple))]">service_role_key</code>.
+                Atualmente, esta tela exibe os dados da tabela <code className="text-[hsl(var(--task-purple))]">public.users</code> via REST API.
+              </p>
+              <p>
+                Para habilitar operações CRUD, é necessário criar uma Edge Function <code className="text-[hsl(var(--task-purple))]">admin-users</code> baseada na API route do projeto Consulta.
+              </p>
             </div>
           </div>
         </motion.div>
