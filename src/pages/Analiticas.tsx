@@ -218,7 +218,7 @@ export default function AnaliticasPage() {
 
         {/* KPI Cards */}
         <AnalyticsKpiCards
-          clients={uniqueClients}
+          clients={myProjectIds.size > 0 ? myProjectIds.size : projects.length}
           activeProjects={activeProjects}
           totalHours={periodHours > 0 ? periodHours : totalHours}
           totalTasks={userTaskCount}
