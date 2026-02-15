@@ -539,6 +539,33 @@ export default function TarefasPage() {
           </div>
         </motion.div>
 
+        {/* ═══ FILTERS (moved here, below header) ═══ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+          ref={filtersBoxRef}
+          className="mb-5"
+        >
+          <TaskFilters
+            search={search} setSearch={setSearch}
+            status={status} setStatus={setStatus}
+            deadline={deadline} setDeadline={setDeadline}
+            period={period} setPeriod={setPeriod}
+            dateFrom={dateFrom} setDateFrom={setDateFrom}
+            dateTo={dateTo} setDateTo={setDateTo}
+            deadlineTo={deadlineTo} setDeadlineTo={setDeadlineTo}
+            consultant={consultant} setConsultant={setConsultant}
+            consultantOptions={consultantOptions}
+            searchRef={searchInputRef}
+            project={effectiveProjectFilter} setProject={setProject}
+            projectOptions={projectOptions}
+            projectDisabled={Boolean(lockedProject)}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={resetFilters}
+          />
+        </motion.div>
+
         {/* ═══ KPI CARDS ═══ */}
         <motion.div variants={stagger} initial="initial" animate="animate" className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-5">
           <KpiCard icon={Layers} label="Total de Tarefas" value={stats.total} color="purple" delay={0} />
@@ -787,32 +814,6 @@ export default function TarefasPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* ═══ FILTERS ═══ */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          ref={filtersBoxRef}
-          className="mb-5"
-        >
-          <TaskFilters
-            search={search} setSearch={setSearch}
-            status={status} setStatus={setStatus}
-            deadline={deadline} setDeadline={setDeadline}
-            period={period} setPeriod={setPeriod}
-            dateFrom={dateFrom} setDateFrom={setDateFrom}
-            dateTo={dateTo} setDateTo={setDateTo}
-            deadlineTo={deadlineTo} setDeadlineTo={setDeadlineTo}
-            consultant={consultant} setConsultant={setConsultant}
-            consultantOptions={consultantOptions}
-            searchRef={searchInputRef}
-            project={effectiveProjectFilter} setProject={setProject}
-            projectOptions={projectOptions}
-            projectDisabled={Boolean(lockedProject)}
-            hasActiveFilters={hasActiveFilters}
-            onClearFilters={resetFilters}
-          />
-        </motion.div>
 
         {/* ═══ TASK LIST ═══ */}
         <motion.div
