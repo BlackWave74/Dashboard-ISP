@@ -1,4 +1,4 @@
-import { Users, FolderKanban, Clock, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
+import { FolderKanban, Clock, CheckCircle2, AlertTriangle, TrendingUp, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 
 type Props = {
@@ -16,18 +16,11 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
 
   const kpis = [
     {
-      label: "Clientes Atendidos",
+      label: "Meus Projetos",
       value: clients.toLocaleString("pt-BR"),
-      sub: "com projetos vinculados",
-      icon: Users,
+      sub: "com atividade vinculada",
+      icon: Briefcase,
       accent: "hsl(262 83% 58%)",
-    },
-    {
-      label: "Projetos Ativos",
-      value: activeProjects.toLocaleString("pt-BR"),
-      sub: `de ${(activeProjects + (totalTasks > 0 ? Math.max(0, Math.round(totalTasks / 8) - activeProjects) : 0)).toLocaleString("pt-BR")} total`,
-      icon: FolderKanban,
-      accent: "hsl(234 89% 64%)",
     },
     {
       label: "Horas Alocadas",
