@@ -516,10 +516,10 @@ export default function TarefasPage() {
         <motion.div {...fadeUp} className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
-              Painel de Atividades
+              Acompanhamento de Tarefas
             </h1>
             <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))]">
-              Acompanhe o progresso, prazos e desempenho das suas atividades em tempo real.
+              Acompanhe o progresso, prazos e desempenho das atividades em tempo real.
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -624,9 +624,10 @@ export default function TarefasPage() {
                 return performers.map(([name, data], idx) => {
                   const pctBar = data.total > 0 ? (data.done / data.total) * 100 : 0;
                   const pctDoneLocal = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
-                  // Paleta restrita: roxo, amarelo, branco-muted — sem excesso cromático
-                  const palette = ["hsl(262 83% 58%)", "hsl(45 97% 54%)", "hsl(220 14% 70%)"];
-                  const color = palette[idx % palette.length];
+                  // Cor única: verde para progresso concluído
+                  const color = "hsl(142 71% 45%)";
+                  const avatarColors = ["hsl(262 83% 58%)", "hsl(45 97% 54%)", "hsl(220 90% 56%)", "hsl(142 71% 45%)"];
+                  const avatarColor = avatarColors[idx % avatarColors.length];
                   return (
                     <motion.div
                       key={name}
@@ -638,19 +639,19 @@ export default function TarefasPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <div
                           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                          style={{ backgroundColor: `${color}20`, color }}
+                          style={{ backgroundColor: `${avatarColor}20`, color: avatarColor }}
                         >
                           {name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-[hsl(var(--task-text))] truncate">{name}</p>
                           <div className="flex items-center gap-2.5 text-[11px] flex-wrap mt-0.5">
-                            <span className="text-[hsl(var(--task-purple))] font-medium">{data.done} feitas</span>
+                            <span className="text-emerald-400 font-medium">{data.done} feitas</span>
                             {data.pending > 0 && <span className="text-[hsl(var(--task-yellow))] font-medium">{data.pending} em andamento</span>}
                             {data.overdue > 0 && <span className="text-rose-400/80 font-medium">{data.overdue} atrasadas</span>}
                           </div>
                         </div>
-                        <span className="text-sm font-extrabold" style={{ color }}>{pctDoneLocal}%</span>
+                        <span className="text-sm font-extrabold text-emerald-400">{pctDoneLocal}%</span>
                       </div>
                       {/* Progress bar with loading shimmer */}
                       <div className="h-2 rounded-full bg-[hsl(var(--task-border))] overflow-hidden relative">
@@ -659,7 +660,7 @@ export default function TarefasPage() {
                           animate={{ width: `${pctBar}%` }}
                           transition={{ duration: 1.2, delay: 0.4 + idx * 0.12, ease: [0.22, 1, 0.36, 1] }}
                           className="h-full rounded-full relative overflow-hidden"
-                          style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)` }}
+                          style={{ background: `linear-gradient(90deg, hsl(142 71% 45%), hsl(142 71% 55%))` }}
                         >
                           <div
                             className="absolute inset-0 animate-[task-shimmer_2s_ease-in-out_infinite]"
@@ -699,7 +700,7 @@ export default function TarefasPage() {
               </div>
               <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] px-3 py-2.5 text-center">
                 <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Feitas</p>
-                <p className="text-xl font-extrabold text-[hsl(var(--task-purple))]">{stats.done}</p>
+                <p className="text-xl font-extrabold text-emerald-400">{stats.done}</p>
               </div>
             </div>
           </motion.div>

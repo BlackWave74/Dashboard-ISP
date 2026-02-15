@@ -81,7 +81,7 @@ function ToggleButton() {
 }
 
 export function AppSidebar() {
-  const { session, logout } = useAuth();
+  const { session, logout, canAccess } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [projectsOpen, setProjectsOpen] = useState(() => {
@@ -166,7 +166,9 @@ export function AppSidebar() {
               </div>
             )}
 
-            <SidebarNavItem to="/usuarios" icon={UserPlus} label="Usuários" />
+            {canAccess("usuarios") && (
+              <SidebarNavItem to="/usuarios" icon={UserPlus} label="Usuários" />
+            )}
             <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />
           </nav>
         </div>
