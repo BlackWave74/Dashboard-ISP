@@ -6,12 +6,13 @@ import AnalyticsProjectCard from "./AnalyticsProjectCard";
 type Props = {
   projects: ProjectAnalytics[];
   onToggleFavorite: (id: number) => void;
+  onProjectClick?: (project: ProjectAnalytics) => void;
   selectedProject: ProjectAnalytics | null;
 };
 
 type Filter = "all" | "active" | "favorites";
 
-export default function AnalyticsProjectList({ projects, onToggleFavorite, selectedProject }: Props) {
+export default function AnalyticsProjectList({ projects, onToggleFavorite, onProjectClick, selectedProject }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
 
   const filtered = useMemo(() => {
@@ -64,6 +65,7 @@ export default function AnalyticsProjectList({ projects, onToggleFavorite, selec
               key={p.projectId}
               project={p}
               onToggleFavorite={onToggleFavorite}
+              onClick={onProjectClick}
               index={i}
             />
           ))}

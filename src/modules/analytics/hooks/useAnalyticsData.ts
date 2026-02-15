@@ -4,7 +4,7 @@ import type { ProjectHours } from "@/modules/tasks/api/useProjectHours";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 import type { ProjectAnalytics } from "../types";
 
-function classifyTask(task: TaskRecord): "done" | "overdue" | "pending" {
+export function classifyTask(task: TaskRecord): "done" | "overdue" | "pending" {
   const status = String(task.status ?? task.situacao ?? "").toLowerCase();
   if (["5", "done", "concluida", "concluído", "finalizada", "completed"].some((s) => status.includes(s)))
     return "done";
