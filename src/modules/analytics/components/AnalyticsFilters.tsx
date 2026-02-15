@@ -5,13 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 export type AnalyticsFilterState = {
   period: "30d" | "90d" | "180d" | "all";
   status: "all" | "done" | "pending" | "overdue";
-  consultant: string; // "" = all
+  projectId: number | null; // null = all
 };
+
+type ProjectOption = { id: number; name: string };
 
 type Props = {
   filters: AnalyticsFilterState;
   onChange: (filters: AnalyticsFilterState) => void;
-  consultants: string[];
+  projects: ProjectOption[];
 };
 
 const PERIODS: { key: AnalyticsFilterState["period"]; label: string }[] = [
@@ -28,13 +30,13 @@ const STATUSES: { key: AnalyticsFilterState["status"]; label: string }[] = [
   { key: "overdue", label: "Atrasadas" },
 ];
 
-export default function AnalyticsFilters({ filters, onChange, consultants }: Props) {
+export default function AnalyticsFilters({ filters, onChange, projects }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const activeCount =
     (filters.period !== "180d" ? 1 : 0) +
     (filters.status !== "all" ? 1 : 0) +
-    (filters.consultant ? 1 : 0);
+    (filters.projectId !== null ? 1 : 0);
 
   return (
     <div className="space-y-2">
@@ -102,18 +104,18 @@ export default function AnalyticsFilters({ filters, onChange, consultants }: Pro
                 </div>
               </div>
 
-              {/* Consultant */}
-              {consultants.length > 1 && (
+              {/* Project */}
+              {projects.length > 1 && (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Consultor</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
                   <select
-                    value={filters.consultant}
-                    onChange={(e) => onChange({ ...filters, consultant: e.target.value })}
-                    className="h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 text-[11px] font-semibold text-white/70 outline-none transition focus:border-[hsl(262_83%_58%/0.5)]"
+                    value={filters.projectId ?? ""}
+                    onChange={(e) => onChange({ ...filters, projectId: e.target.value ? Number(e.target.value) : null })}
+                    className="h-8 max-w-[200px] rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 text-[11px] font-semibold text-white/70 outline-none transition focus:border-[hsl(262_83%_58%/0.5)]"
                   >
-                    <option value="">Todos</option>
-                    {consultants.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                    <option value="">Todos os projetos</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
                 </div>
@@ -122,7 +124,7 @@ export default function AnalyticsFilters({ filters, onChange, consultants }: Pro
               {/* Reset */}
               {activeCount > 0 && (
                 <button
-                  onClick={() => onChange({ period: "180d", status: "all", consultant: "" })}
+                  onClick={() => onChange({ period: "180d", status: "all", projectId: null })}
                   className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
                 >
                   Limpar filtros
