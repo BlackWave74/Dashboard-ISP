@@ -1,4 +1,4 @@
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 type TaskFiltersProps = {
@@ -44,7 +44,7 @@ const periodChips = [
 ];
 
 const selectClass =
-  "h-9 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 text-xs text-[hsl(var(--task-text))] outline-none transition hover:border-[hsl(var(--task-yellow)/0.4)] focus:border-[hsl(var(--task-yellow)/0.6)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)] appearance-none cursor-pointer";
+  "h-8 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-[hsl(var(--task-text))] outline-none transition hover:border-[hsl(var(--task-yellow)/0.4)] focus:border-[hsl(var(--task-yellow)/0.6)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)] appearance-none cursor-pointer";
 
 export function TaskFilters({
   search,
@@ -75,39 +75,38 @@ export function TaskFilters({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="space-y-3">
-      {/* Row 1: Search + chips inline when space allows */}
+    <div className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface)/0.6)] p-3 space-y-2.5">
+      {/* Row 1: Search + Status + Period + toggle */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex items-center w-full sm:w-auto sm:min-w-[220px] sm:max-w-[320px]">
-          <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[hsl(var(--task-text-muted))]" />
+        {/* Search */}
+        <div className="relative flex items-center w-full sm:w-auto sm:min-w-[200px] sm:flex-1 sm:max-w-[280px]">
+          <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
           <input
             ref={searchRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar tarefa..."
-            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] pl-9 pr-8 text-sm text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.5)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)]"
+            className="h-8 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-7 text-xs text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.4)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.15)]"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3 w-3" />
             </button>
           )}
         </div>
 
-      {/* Status chips + Period chips + Filters/Clear — all in same row */}
-
         {/* Status chips */}
-        <div className="flex items-center gap-1 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-0.5 overflow-x-auto">
+        <div className="flex items-center gap-0.5 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-0.5">
           {statusChips.map((chip) => (
             <button
               key={chip.value}
               type="button"
               onClick={() => setStatus(chip.value)}
-              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition ${
+              className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
                 status === chip.value
                   ? "bg-[hsl(var(--task-yellow))] text-[hsl(var(--task-bg))] shadow-sm"
                   : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
@@ -119,13 +118,13 @@ export function TaskFilters({
         </div>
 
         {/* Period chips */}
-        <div className="flex items-center gap-1 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-0.5">
           {periodChips.map((chip) => (
             <button
               key={chip.value}
               type="button"
               onClick={() => setPeriod(chip.value)}
-              className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+              className={`whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium transition ${
                 period === chip.value
                   ? "bg-[hsl(var(--task-purple))] text-white shadow-sm"
                   : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
@@ -136,25 +135,26 @@ export function TaskFilters({
           ))}
         </div>
 
-        {/* More filters toggle + clear */}
-        <div className="flex items-center gap-1.5">
+        {/* More filters + clear */}
+        <div className="flex items-center gap-1.5 ml-auto">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+            className={`flex items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
               expanded
                 ? "border-[hsl(var(--task-yellow)/0.4)] bg-[hsl(var(--task-yellow)/0.1)] text-[hsl(var(--task-yellow))]"
                 : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-border-light))] hover:text-[hsl(var(--task-text))]"
             }`}
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
+            <SlidersHorizontal className="h-3 w-3" />
             Filtros
+            <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
           </button>
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onClearFilters}
-              className="flex items-center gap-1 whitespace-nowrap rounded-lg border border-rose-500/20 bg-rose-500/5 px-2.5 py-1.5 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
+              className="flex items-center gap-1 whitespace-nowrap rounded-lg border border-rose-500/20 bg-rose-500/5 px-2 py-1 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
             >
               <X className="h-3 w-3" />
               Limpar
@@ -165,7 +165,7 @@ export function TaskFilters({
 
       {/* Expanded filters */}
       {expanded && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface)/0.5)] p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[hsl(var(--task-border)/0.5)] bg-[hsl(var(--task-bg)/0.5)] p-2.5">
           <select value={deadline} onChange={(e) => setDeadline(e.target.value)} className={selectClass}>
             <option value="all">Todos os prazos</option>
             <option value="overdue">Atrasados</option>
@@ -198,13 +198,13 @@ export function TaskFilters({
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className={`${selectClass} w-[140px]`}
+                className={`${selectClass} w-[130px]`}
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className={`${selectClass} w-[140px]`}
+                className={`${selectClass} w-[130px]`}
               />
             </>
           )}
