@@ -182,9 +182,8 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Row 1: Activity Heatmap + Client Radar + Velocity Chart */}
-        <div className="grid gap-5 lg:grid-cols-3">
-          <AnalyticsActivityHeatmap times={userTimes} />
+        {/* Row 1: Client Radar + Velocity Chart */}
+        <div className="grid gap-5 lg:grid-cols-2">
           <AnalyticsClientRadar projects={projects} />
           <AnalyticsVelocityChart tasks={userTasks} classifyTask={classifyTask} />
         </div>
