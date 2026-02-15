@@ -35,7 +35,7 @@ export default function AnaliticasPage() {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     period: "180d",
     status: "all",
-    consultant: "",
+    projectId: null,
   });
 
   const periodDays = PERIOD_DAYS[filters.period];
@@ -54,8 +54,9 @@ export default function AnaliticasPage() {
 
   const loading = loadingTasks || loadingTimes || loadingHours;
 
-  // Determine effective userName for filtering: use consultant filter if set, else logged-in user
-  const effectiveUser = filters.consultant || userName;
+  // Admin sees all tasks; consultor sees only their own
+  const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
+  const effectiveUser = isAdmin ? undefined : userName;
 
   const {
     projects,
@@ -70,21 +71,31 @@ export default function AnaliticasPage() {
     userTasks,
   } = useAnalyticsData(allTasks, projectHours, times, effectiveUser);
 
-  // Extract unique consultant names for the filter dropdown
-  const consultants = useMemo(() => {
-    const set = new Set<string>();
-    allTasks.forEach((t) => {
-      const name = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? "").trim();
-      if (name) set.add(name);
+  // Extract unique project options for the filter dropdown
+  const projectOptions = useMemo(() => {
+    const map = new Map<number, string>();
+    (isAdmin ? allTasks : userTasks).forEach((t) => {
+      const pid = Number(t.project_id);
+      if (!pid) return;
+      const name = String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? `Projeto ${pid}`);
+      if (!map.has(pid)) map.set(pid, name);
     });
-    return [...set].sort();
-  }, [allTasks]);
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allTasks, userTasks, isAdmin]);
 
-  // Apply status filter to user's tasks (not allTasks) for display components
+  // Apply status + project filter to user's tasks for display components
   const filteredTasks = useMemo(() => {
-    if (filters.status === "all") return userTasks;
-    return userTasks.filter((t) => classifyTask(t) === filters.status);
-  }, [userTasks, filters.status]);
+    let result = userTasks;
+    if (filters.projectId !== null) {
+      result = result.filter((t) => Number(t.project_id) === filters.projectId);
+    }
+    if (filters.status !== "all") {
+      result = result.filter((t) => classifyTask(t) === filters.status);
+    }
+    return result;
+  }, [userTasks, filters.status, filters.projectId]);
 
   // Period-aware hours: compute hours within selected period from elapsed times
   const periodHours = useMemo(() => {
@@ -169,7 +180,7 @@ export default function AnaliticasPage() {
         <AnalyticsFilters
           filters={filters}
           onChange={setFilters}
-          consultants={consultants}
+          projects={projectOptions}
         />
 
         {/* KPI Cards */}
