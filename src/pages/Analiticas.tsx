@@ -36,6 +36,7 @@ export default function AnaliticasPage() {
     period: "180d",
     status: "all",
     projectId: null,
+    consultant: "",
   });
 
   const periodDays = PERIOD_DAYS[filters.period];
@@ -54,9 +55,11 @@ export default function AnaliticasPage() {
 
   const loading = loadingTasks || loadingTimes || loadingHours;
 
-  // Admin sees all tasks; consultor sees only their own
+  // Admin sees all tasks (or filtered by consultant); consultor sees only their own
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
-  const effectiveUser = isAdmin ? undefined : userName;
+  const effectiveUser = isAdmin
+    ? (filters.consultant || undefined)
+    : userName;
 
   const {
     projects,
@@ -71,10 +74,22 @@ export default function AnaliticasPage() {
     userTasks,
   } = useAnalyticsData(allTasks, projectHours, times, effectiveUser);
 
+  // Extract unique consultant names for admin filter
+  const consultants = useMemo(() => {
+    if (!isAdmin) return [];
+    const set = new Set<string>();
+    allTasks.forEach((t) => {
+      const name = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? "").trim();
+      if (name) set.add(name);
+    });
+    return [...set].sort();
+  }, [allTasks, isAdmin]);
+
   // Extract unique project options for the filter dropdown
   const projectOptions = useMemo(() => {
     const map = new Map<number, string>();
-    (isAdmin ? allTasks : userTasks).forEach((t) => {
+    const source = isAdmin ? allTasks : userTasks;
+    source.forEach((t) => {
       const pid = Number(t.project_id);
       if (!pid) return;
       const name = String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? `Projeto ${pid}`);
@@ -119,6 +134,22 @@ export default function AnaliticasPage() {
   }, [userTimes, periodDays]);
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
+
+  // Compute which projects the current user participates in (by matching responsible name)
+  const myProjectIds = useMemo(() => {
+    if (!userName) return new Set<number>();
+    const ids = new Set<number>();
+    allTasks.forEach((t) => {
+      const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
+      const a = responsible.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const b = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      if (a && b && (a.includes(b) || b.includes(a))) {
+        const pid = Number(t.project_id);
+        if (pid) ids.add(pid);
+      }
+    });
+    return ids;
+  }, [allTasks, userName]);
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
@@ -181,6 +212,8 @@ export default function AnaliticasPage() {
           filters={filters}
           onChange={setFilters}
           projects={projectOptions}
+          consultants={consultants}
+          isAdmin={isAdmin}
         />
 
         {/* KPI Cards */}
@@ -211,6 +244,7 @@ export default function AnaliticasPage() {
           onToggleFavorite={toggleFavorite}
           onProjectClick={handleProjectClick}
           selectedProject={selectedProject}
+          myProjectIds={myProjectIds}
         />
       </div>
 
