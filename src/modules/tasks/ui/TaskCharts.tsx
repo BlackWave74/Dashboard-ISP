@@ -569,8 +569,8 @@ export function ProjectPerformanceGauge({
           >
             <defs>
               <linearGradient id="tcGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#FCBD0F" />
-                <stop offset="100%" stopColor="#9333ea" />
+                <stop offset="0%" stopColor="hsl(142 71% 45%)" />
+                <stop offset="100%" stopColor="hsl(142 71% 55%)" />
               </linearGradient>
               <filter id="tcGlow" x="-80%" y="-80%" width="260%" height="260%">
                 <feGaussianBlur stdDeviation="5" result="coloredBlur" />

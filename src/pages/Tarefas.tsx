@@ -626,8 +626,6 @@ export default function TarefasPage() {
                   const pctDoneLocal = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
                   // Cor única: verde para progresso concluído
                   const color = "hsl(142 71% 45%)";
-                  const avatarColors = ["hsl(262 83% 58%)", "hsl(45 97% 54%)", "hsl(220 90% 56%)", "hsl(142 71% 45%)"];
-                  const avatarColor = avatarColors[idx % avatarColors.length];
                   return (
                     <motion.div
                       key={name}
@@ -638,8 +636,7 @@ export default function TarefasPage() {
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <div
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                          style={{ backgroundColor: `${avatarColor}20`, color: avatarColor }}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]"
                         >
                           {name.charAt(0).toUpperCase()}
                         </div>
