@@ -210,5 +210,6 @@ export function useAnalyticsData(
     toggleFavorite,
     userTaskCount,
     userTimes,
+    userTasks: tasks,
   };
 }

@@ -67,6 +67,7 @@ export default function AnaliticasPage() {
     toggleFavorite,
     userTaskCount,
     userTimes,
+    userTasks,
   } = useAnalyticsData(allTasks, projectHours, times, effectiveUser);
 
   // Extract unique consultant names for the filter dropdown
@@ -79,11 +80,11 @@ export default function AnaliticasPage() {
     return [...set].sort();
   }, [allTasks]);
 
-  // Apply status filter to tasks for display components
+  // Apply status filter to user's tasks (not allTasks) for display components
   const filteredTasks = useMemo(() => {
-    if (filters.status === "all") return allTasks;
-    return allTasks.filter((t) => classifyTask(t) === filters.status);
-  }, [allTasks, filters.status]);
+    if (filters.status === "all") return userTasks;
+    return userTasks.filter((t) => classifyTask(t) === filters.status);
+  }, [userTasks, filters.status]);
 
   // Period-aware hours: compute hours within selected period from elapsed times
   const periodHours = useMemo(() => {
