@@ -21,7 +21,7 @@ import {
   Mail,
   User,
   Key,
-  Building,
+  
   Lock,
 } from "lucide-react";
 
@@ -38,7 +38,7 @@ type UserRow = {
   email: string;
   name: string;
   user_profile: string;
-  client_name?: string;
+  
   allowed_areas?: AccessArea[];
   active?: boolean;
 };
@@ -76,7 +76,7 @@ export default function UsuariosPage() {
     try {
       const base = SUPABASE_URL.replace(/\/$/, "");
       const res = await fetch(
-        `${base}/rest/v1/users?select=id,auth_user_id,email,name,user_profile,client_name,allowed_areas,active&order=name.asc&limit=200`,
+        `${base}/rest/v1/users?select=id,auth_user_id,email,name,user_profile,allowed_areas,active&order=name.asc&limit=200`,
         {
           headers: {
             apikey: SUPABASE_ANON_KEY,
@@ -96,7 +96,7 @@ export default function UsuariosPage() {
           email: String(u.email ?? ""),
           name: String(u.name ?? ""),
           user_profile: String(u.user_profile ?? "Consultor"),
-          client_name: u.client_name ? String(u.client_name) : undefined,
+          
           allowed_areas: Array.isArray(u.allowed_areas) ? u.allowed_areas as AccessArea[] : undefined,
           active: u.active !== false,
         })));
@@ -119,7 +119,7 @@ export default function UsuariosPage() {
       u.email.toLowerCase().includes(term) ||
       u.name.toLowerCase().includes(term) ||
       u.user_profile.toLowerCase().includes(term) ||
-      (u.client_name ?? "").toLowerCase().includes(term)
+      u.user_profile.toLowerCase().includes(term)
     );
   }, [filter, users]);
 
@@ -300,12 +300,6 @@ export default function UsuariosPage() {
                           <Mail className="h-3 w-3 shrink-0" />
                           {user.email}
                         </span>
-                        {user.client_name && (
-                          <span className="flex items-center gap-1 truncate">
-                            <Building className="h-3 w-3 shrink-0" />
-                            {user.client_name}
-                          </span>
-                        )}
                       </div>
                       {/* Areas badges */}
                       {user.allowed_areas && user.allowed_areas.length > 0 && (
