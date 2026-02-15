@@ -46,31 +46,34 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-primary/50 font-semibold">{project.clientName || "Cliente"}</p>
-            <h4 className="mt-0.5 truncate text-sm font-bold text-white/90">{project.projectName}</h4>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {project.isActive && (
-              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                Ativo
-              </span>
-            )}
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${perf.badge}`}>
-              <PerfIcon className="h-3 w-3" />
-              {perf.label}
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-primary/50 font-semibold truncate">{project.clientName || "Cliente"}</p>
+          <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(project.projectId); }} className="shrink-0 transition hover:scale-110">
+            <Star
+              className={`h-4 w-4 transition ${
+                project.isFavorite
+                  ? "fill-amber-400 text-amber-400"
+                  : "text-white/15 hover:text-amber-400/60"
+              }`}
+            />
+          </button>
+        </div>
+        <h4 className="truncate text-sm font-bold text-white/90">{project.projectName}</h4>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {isMine && (
+            <span className="rounded-full bg-[hsl(262_83%_58%/0.2)] border border-[hsl(262_83%_58%/0.3)] px-2 py-0.5 text-[10px] font-bold text-[hsl(262_83%_58%)]">
+              Meu
             </span>
-            <button onClick={() => onToggleFavorite(project.projectId)} className="transition hover:scale-110">
-              <Star
-                className={`h-4 w-4 transition ${
-                  project.isFavorite
-                    ? "fill-amber-400 text-amber-400"
-                    : "text-white/15 hover:text-amber-400/60"
-                }`}
-              />
-            </button>
-          </div>
+          )}
+          {project.isActive && (
+            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+              Ativo
+            </span>
+          )}
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${perf.badge}`}>
+            <PerfIcon className="h-3 w-3" />
+            {perf.label}
+          </span>
         </div>
 
         {/* Task stats */}
