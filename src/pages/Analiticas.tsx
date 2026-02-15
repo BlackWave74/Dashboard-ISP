@@ -9,7 +9,7 @@ import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
 import AnalyticsActivityHeatmap from "@/modules/analytics/components/AnalyticsActivityHeatmap";
-import AnalyticsClientRadar from "@/modules/analytics/components/AnalyticsClientRadar";
+import AnalyticsProductivityPulse from "@/modules/analytics/components/AnalyticsProductivityPulse";
 import AnalyticsVelocityChart from "@/modules/analytics/components/AnalyticsVelocityChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
 import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
@@ -184,7 +184,7 @@ export default function AnaliticasPage() {
 
         {/* Row 1: Client Radar + Velocity Chart */}
         <div className="grid gap-5 lg:grid-cols-2">
-          <AnalyticsClientRadar projects={projects} />
+          <AnalyticsProductivityPulse tasks={userTasks} classifyTask={classifyTask} />
           <AnalyticsVelocityChart tasks={userTasks} classifyTask={classifyTask} />
         </div>
 
