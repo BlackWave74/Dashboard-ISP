@@ -24,8 +24,16 @@ import {
 } from "lucide-react";
 
 /* ─── Types ─── */
-const perfis = ["Administrador", "Consultor"] as const;
+const perfis = ["Administrador", "Consultor", "Gerente", "Coordenador", "Cliente"] as const;
 type Perfil = (typeof perfis)[number];
+
+const perfilToRole: Record<Perfil, string> = {
+  Administrador: "admin",
+  Consultor: "consultor",
+  Gerente: "gerente",
+  Coordenador: "coordenador",
+  Cliente: "cliente",
+};
 
 type UserRow = {
   id: string;
@@ -34,6 +42,7 @@ type UserRow = {
   name: string;
   user_profile: string;
   active: boolean;
+  role?: string; // from user_roles
 };
 
 /* ─── Helpers ─── */
@@ -188,6 +197,25 @@ export default function UsuariosPage() {
         method: "PATCH",
         body: JSON.stringify(payload),
       });
+
+      // Sync role to user_roles table
+      const editedUser = users.find(u => u.id === editingId);
+      if (editedUser?.auth_user_id && editForm.user_profile) {
+        const appRole = perfilToRole[editForm.user_profile as Perfil] ?? "consultor";
+        try {
+          // Delete existing role then insert new one
+          await supabaseRest(`user_roles?user_id=eq.${editedUser.auth_user_id}`, token, {
+            method: "DELETE",
+          });
+          await supabaseRest("user_roles", token, {
+            method: "POST",
+            body: JSON.stringify({ user_id: editedUser.auth_user_id, role: appRole }),
+          });
+        } catch {
+          // non-critical: role sync failed
+        }
+      }
+
       showFeedback("ok", "Usuário atualizado com sucesso.");
       cancelEdit();
       loadUsers();
