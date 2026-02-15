@@ -8,9 +8,9 @@ import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
-import AnalyticsCompletionGauge from "@/modules/analytics/components/AnalyticsCompletionGauge";
-import AnalyticsPerformanceSummary from "@/modules/analytics/components/AnalyticsPerformanceSummary";
-import AnalyticsStatusDonut from "@/modules/analytics/components/AnalyticsStatusDonut";
+import AnalyticsActivityHeatmap from "@/modules/analytics/components/AnalyticsActivityHeatmap";
+import AnalyticsClientRadar from "@/modules/analytics/components/AnalyticsClientRadar";
+import AnalyticsVelocityChart from "@/modules/analytics/components/AnalyticsVelocityChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
 import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
 import AnalyticsFilters from "@/modules/analytics/components/AnalyticsFilters";
@@ -182,25 +182,11 @@ export default function AnaliticasPage() {
           overdueCount={totalOverdue}
         />
 
-        {/* Row 1: Completion gauge + Status donut + Performance summary */}
+        {/* Row 1: Activity Heatmap + Client Radar + Velocity Chart */}
         <div className="grid gap-5 lg:grid-cols-3">
-          <AnalyticsCompletionGauge
-            done={totalDone}
-            total={userTaskCount}
-            activeProjects={activeProjects}
-            totalHours={periodHours > 0 ? periodHours : totalHours}
-          />
-          <AnalyticsStatusDonut
-            done={totalDone}
-            pending={totalPending}
-            overdue={totalOverdue}
-          />
-          <AnalyticsPerformanceSummary
-            projects={projects}
-            totalDone={totalDone}
-            totalTasks={userTaskCount}
-            totalHours={periodHours > 0 ? periodHours : totalHours}
-          />
+          <AnalyticsActivityHeatmap times={userTimes} />
+          <AnalyticsClientRadar projects={projects} />
+          <AnalyticsVelocityChart tasks={userTasks} classifyTask={classifyTask} />
         </div>
 
         {/* Pending tasks list */}
