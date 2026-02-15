@@ -49,7 +49,7 @@ const normalizeRole = (value?: string): UserRole => {
   return "consultor";
 };
 
-/** Fetch role from user_roles table (uses the external Supabase) */
+/** Fetch role from user_roles table */
 const fetchUserRole = async (
   accessToken: string,
   authUserId: string
@@ -74,6 +74,33 @@ const fetchUserRole = async (
     // fallback
   }
   return "consultor";
+};
+
+/** Fetch allowed areas from user_allowed_areas table */
+const fetchAllowedAreas = async (
+  accessToken: string,
+  authUserId: string
+): Promise<AccessArea[] | null> => {
+  const base = SUPABASE_URL.replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${base}/rest/v1/user_allowed_areas?user_id=eq.${authUserId}&select=area_name`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (Array.isArray(rows) && rows.length > 0) {
+      return rows.map((r: { area_name: string }) => r.area_name as AccessArea);
+    }
+  } catch {
+    // fallback
+  }
+  return null;
 };
 
 export function useAuth() {
@@ -108,21 +135,21 @@ export function useAuth() {
         const metadata = user?.user_metadata ?? {};
         const metaObj = metadata as Record<string, unknown>;
         const clientName = metaObj?.["client_name"] as string | undefined;
-        const allowedAreas = Array.isArray(metaObj?.["allowed_areas"])
-          ? (metaObj?.["allowed_areas"] as AccessArea[])
-          : null;
         const expiresIn = Number(data?.expires_in ?? 0);
         const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-        // Fetch role from user_roles table
-        const role = await fetchUserRole(data?.access_token, user?.id);
+        // Fetch role and allowed areas from DB tables
+        const [role, allowedAreas] = await Promise.all([
+          fetchUserRole(data?.access_token, user?.id),
+          fetchAllowedAreas(data?.access_token, user?.id),
+        ]);
 
         const refreshed: AuthSession = {
           name: metadata.name || user?.email || stored.name,
           email: user?.email ?? stored.email,
           role,
           company: clientName ?? stored.company ?? null,
-          allowedAreas: allowedAreas ?? stored.allowedAreas ?? null,
+          allowedAreas,
           accessToken: data?.access_token,
           refreshToken: data?.refresh_token ?? stored.refreshToken,
           expiresAt,
@@ -205,21 +232,21 @@ export function useAuth() {
         const metadata = user?.user_metadata ?? {};
         const metaObj = metadata as Record<string, unknown>;
         const clientName = metaObj?.["client_name"] as string | undefined;
-        const allowedAreas = Array.isArray(metaObj?.["allowed_areas"])
-          ? (metaObj?.["allowed_areas"] as AccessArea[])
-          : null;
         const expiresIn = Number(data?.expires_in ?? 0);
         const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-        // Fetch role from user_roles table
-        const role = await fetchUserRole(data?.access_token, user?.id);
+        // Fetch role and allowed areas from DB tables
+        const [role, allowedAreas] = await Promise.all([
+          fetchUserRole(data?.access_token, user?.id),
+          fetchAllowedAreas(data?.access_token, user?.id),
+        ]);
 
         const authSession: AuthSession = {
           name: metadata.name || user?.email || "Usuário",
           email: user?.email ?? email,
           role,
           company: clientName ?? null,
-          allowedAreas: allowedAreas ?? null,
+          allowedAreas,
           accessToken: data?.access_token,
           refreshToken: data?.refresh_token,
           expiresAt,
