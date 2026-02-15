@@ -107,7 +107,7 @@ function CustomSelect({
             {/* Mine first if provided */}
             {mineIds && sortedOptions.length > 0 && (
               <>
-                <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(262_83%_58%/0.6)]">Meus</div>
+                <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(262_83%_58%/0.6)]">Projetos que faço parte</div>
                 {sortedOptions.filter(o => mineIds.has(o.value)).map((o) => (
                   <button
                     key={o.value}
