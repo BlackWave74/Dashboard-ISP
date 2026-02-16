@@ -1,4 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
+const EXT_URL = "https://stubkeeuttixteqckshd.supabase.co";
+const EXT_ANON =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0dWJrZWV1dHRpeHRlcWNrc2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQ0OTIsImV4cCI6MjA3MzA0MDQ5Mn0.YcpSKrTSb1P1REC8lgkdduDITX52h_z7ArPD6XIkrlU";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -199,6 +204,22 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Auth validation: require valid Bearer token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return errRes("Não autorizado.", 401);
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const callerClient = createClient(EXT_URL, EXT_ANON, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: userData, error: userError } = await callerClient.auth.getUser(token);
+    if (userError || !userData?.user) {
+      return errRes("Token inválido.", 401);
+    }
+
     const body = await req.json();
     const { action, config, ...rest } = body;
 
