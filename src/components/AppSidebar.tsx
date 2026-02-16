@@ -8,7 +8,7 @@ import {
   Package,
   LogOut,
   ChevronDown,
-  Settings,
+  Plug,
   HelpCircle,
   MoreVertical,
   PanelLeft,
@@ -91,7 +91,7 @@ export function AppSidebar() {
     );
   });
   const [adminOpen, setAdminOpen] = useState(() => {
-    return ["/usuarios", "/configuracoes"].some((p) =>
+    return ["/usuarios", "/integracoes"].some((p) =>
       location.pathname.startsWith(p)
     );
   });
@@ -105,7 +105,7 @@ export function AppSidebar() {
     location.pathname.startsWith(p)
   );
 
-  const isAdminActive = ["/usuarios", "/configuracoes"].some((p) =>
+  const isAdminActive = ["/usuarios", "/integracoes"].some((p) =>
     location.pathname.startsWith(p)
   );
 
@@ -217,12 +217,12 @@ export function AppSidebar() {
                     <span>Usuários</span>
                   </NavLink>
                   <NavLink
-                    to="/configuracoes"
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                    to="/integracoes"
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
                     activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                   >
-                    <Settings className="h-4 w-4" />
-                    <span>Configurações</span>
+                    <Plug className="h-4 w-4" />
+                    <span>Integrações</span>
                   </NavLink>
                 </div>
               )}

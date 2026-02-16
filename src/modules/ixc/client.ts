@@ -1,28 +1,62 @@
 import type { ApiResult, ComodatoLaunchResult, ComodatoStatus } from "./types";
+import { storage } from "@/modules/shared/storage";
+
+/**
+ * Reads the active IXC integration profile config from localStorage.
+ */
+function getActiveIxcConfig(): Record<string, string> | null {
+  // Try to find the integration state for any user
+  const keys = Object.keys(localStorage).filter((k) => k.startsWith("integrations_state:"));
+  for (const key of keys) {
+    const state = storage.get<Record<string, { status: string; config?: Record<string, string>; activeProfile?: string; profiles?: { name: string; data: Record<string, string> }[] }>>(key, {});
+    const ixc = state["ixc"];
+    if (!ixc || ixc.status !== "CONECTADO") continue;
+
+    // Get active profile data
+    const activeProfileName = ixc.activeProfile;
+    if (activeProfileName && ixc.profiles?.length) {
+      const profile = ixc.profiles.find((p) => p.name === activeProfileName);
+      if (profile?.data?.host) return profile.data;
+    }
+
+    // Fallback to config
+    if (ixc.config?.host) return ixc.config;
+  }
+  return null;
+}
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 async function postIxc<T>(
   payload: Record<string, unknown>,
   options?: { idempotencyKey?: string; auditUser?: string }
 ): Promise<ApiResult<T>> {
   try {
+    const config = getActiveIxcConfig();
+    if (!config?.host) {
+      return { ok: false, error: "Integração IXC não configurada. Acesse Integrações para configurar." };
+    }
+
     const key =
       options?.idempotencyKey ||
       (typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Idempotency-Key": key,
+      apikey: SUPABASE_KEY,
     };
     if (options?.auditUser) {
       headers["X-Audit-User"] = options.auditUser;
     }
 
-    const response = await fetch("/api/ixc/comodato", {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/ixc-proxy`, {
       method: "POST",
       headers,
-      body: JSON.stringify(payload),
-      cache: "no-store",
+      body: JSON.stringify({ ...payload, config }),
     });
 
     const json = (await response.json()) as ApiResult<T>;
@@ -48,7 +82,6 @@ export function consultarComodato(input: {
     action: "consultar",
     pppoe: input.pppoe,
     serial: input.serial,
-    config: input.config,
   }, { auditUser: input.auditUser });
 }
 
@@ -77,6 +110,5 @@ export function lancarComodato(input: {
     mac: input.mac,
     qtde: input.qtde,
     data: input.data,
-    config: input.config,
   }, { idempotencyKey: input.idempotencyKey, auditUser: input.auditUser });
 }
