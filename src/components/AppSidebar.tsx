@@ -28,7 +28,18 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
-import { supabase as cloudSupabase } from "@/integrations/supabase/client";
+// Safely import cloud client — may fail if env vars are missing
+let cloudSupabase: any = null;
+try {
+  // Dynamic require-like pattern: the import is static but wrapped in try
+  const cloudUrl = import.meta.env.VITE_SUPABASE_URL;
+  const cloudKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (cloudUrl && cloudKey) {
+    cloudSupabase = createClient(cloudUrl, cloudKey);
+  }
+} catch {
+  // Cloud client unavailable
+}
 
 const supabaseExt = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -229,6 +240,10 @@ export function AppSidebar() {
 
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${user.id}/avatar_${Date.now()}.${ext}`;
+
+      if (!cloudSupabase) {
+        throw new Error("Serviço de armazenamento não disponível. Tente recarregar a página.");
+      }
 
       // Upload to Lovable Cloud storage (has the avatars bucket)
       const { error: uploadError } = await cloudSupabase.storage
