@@ -56,13 +56,14 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
 
   const maxCount = Math.max(...weekData.map((w) => w.count), 1);
 
-  const chartW = 340;
+  const chartW = 380;
   const chartH = 100;
-  const padX = 0;
+  const padX = 10;
   const padY = 10;
+  const usableW = chartW - padX * 2;
 
   const points = weekData.map((w, i) => ({
-    x: padX + (i / (WEEKS - 1)) * (chartW - padX * 2),
+    x: padX + (i / (WEEKS - 1)) * usableW,
     y: padY + (1 - w.count / maxCount) * (chartH - padY * 2),
   }));
 
@@ -97,7 +98,7 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.35 }}
-      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] relative overflow-hidden"
+      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] relative"
       style={{ background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))" }}
     >
       <div className="flex items-center justify-between mb-4">
@@ -152,29 +153,28 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl"
+            className="absolute inset-0 z-20 flex flex-col rounded-2xl overflow-y-auto styled-scrollbar"
             style={{ background: "hsl(260 30% 10% / 0.97)", backdropFilter: "blur(8px)" }}
           >
-            <div className="p-6 max-w-sm">
+            <div className="p-5 flex-1">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-bold text-white/90">Sobre este gráfico</h4>
-                <button onClick={() => setShowInfo(false)} className="text-white/30 hover:text-white/60 transition">
+                <button onClick={() => setShowInfo(false)} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:text-white/90 hover:bg-white/10 transition">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="space-y-2.5 text-[12px] text-white/60 leading-relaxed">
-                <p>A <strong className="text-white/80">Velocidade de Entrega</strong> mostra o volume de tarefas concluídas por semana nas últimas {WEEKS} semanas, ajudando a identificar tendências de produtividade.</p>
+              <div className="space-y-2 text-[11px] text-white/60 leading-relaxed">
+                <p>A <strong className="text-white/80">Velocidade de Entrega</strong> mostra o volume de tarefas concluídas por semana nas últimas {WEEKS} semanas.</p>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-6 rounded-full" style={{ background: "linear-gradient(90deg, hsl(234 89% 64%), hsl(160 84% 39%))" }} />
-                  <span><strong className="text-white/80">Linha colorida:</strong> volume de entregas por semana</span>
+                  <div className="h-2 w-6 rounded-full shrink-0" style={{ background: "linear-gradient(90deg, hsl(234 89% 64%), hsl(160 84% 39%))" }} />
+                  <span><strong className="text-white/80">Linha:</strong> entregas/semana</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-px w-6 border-t border-dashed" style={{ borderColor: "hsl(262 83% 58% / 0.6)" }} />
-                  <span><strong className="text-white/80">Linha tracejada:</strong> média de entregas no período</span>
+                  <div className="h-px w-6 border-t border-dashed shrink-0" style={{ borderColor: "hsl(262 83% 58% / 0.6)" }} />
+                  <span><strong className="text-white/80">Tracejada:</strong> média no período</span>
                 </div>
-                <p>O indicador mostra se a equipe está <strong className="text-white/80">🚀 Acelerando</strong> (mais entregas recentes), <strong className="text-white/80">📉 Desacelerando</strong> (menos entregas) ou <strong className="text-white/80">➡️ Estável</strong>.</p>
-                <p>Os cards abaixo resumem: média semanal, melhor semana e total de tarefas entregues no período.</p>
-                <p className="text-white/40 italic">💡 Passe o mouse sobre as bolinhas para ver o total de cada semana.</p>
+                <p>Indicador: <strong className="text-white/80">🚀 Acelerando</strong>, <strong className="text-white/80">📉 Desacelerando</strong> ou <strong className="text-white/80">➡️ Estável</strong>.</p>
+                <p className="text-white/40 italic">💡 Passe o mouse nas bolinhas para detalhes.</p>
               </div>
             </div>
           </motion.div>
@@ -208,7 +208,7 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
           )}
         </AnimatePresence>
 
-        <svg width="100%" viewBox={`0 0 ${chartW} ${chartH + 24}`} preserveAspectRatio="none" className="overflow-visible">
+        <svg width="100%" viewBox={`0 0 ${chartW} ${chartH + 24}`} preserveAspectRatio="xMidYMid meet" className="overflow-visible">
           {/* Area fill */}
           <motion.path
             d={areaPath}
@@ -297,21 +297,23 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
             );
           })}
 
-          {/* Week labels — with padding to stay inside card */}
-          {weekData.map((w, i) => (
-            i % 2 === 0 && (
+          {/* Week labels — every 3rd to avoid overlap */}
+          {weekData.map((w, i) => {
+            if (i % 3 !== 0 && i !== WEEKS - 1) return null;
+            const x = points[i].x;
+            return (
               <text
                 key={i}
-                x={Math.max(points[i].x, 20)}
+                x={i === 0 ? Math.max(x, padX + 5) : i === WEEKS - 1 ? Math.min(x, chartW - padX - 5) : x}
                 y={chartH + 18}
-                textAnchor={i === 0 ? "start" : i >= WEEKS - 2 ? "end" : "middle"}
+                textAnchor={i === 0 ? "start" : i === WEEKS - 1 ? "end" : "middle"}
                 className="fill-white/45 font-medium"
                 style={{ fontSize: "9px" }}
               >
                 {w.label}
               </text>
-            )
-          ))}
+            );
+          })}
 
           <defs>
             <linearGradient id="velocityStroke" x1="0" y1="0" x2="1" y2="0">
