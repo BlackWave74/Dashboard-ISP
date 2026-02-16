@@ -128,12 +128,6 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowInfo(true)}
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all"
-          >
-            <Info className="h-3.5 w-3.5" />
-          </button>
           <span
             className="rounded-full px-2 py-0.5 text-[10px] font-bold"
             style={{ color: tc.color, background: `${tc.color.replace(")", " / 0.15)")}` }}
@@ -142,6 +136,14 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
           </span>
         </div>
       </div>
+
+      {/* Info button — top right corner */}
+      <button
+        onClick={() => setShowInfo(true)}
+        className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-white/25 hover:text-white/60 hover:bg-white/[0.08] transition-all"
+      >
+        <Info className="h-4 w-4" />
+      </button>
 
       {/* Info Modal */}
       <AnimatePresence>
@@ -192,9 +194,11 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
               style={{
                 background: "hsl(260 30% 12% / 0.95)",
                 backdropFilter: "blur(8px)",
-                left: `${Math.min(Math.max((hoveredIdx / (WEEKS - 1)) * 100, 10), 88)}%`,
+                left: hoveredIdx > WEEKS * 0.7
+                  ? `${Math.max((hoveredIdx / (WEEKS - 1)) * 100 - 2, 5)}%`
+                  : `${Math.min((hoveredIdx / (WEEKS - 1)) * 100 + 2, 95)}%`,
                 top: -8,
-                transform: "translateX(-50%)",
+                transform: hoveredIdx > WEEKS * 0.7 ? "translateX(-100%)" : "translateX(0%)",
               }}
             >
               <p className="text-[11px] font-bold text-white/80 mb-0.5">{hoveredData.label}</p>
@@ -203,7 +207,7 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
           )}
         </AnimatePresence>
 
-        <svg width="100%" viewBox={`0 0 ${chartW} ${chartH + 20}`} preserveAspectRatio="none" className="overflow-visible">
+        <svg width="100%" viewBox={`0 0 ${chartW} ${chartH + 24}`} preserveAspectRatio="none" className="overflow-visible">
           {/* Area fill */}
           <motion.path
             d={areaPath}
