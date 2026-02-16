@@ -90,7 +90,6 @@ serve(async (req: Request) => {
         });
 
       if (userError) {
-        // Rollback auth user if users table insert fails
         await adminClient.auth.admin.deleteUser(authUserId);
         return errRes(`Falha ao criar registro: ${userError.message}`);
       }
@@ -132,23 +131,97 @@ serve(async (req: Request) => {
       });
     }
 
+    if (action === "update") {
+      const { userId, authUserId: targetAuthUserId, payload, areas, projects } = body;
+
+      if (!userId || !targetAuthUserId) {
+        return errRes("userId e authUserId são obrigatórios.");
+      }
+
+      // 1. Update users table
+      const userPayload: Record<string, unknown> = {};
+      if (payload?.name !== undefined) userPayload.name = payload.name;
+      if (payload?.email !== undefined) userPayload.email = payload.email;
+      if (payload?.user_profile !== undefined) userPayload.user_profile = payload.user_profile;
+      if (payload?.active !== undefined) userPayload.active = payload.active;
+      if (payload?.cliente_id !== undefined) userPayload.cliente_id = payload.cliente_id;
+
+      if (Object.keys(userPayload).length > 0) {
+        const { error: updateError } = await adminClient
+          .from("users")
+          .update(userPayload)
+          .eq("id", userId);
+        if (updateError) {
+          return errRes(`Falha ao atualizar usuário: ${updateError.message}`);
+        }
+      }
+
+      // 2. Sync role
+      if (payload?.user_profile) {
+        const profileToRole: Record<string, string> = {
+          Administrador: "admin",
+          Consultor: "consultor",
+          Gerente: "gerente",
+          Coordenador: "coordenador",
+          Cliente: "cliente",
+        };
+        const role = profileToRole[payload.user_profile] ?? "consultor";
+        await adminClient.from("user_roles").delete().eq("user_id", targetAuthUserId);
+        const { error: roleError } = await adminClient.from("user_roles").insert({ user_id: targetAuthUserId, role });
+        if (roleError) {
+          return errRes(`Falha ao sincronizar role: ${roleError.message}`);
+        }
+      }
+
+      // 3. Sync allowed areas
+      if (Array.isArray(areas)) {
+        await adminClient.from("user_allowed_areas").delete().eq("user_id", targetAuthUserId);
+        if (areas.length > 0) {
+          const areaRows = areas.map((a: string) => ({ user_id: targetAuthUserId, area_name: a }));
+          const { error: areasError } = await adminClient.from("user_allowed_areas").insert(areaRows);
+          if (areasError) {
+            return errRes(`Falha ao sincronizar áreas: ${areasError.message}`);
+          }
+        }
+      }
+
+      // 4. Sync project access
+      if (Array.isArray(projects)) {
+        await adminClient.from("user_project_access").delete().eq("user_id", targetAuthUserId);
+        if (projects.length > 0) {
+          const projRows = projects.map((pid: number) => ({ user_id: targetAuthUserId, project_id: pid }));
+          const { error: projError } = await adminClient.from("user_project_access").insert(projRows);
+          if (projError) {
+            return errRes(`Falha ao sincronizar projetos: ${projError.message}`);
+          }
+        }
+      }
+
+      // 5. Audit log
+      await adminClient.from("audit_log").insert({
+        performed_by: claimsData.user.id,
+        target_user_id: targetAuthUserId,
+        action: "update_user",
+        details: { userId, changes: userPayload, areas, projects },
+      });
+
+      return jsonRes({ ok: true });
+    }
+
     if (action === "delete") {
       const { authUserId } = body;
       if (!authUserId) return errRes("authUserId é obrigatório.");
 
-      // Delete auth user (cascades to users table if FK set, otherwise clean up)
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(authUserId);
       if (deleteError) {
         return errRes(`Falha ao deletar: ${deleteError.message}`);
       }
 
-      // Clean up related tables
       await adminClient.from("users").delete().eq("auth_user_id", authUserId);
       await adminClient.from("user_roles").delete().eq("user_id", authUserId);
       await adminClient.from("user_allowed_areas").delete().eq("user_id", authUserId);
       await adminClient.from("user_project_access").delete().eq("user_id", authUserId);
 
-      // Audit
       await adminClient.from("audit_log").insert({
         performed_by: claimsData.user.id,
         target_user_id: authUserId,
@@ -159,7 +232,7 @@ serve(async (req: Request) => {
       return jsonRes({ ok: true });
     }
 
-    return errRes("Ação inválida. Use 'create' ou 'delete'.");
+    return errRes("Ação inválida. Use 'create', 'update' ou 'delete'.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno";
     return errRes(message, 500);
