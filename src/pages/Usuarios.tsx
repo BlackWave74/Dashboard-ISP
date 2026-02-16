@@ -165,6 +165,7 @@ export default function UsuariosPage() {
 
   const [filter, setFilter] = useState("");
   const [clienteFilter, setClienteFilter] = useState<number | "all">("all");
+  const [profileFilter, setProfileFilter] = useState<string>("all");
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"users" | "audit">("users");
 
@@ -358,6 +359,9 @@ export default function UsuariosPage() {
     if (clienteFilter !== "all") {
       list = list.filter(u => u.cliente_id === clienteFilter);
     }
+    if (profileFilter !== "all") {
+      list = list.filter(u => u.user_profile === profileFilter);
+    }
     const term = filter.trim().toLowerCase();
     if (term) {
       list = list.filter(u =>
@@ -367,7 +371,7 @@ export default function UsuariosPage() {
       );
     }
     return list;
-  }, [filter, clienteFilter, api.users]);
+  }, [filter, clienteFilter, profileFilter, api.users]);
 
   const clienteMap = useMemo(() => {
     const m = new Map<number, string>();
@@ -638,23 +642,48 @@ export default function UsuariosPage() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 className="task-card overflow-visible"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3 p-4 pb-3 border-b border-[hsl(var(--task-border))]">
-                  <h2 className="text-base font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
-                    <Users className="h-4 w-4 text-[hsl(var(--task-purple))]" />
-                    Usuários Cadastrados
-                    <span className="text-xs font-normal text-[hsl(var(--task-text-muted))]">({filteredUsers.length})</span>
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
-                      <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Buscar por nome, e-mail..."
-                        className="h-8 w-48 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                <div className="p-4 pb-3 border-b border-[hsl(var(--task-border))] space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-base font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
+                      <Users className="h-4 w-4 text-[hsl(var(--task-purple))]" />
+                      Usuários Cadastrados
+                      <span className="text-xs font-normal text-[hsl(var(--task-text-muted))]">({filteredUsers.length})</span>
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+                        <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Buscar por nome, e-mail..."
+                          className="h-8 w-48 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                      </div>
+                      <select value={clienteFilter === "all" ? "" : clienteFilter} onChange={e => setClienteFilter(e.target.value ? Number(e.target.value) : "all")}
+                        className="h-8 w-40 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-2 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)]">
+                        <option value="">Todos os clientes</option>
+                        {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </select>
                     </div>
-                    <select value={clienteFilter === "all" ? "" : clienteFilter} onChange={e => setClienteFilter(e.target.value ? Number(e.target.value) : "all")}
-                      className="h-8 w-44 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-2 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)]">
-                      <option value="">Todos os clientes</option>
-                      {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                    </select>
+                  </div>
+                  {/* Profile filter chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { key: "all", label: "Todos" },
+                      ...PERFIS.map(p => ({ key: p, label: p })),
+                    ].map(chip => {
+                      const isActive = profileFilter === chip.key;
+                      const count = chip.key === "all" ? api.users.length : api.users.filter(u => u.user_profile === chip.key).length;
+                      return (
+                        <button key={chip.key} onClick={() => setProfileFilter(chip.key)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                            isActive
+                              ? "bg-[hsl(var(--task-purple)/0.2)] text-[hsl(var(--task-purple))] border border-[hsl(var(--task-purple)/0.3)]"
+                              : "bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] border border-[hsl(var(--task-border))] hover:border-[hsl(var(--task-purple)/0.2)] hover:text-[hsl(var(--task-text))]"
+                          }`}>
+                          {chip.label}
+                          <span className={`text-[9px] ${isActive ? "text-[hsl(var(--task-purple)/0.7)]" : "text-[hsl(var(--task-text-muted)/0.5)]"}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -690,13 +719,20 @@ export default function UsuariosPage() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-                          className={`flex items-center gap-4 px-4 py-3.5 transition group cursor-pointer ${
-                            isSelected ? "bg-[hsl(var(--task-purple)/0.06)]" : "hover:bg-[hsl(var(--task-bg)/0.4)]"
+                          className={`flex items-center gap-4 px-4 py-3.5 transition-all duration-200 group cursor-pointer border-l-2 ${
+                            isSelected 
+                              ? "bg-[hsl(var(--task-purple)/0.06)] border-l-[hsl(var(--task-purple))]" 
+                              : "hover:bg-[hsl(var(--task-bg)/0.4)] border-l-transparent"
                           }`}
                           onClick={() => startEdit(user)}
                         >
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-xs font-bold text-[hsl(var(--task-purple))]">
-                            {initials}
+                          <div className="relative">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-xs font-bold text-[hsl(var(--task-purple))]">
+                              {initials}
+                            </div>
+                            <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[hsl(var(--task-surface))] ${
+                              user.active !== false ? "bg-emerald-400" : "bg-rose-400"
+                            }`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
