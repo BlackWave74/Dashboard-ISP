@@ -95,36 +95,75 @@ export function useUsersApi(token: string | undefined) {
   ) => {
     if (!token) throw new Error("Sem token");
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    // 1. Update users table directly via REST (external DB)
+    const userPayload: Record<string, unknown> = {};
+    if (payload.name !== undefined) userPayload.name = payload.name;
+    if (payload.email !== undefined) userPayload.email = payload.email;
+    if (payload.user_profile !== undefined) userPayload.user_profile = payload.user_profile;
+    if (payload.active !== undefined) userPayload.active = payload.active;
 
-    const res = await fetch(`${supabaseUrl}/functions/v1/manage-user`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        apikey: supabaseKey,
-      },
-      body: JSON.stringify({
-        action: "update",
-        userId,
-        authUserId: authUserId,
-        payload: {
-          name: payload.name,
-          email: payload.email,
-          user_profile: payload.user_profile,
-          active: payload.active,
-          cliente_id: payload.cliente_id,
-        },
-        areas: selectedAreas,
-        projects: selectedProjects,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok || data.ok === false) {
-      throw new Error(data.error || `Erro ${res.status}`);
+    if (Object.keys(userPayload).length > 0) {
+      await supabaseRest(`users?id=eq.${userId}`, token, {
+        method: "PATCH",
+        body: JSON.stringify(userPayload),
+      });
     }
+
+    // 2. Sync role
+    if (payload.user_profile && authUserId) {
+      const profileToRole: Record<string, string> = {
+        Administrador: "admin",
+        Consultor: "consultor",
+        Gerente: "gerente",
+        Coordenador: "coordenador",
+        Cliente: "cliente",
+      };
+      const role = profileToRole[payload.user_profile] ?? "consultor";
+      // Delete existing role
+      try { await supabaseRest(`user_roles?user_id=eq.${authUserId}`, token, { method: "DELETE" }); } catch { /* ok */ }
+      // Insert new role
+      await supabaseRest("user_roles", token, {
+        method: "POST",
+        body: JSON.stringify({ user_id: authUserId, role }),
+      });
+    }
+
+    // 3. Sync allowed areas
+    if (authUserId) {
+      try { await supabaseRest(`user_allowed_areas?user_id=eq.${authUserId}`, token, { method: "DELETE" }); } catch { /* ok */ }
+      if (selectedAreas.length > 0) {
+        const areaRows = selectedAreas.map(a => ({ user_id: authUserId, area_name: a }));
+        await supabaseRest("user_allowed_areas", token, {
+          method: "POST",
+          body: JSON.stringify(areaRows),
+        });
+      }
+    }
+
+    // 4. Sync project access
+    if (authUserId) {
+      try { await supabaseRest(`user_project_access?user_id=eq.${authUserId}`, token, { method: "DELETE" }); } catch { /* ok */ }
+      if (selectedProjects.length > 0) {
+        const projRows = selectedProjects.map(pid => ({ user_id: authUserId, project_id: pid }));
+        await supabaseRest("user_project_access", token, {
+          method: "POST",
+          body: JSON.stringify(projRows),
+        });
+      }
+    }
+
+    // 5. Audit log
+    try {
+      await supabaseRest("audit_log", token, {
+        method: "POST",
+        body: JSON.stringify({
+          performed_by: performedBy,
+          target_user_id: authUserId || null,
+          action: "update_user",
+          details: { userId, changes: userPayload, areas: selectedAreas, projects: selectedProjects },
+        }),
+      });
+    } catch { /* non-critical */ }
   }, [token]);
 
   const deleteUser = useCallback(async (userId: string, authUserId: string, performedBy: string) => {
@@ -156,7 +195,7 @@ export function useUsersApi(token: string | undefined) {
     if (!token || !authUserId) return [];
     try {
       const res = await supabaseRest(`user_allowed_areas?user_id=eq.${authUserId}&select=area_name`, token);
-      const data = await res.json();
+      const data = await safeJson(res);
       return Array.isArray(data) ? data.map((r: { area_name: string }) => r.area_name) : [];
     } catch { return []; }
   }, [token]);
@@ -165,7 +204,7 @@ export function useUsersApi(token: string | undefined) {
     if (!token || !authUserId) return [];
     try {
       const res = await supabaseRest(`user_project_access?user_id=eq.${authUserId}&select=project_id`, token);
-      const data = await res.json();
+      const data = await safeJson(res);
       return Array.isArray(data) ? data.map((r: { project_id: number }) => r.project_id) : [];
     } catch { return []; }
   }, [token]);
