@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabaseRest } from "./supabaseRest";
+import { supabaseRest, safeJson } from "./supabaseRest";
 import type { UserRow, ProjectRow, AuditRow, ClienteRow } from "../types";
 import { PERFIL_TO_ROLE, ROLE_TO_PERFIL, type Perfil } from "../types";
 
@@ -16,14 +16,14 @@ export function useUsersApi(token: string | undefined) {
     setError(null);
     try {
       const res = await supabaseRest(
-        "users?select=id,auth_user_id,email,name,user_profile,active,cliente_id&order=name.asc&limit=200",
+        "users?select=id,auth_user_id,email,name,user_profile,active&order=name.asc&limit=200",
         token,
       );
-      const data = await res.json();
+      const data = await safeJson(res);
       if (Array.isArray(data)) {
         // Also fetch roles for each user
         const rolesRes = await supabaseRest("user_roles?select=user_id,role", token);
-        const roles = await rolesRes.json();
+        const roles = await safeJson(rolesRes);
         const roleMap = new Map<string, string>();
         if (Array.isArray(roles)) {
           roles.forEach((r: { user_id: string; role: string }) => roleMap.set(r.user_id, r.role));
@@ -40,7 +40,7 @@ export function useUsersApi(token: string | undefined) {
             user_profile: dbRole ? (ROLE_TO_PERFIL[dbRole] ?? String(u.user_profile ?? "Consultor")) : String(u.user_profile ?? "Consultor"),
             active: u.active !== false,
             role: dbRole,
-            cliente_id: u.cliente_id != null ? Number(u.cliente_id) : null,
+            cliente_id: null,
           };
         }));
       }
@@ -55,7 +55,7 @@ export function useUsersApi(token: string | undefined) {
     if (!token) return;
     try {
       const res = await supabaseRest("projects?select=id,name,active&order=name.asc&limit=500", token);
-      const data = await res.json();
+      const data = await safeJson(res);
       if (Array.isArray(data)) {
         setProjects(data.map((p: Record<string, unknown>) => ({
           id: Number(p.id),
@@ -72,7 +72,7 @@ export function useUsersApi(token: string | undefined) {
     if (!token) return;
     try {
       const res = await supabaseRest('clientes?select=cliente_id,nome,"Ativo"&order=nome.asc&limit=500', token);
-      const data = await res.json();
+      const data = await safeJson(res);
       if (Array.isArray(data)) {
         setClientes(data.map((c: Record<string, unknown>) => ({
           cliente_id: Number(c.cliente_id),
