@@ -10,7 +10,7 @@ import TarefasPage from "./pages/Tarefas";
 import AnaliticasPage from "./pages/Analiticas";
 import UsuariosPage from "./pages/Usuarios";
 import ComodatoPage from "./pages/Comodato";
-import ConfiguracoesPage from "./pages/Configuracoes";
+import IntegracoesPage from "./pages/Integracoes";
 import SuportePage from "./pages/Suporte";
 import NotFound from "./pages/NotFound";
 
@@ -29,7 +29,7 @@ const App = () => (
             <Route path="/tarefas" element={<TarefasPage />} />
             <Route path="/analiticas" element={<AnaliticasPage />} />
             <Route path="/usuarios" element={<UsuariosPage />} />
-            <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="/integracoes" element={<IntegracoesPage />} />
             <Route path="/comodato" element={<ComodatoPage />} />
             <Route path="/suporte" element={<SuportePage />} />
           </Route>

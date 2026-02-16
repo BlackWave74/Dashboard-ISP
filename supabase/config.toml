@@ -1,1 +1,4 @@
 project_id = "phughcqnevoziyqmpvoj"
+
+[functions.ixc-proxy]
+verify_jwt = false
