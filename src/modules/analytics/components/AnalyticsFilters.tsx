@@ -171,7 +171,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
     (filters.consultant ? 1 : 0);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 flex flex-col items-center">
       <button
         onClick={() => setExpanded((v) => !v)}
         className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-white/[0.12] hover:text-white/70"
