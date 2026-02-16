@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
+import PageSkeleton from "@/components/ui/PageSkeleton";
+import DataErrorCard from "@/components/ui/DataErrorCard";
 
 import { ProjectPerformanceGauge } from "@/modules/tasks/ui/TaskCharts";
 import { TaskFilters } from "@/modules/tasks/ui/TaskFilters";
@@ -528,6 +530,22 @@ export default function TarefasPage() {
     { id: "overview", label: "Visão Geral" },
     { id: "charts", label: "Gráficos Detalhados" },
   ];
+
+  // Show skeleton on initial load (no cached data yet)
+  if (loading && tasks.length === 0 && !error) {
+    return <PageSkeleton variant="tarefas" />;
+  }
+
+  if (error && tasks.length === 0) {
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-8">
+        <DataErrorCard
+          message={error}
+          onRetry={() => { reload(); reloadTimes(); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="task-page min-h-screen relative">

@@ -5,8 +5,10 @@ import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import PageSkeleton from "@/components/ui/PageSkeleton";
+import DataErrorCard from "@/components/ui/DataErrorCard";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
 import AnalyticsProductivityPulse from "@/modules/analytics/components/AnalyticsProductivityPulse";
 import AnalyticsVelocityChart from "@/modules/analytics/components/AnalyticsVelocityChart";
@@ -204,21 +206,16 @@ export default function AnaliticasPage() {
   }, []);
 
   if (loading && allTasks.length === 0) {
-    return (
-      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="ml-3 text-sm text-muted-foreground">Carregando análises...</span>
-      </div>
-    );
+    return <PageSkeleton variant="analiticas" />;
   }
 
   if (errorTasks) {
     return (
       <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-8">
-        <div className="flex items-center gap-3 rounded-2xl bg-destructive/10 p-6">
-          <AlertCircle className="h-5 w-5 text-destructive" />
-          <p className="text-sm text-destructive">{errorTasks}</p>
-        </div>
+        <DataErrorCard
+          message={errorTasks}
+          onRetry={() => { reloadTasks(); reloadTimes(); }}
+        />
       </div>
     );
   }
