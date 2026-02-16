@@ -83,7 +83,8 @@ function groupByDeadline(tasks: TaskView[], limit: TimelineRange) {
   for (const t of tasks) {
     const d = t.deadlineDate;
     if (!d) continue;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    // Use UTC methods to avoid timezone offset causing off-by-one day
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
     map.set(key, (map.get(key) ?? 0) + 1);
   }
   const arr = [...map.entries()]
@@ -345,7 +346,7 @@ export function TaskCharts({
                 <div className="flex-1 min-w-0 w-full" style={{ minHeight: 180 }}>
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
-                      <Pie
+                  <Pie
                         data={pieByConsultant}
                         dataKey="value"
                         nameKey="name"
@@ -353,6 +354,9 @@ export function TaskCharts({
                         outerRadius="65%"
                         paddingAngle={3}
                         stroke="none"
+                        isAnimationActive={true}
+                        animationDuration={1200}
+                        animationEasing="ease-out"
                         className="cursor-pointer"
                         onClick={(data: { name?: string; payload?: { name?: string } }) => {
                           const name = String(data?.name ?? data?.payload?.name ?? "");
@@ -441,6 +445,9 @@ export function TaskCharts({
                     radius={[0, 6, 6, 0]}
                     barSize={18}
                     minPointSize={12}
+                    isAnimationActive={true}
+                    animationDuration={1200}
+                    animationEasing="ease-out"
                     className="cursor-pointer"
                     onClick={(data: { name?: string; payload?: { name?: string } }) => {
                       const name = String(data?.name ?? data?.payload?.name ?? "");
@@ -512,7 +519,7 @@ export function TaskCharts({
                     labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))}
                   />
                   <ReferenceLine x={todayIso} stroke="hsl(160 84% 60%)" strokeDasharray="4 4" label={{ position: "top", value: "Hoje", fill: "#94a3b8", fontSize: 10 }} />
-                  <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} />
+                  <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
                 </LineChart>
               </ResponsiveContainer>
             ) : isLoading ? (

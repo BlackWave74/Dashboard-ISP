@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useUsersApi } from "@/modules/users/api/useUsersApi";
 import { callManageUser } from "@/modules/users/api/manageUserApi";
-import { PERFIS, ALL_AREAS, PERFIL_TO_ROLE, type Perfil, type UserRow, type AuditRow } from "@/modules/users/types";
+import { PERFIS, ALL_AREAS, PERFIL_TO_ROLE, type Perfil, type UserRow } from "@/modules/users/types";
 import {
   Users, Search, RefreshCw, Pencil, Trash2, Save, X, Shield,
   Loader2, AlertCircle, CheckCircle2, UserPlus, Mail, User,
   Eye, EyeOff, FolderOpen, Clock, ChevronDown,
-  History, MapPin, Key, Copy, Power, Check, Building2,
+  MapPin, Key, Copy, Power, Check, Building2,
 } from "lucide-react";
 
 /* ─── Password generator ─── */
@@ -168,7 +168,7 @@ export default function UsuariosPage() {
   const [clienteFilter, setClienteFilter] = useState<number | "all">("all");
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<"users" | "audit">("users");
+  const [activeTab, setActiveTab] = useState<"users">("users");
 
   // Edit state
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
@@ -192,10 +192,6 @@ export default function UsuariosPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Audit
-  const [auditLog, setAuditLog] = useState<AuditRow[]>([]);
-  const [loadingAudit, setLoadingAudit] = useState(false);
-  const auditLoadedRef = useRef(false);
 
   const showFeedback = (type: "ok" | "error", message: string) => {
     setFeedback({ type, message });
@@ -365,28 +361,6 @@ export default function UsuariosPage() {
     }
   };
 
-  /* ─── Load audit (stable, no flicker) ─── */
-  const getAuditLogRef = useRef(api.getAuditLog);
-  getAuditLogRef.current = api.getAuditLog;
-
-  const loadAudit = useCallback(async () => {
-    setLoadingAudit(true);
-    const data = await getAuditLogRef.current();
-    setAuditLog(data);
-    setLoadingAudit(false);
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "audit" && !auditLoadedRef.current) {
-      auditLoadedRef.current = true;
-      loadAudit();
-    }
-  }, [activeTab, loadAudit]);
-
-  // Reset audit loaded flag when switching away
-  useEffect(() => {
-    if (activeTab !== "audit") auditLoadedRef.current = false;
-  }, [activeTab]);
 
   /* ─── Filter ─── */
   const filteredUsers = useMemo(() => {
@@ -515,27 +489,8 @@ export default function UsuariosPage() {
           )}
         </AnimatePresence>
 
-        {/* ═══ TABS ═══ */}
-        <div className="flex gap-1 rounded-2xl bg-[hsl(var(--task-surface))] p-1.5 border border-[hsl(var(--task-border))]">
-          {([
-            { key: "users" as const, label: "Usuários", icon: Users },
-            { key: "audit" as const, label: "Auditoria", icon: History },
-          ]).map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition ${
-                activeTab === tab.key
-                  ? "bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]"
-                  : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
-              }`}
-            >
-              <tab.icon className="h-3.5 w-3.5" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
 
-        {activeTab === "users" && (
-          <>
+        {/* Users content */}
             {/* ═══ CREATE FORM ═══ */}
             <AnimatePresence>
               {showCreate && (
@@ -997,79 +952,7 @@ export default function UsuariosPage() {
                 )}
               </AnimatePresence>
             </div>
-          </>
-        )}
-
-        {/* ═══ AUDIT TAB ═══ */}
-        {activeTab === "audit" && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="task-card overflow-hidden">
-            <div className="flex items-center justify-between p-4 pb-3 border-b border-[hsl(var(--task-border))]">
-              <h2 className="text-base font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
-                <History className="h-4 w-4 text-[hsl(var(--task-purple))]" />
-                Log de Auditoria
-              </h2>
-              <button onClick={loadAudit} disabled={loadingAudit}
-                className="flex items-center gap-1.5 rounded-lg border border-[hsl(var(--task-border))] px-3 py-1.5 text-xs text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-purple))] transition disabled:opacity-40">
-                <RefreshCw className={`h-3 w-3 ${loadingAudit ? "animate-spin" : ""}`} /> Atualizar
-              </button>
-            </div>
-
-            {loadingAudit && (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--task-purple))]" />
-              </div>
-            )}
-
-            {!loadingAudit && auditLog.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <History className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.15)] mb-3" />
-                <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">Nenhum registro de auditoria.</p>
-              </div>
-            )}
-
-            {!loadingAudit && auditLog.length > 0 && (
-              <div className="divide-y divide-[hsl(var(--task-border)/0.4)]">
-                {auditLog.map((log) => {
-                  const actionLabel = log.action === "update_user" ? "Atualizou usuário" :
-                    log.action === "delete_user" ? "Removeu usuário" :
-                    log.action === "create_user" ? "Criou usuário" : log.action;
-                  const actionColor = log.action === "delete_user" ? "text-rose-400" :
-                    log.action === "create_user" ? "text-emerald-400" : "text-[hsl(var(--task-purple))]";
-                  const details = log.details as Record<string, unknown> | null;
-                  const changes = details?.changes as Record<string, unknown> | undefined;
-
-                  return (
-                    <div key={log.id} className="px-4 py-3 flex items-start gap-3">
-                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                        log.action === "delete_user" ? "bg-rose-500/10" :
-                        log.action === "create_user" ? "bg-emerald-500/10" : "bg-[hsl(var(--task-purple)/0.1)]"
-                      }`}>
-                        {log.action === "delete_user" ? <Trash2 className="h-3.5 w-3.5 text-rose-400" /> :
-                         log.action === "create_user" ? <UserPlus className="h-3.5 w-3.5 text-emerald-400" /> :
-                         <Pencil className="h-3.5 w-3.5 text-[hsl(var(--task-purple))]" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs">
-                          <span className={`font-semibold ${actionColor}`}>{actionLabel}</span>
-                        </p>
-                        {changes && (
-                          <p className="text-[11px] text-[hsl(var(--task-text-muted))] mt-0.5 truncate">
-                            {Object.entries(changes).map(([k, v]) => `${k}: ${v}`).join(", ")}
-                          </p>
-                        )}
-                        <p className="text-[10px] text-[hsl(var(--task-text-muted)/0.5)] mt-0.5 flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5" />
-                          {new Date(log.created_at).toLocaleString("pt-BR")}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
-        )}
-      </div>
+          </div>
     </div>
   );
 }
