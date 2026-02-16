@@ -162,7 +162,7 @@ export function TaskFilters({
   return (
     <div className="space-y-2">
       {/* Collapsed: filter toggle button */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center gap-3 flex-wrap">
         {/* Search */}
         <div className="relative flex items-center w-full sm:w-auto sm:min-w-[200px] sm:max-w-[260px]">
           <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
