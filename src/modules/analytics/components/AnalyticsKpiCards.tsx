@@ -8,9 +8,10 @@ type Props = {
   totalTasks: number;
   doneCount: number;
   overdueCount: number;
+  loading?: boolean;
 };
 
-export default function AnalyticsKpiCards({ clients, activeProjects, totalHours, totalTasks, doneCount, overdueCount }: Props) {
+export default function AnalyticsKpiCards({ clients, activeProjects, totalHours, totalTasks, doneCount, overdueCount, loading }: Props) {
   const pendingCount = totalTasks - doneCount - overdueCount;
   const completionPct = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
 
@@ -83,8 +84,14 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
             </div>
 
             <p className="text-[11px] font-semibold text-white/40 leading-tight text-center mb-1">{k.label}</p>
-            <p className="text-2xl font-bold text-white/90 text-center">{k.value}</p>
-            <p className="text-[10px] text-white/25 mt-0.5 text-center">{k.sub}</p>
+            {loading ? (
+              <div className="flex justify-center py-1">
+                <div className="h-5 w-16 rounded-md bg-white/[0.06] animate-pulse" />
+              </div>
+            ) : (
+              <p className="text-2xl font-bold text-white/90 text-center">{k.value}</p>
+            )}
+            <p className="text-[10px] text-white/25 mt-0.5 text-center">{loading ? "Carregando…" : k.sub}</p>
           </motion.div>
         );
       })}

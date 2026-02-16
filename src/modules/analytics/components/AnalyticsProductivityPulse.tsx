@@ -121,7 +121,7 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] flex flex-col relative overflow-hidden"
+      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] flex flex-col relative"
       style={{ background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))" }}
     >
       {/* Header */}
@@ -190,29 +190,28 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl"
+            className="absolute inset-0 z-20 flex flex-col rounded-2xl overflow-y-auto styled-scrollbar"
             style={{ background: "hsl(260 30% 10% / 0.97)", backdropFilter: "blur(8px)" }}
           >
-            <div className="p-6 max-w-sm">
+            <div className="p-5 flex-1">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-bold text-white/90">Sobre este gráfico</h4>
-                <button onClick={() => setShowInfo(false)} className="text-white/30 hover:text-white/60 transition">
+                <button onClick={() => setShowInfo(false)} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:text-white/90 hover:bg-white/10 transition">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="space-y-2.5 text-[12px] text-white/60 leading-relaxed">
-                <p>O <strong className="text-white/80">Pulso de Produtividade</strong> mostra o ritmo de entregas da equipe nas últimas {WEEKS} semanas, representado como um eletrocardiograma.</p>
+              <div className="space-y-2 text-[11px] text-white/60 leading-relaxed">
+                <p>O <strong className="text-white/80">Pulso de Produtividade</strong> mostra o ritmo de entregas nas últimas {WEEKS} semanas.</p>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full" style={{ background: "hsl(262 83% 58%)" }} />
-                  <span><strong className="text-white/80">Linha roxa:</strong> quantidade de tarefas concluídas por semana</span>
+                  <div className="h-2 w-2 rounded-full shrink-0" style={{ background: "hsl(262 83% 58%)" }} />
+                  <span><strong className="text-white/80">Roxa:</strong> concluídas/semana</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full" style={{ background: "hsl(0 84% 60% / 0.6)" }} />
-                  <span><strong className="text-white/80">Linha vermelha:</strong> quantidade de tarefas atrasadas</span>
+                  <div className="h-2 w-2 rounded-full shrink-0" style={{ background: "hsl(0 84% 60% / 0.6)" }} />
+                  <span><strong className="text-white/80">Vermelha:</strong> atrasadas/semana</span>
                 </div>
-                <p>O número <strong className="text-white/80">t/sem</strong> representa a média de tarefas entregues por semana. Quanto maior o pico, mais entregas naquela semana.</p>
-                <p>A porcentagem <strong className="text-white/80">▲/▼</strong> compara as últimas 4 semanas com as 4 anteriores, indicando se a produtividade está subindo ou caindo.</p>
-                <p className="text-white/40 italic">💡 Passe o mouse sobre as bolinhas para ver os detalhes de cada semana.</p>
+                <p><strong className="text-white/80">t/sem</strong> = média de entregas por semana.</p>
+                <p className="text-white/40 italic">💡 Passe o mouse nas bolinhas para detalhes.</p>
               </div>
             </div>
           </motion.div>
@@ -250,7 +249,7 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
           )}
         </AnimatePresence>
 
-        <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="overflow-visible">
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" className="overflow-visible">
           <defs>
             <filter id="pulseGlow" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />

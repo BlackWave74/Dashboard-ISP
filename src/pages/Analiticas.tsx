@@ -76,8 +76,9 @@ export default function AnaliticasPage() {
 
   const { data: projectHours, loading: loadingHours } = useProjectHours({ startIso, endIso });
 
-  const loading = loadingTasks || loadingTimes || loadingHours;
-  // Note: 'refreshing' is computed above after hooks, 'loading' includes hours for initial load
+  // Only block initial render on tasks+times, not hours (hours can load in background)
+  const loading = loadingTasks || loadingTimes;
+  const initialLoading = loading && allTasks.length === 0;
 
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const accessibleProjectIds = session?.accessibleProjectIds;
@@ -205,7 +206,7 @@ export default function AnaliticasPage() {
     setDrawerProject(project);
   }, []);
 
-  if (loading && allTasks.length === 0) {
+  if (initialLoading) {
     return <PageSkeleton variant="analiticas" />;
   }
 
@@ -274,6 +275,7 @@ export default function AnaliticasPage() {
           totalTasks={userTaskCount}
           doneCount={totalDone}
           overdueCount={totalOverdue}
+          loading={loading}
         />
 
         {/* Row 1: Client Radar + Velocity Chart */}
