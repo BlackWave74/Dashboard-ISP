@@ -163,18 +163,44 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="space-y-2 text-[11px] text-white/60 leading-relaxed">
-                <p>A <strong className="text-white/80">Velocidade de Entrega</strong> mostra o volume de tarefas concluídas por semana nas últimas {WEEKS} semanas.</p>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-6 rounded-full shrink-0" style={{ background: "linear-gradient(90deg, hsl(234 89% 64%), hsl(160 84% 39%))" }} />
-                  <span><strong className="text-white/80">Linha:</strong> entregas/semana</span>
+              <div className="space-y-2.5 text-[11px] text-white/60 leading-relaxed">
+                <p>A <strong className="text-white/80">Velocidade de Entrega</strong> acompanha o volume de tarefas concluídas por semana nas últimas <strong className="text-white/80">{WEEKS} semanas</strong>.</p>
+                <p className="text-white/50">Este gráfico ajuda a identificar se a equipe está acelerando, desacelerando ou mantendo um ritmo estável de entregas.</p>
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-3 space-y-2">
+                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider mb-1">Legenda</p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-6 rounded-full shrink-0" style={{ background: "linear-gradient(90deg, hsl(234 89% 64%), hsl(160 84% 39%))" }} />
+                    <span><strong className="text-white/80">Linha gradiente:</strong> tarefas concluídas por semana</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-px w-6 border-t border-dashed shrink-0" style={{ borderColor: "hsl(262 83% 58% / 0.6)" }} />
+                    <span><strong className="text-white/80">Linha tracejada:</strong> média de entregas no período</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm shrink-0">🚀</span>
+                    <span><strong className="text-white/80">Indicador:</strong> compara as últimas 6 semanas com as 6 anteriores</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-px w-6 border-t border-dashed shrink-0" style={{ borderColor: "hsl(262 83% 58% / 0.6)" }} />
-                  <span><strong className="text-white/80">Tracejada:</strong> média no período</span>
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-3 space-y-1.5">
+                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider mb-1">Resumo do período</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50">Média semanal</span>
+                    <span className="font-bold text-white/80">{avgVelocity.toFixed(1)} tarefas</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50">Melhor semana</span>
+                    <span className="font-bold text-emerald-400">{maxCount} tarefas</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50">Total entregue</span>
+                    <span className="font-bold text-white/80">{weekData.reduce((s, w) => s + w.count, 0)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50">Tendência</span>
+                    <span className="font-bold" style={{ color: tc.color }}>{tc.emoji} {tc.label}</span>
+                  </div>
                 </div>
-                <p>Indicador: <strong className="text-white/80">🚀 Acelerando</strong>, <strong className="text-white/80">📉 Desacelerando</strong> ou <strong className="text-white/80">➡️ Estável</strong>.</p>
-                <p className="text-white/40 italic">💡 Passe o mouse nas bolinhas para detalhes.</p>
+                <p className="text-white/40 italic">💡 Passe o mouse nos pontos do gráfico para ver o total de cada semana.</p>
               </div>
             </div>
           </motion.div>

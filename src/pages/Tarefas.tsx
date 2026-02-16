@@ -685,7 +685,16 @@ export default function TarefasPage() {
 
             {/* Top performers list */}
             <div className="space-y-2 flex-1 overflow-y-auto styled-scrollbar">
-              {(() => {
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-3">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="h-6 w-6 rounded-full border-2 border-white/10 border-t-[hsl(var(--task-purple))]"
+                  />
+                  <p className="text-xs text-[hsl(var(--task-text-muted))]">Carregando dados da equipe…</p>
+                </div>
+              ) : (() => {
                 const performerMap = new Map<string, { total: number; done: number; overdue: number; pending: number; hours: number }>();
                 filteredTasks.forEach((t) => {
                   const name = (t.consultant || "").trim() || "Sem responsável";
@@ -703,18 +712,7 @@ export default function TarefasPage() {
                 const maxTotal = Math.max(1, ...performers.map(([, d]) => d.total));
 
                 if (!performers.length) {
-                  return loading ? (
-                    <div className="flex flex-col items-center justify-center py-10 gap-3">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                        className="h-6 w-6 rounded-full border-2 border-white/10 border-t-[hsl(var(--task-purple))]"
-                      />
-                      <p className="text-xs text-[hsl(var(--task-text-muted))]">Sincronizando dados…</p>
-                    </div>
-                  ) : (
-                    <EmptyState variant="users" />
-                  );
+                  return <EmptyState variant="users" />;
                 }
 
                 return performers.map(([name, data], idx) => {
@@ -781,21 +779,32 @@ export default function TarefasPage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))] mb-2">
               Progresso das Tarefas
             </p>
-            <div className="flex-1 flex items-center justify-center w-full">
-              <ProjectPerformanceGauge tasks={filteredTasks ?? []} footerHint="" />
-            </div>
-
-            {/* Mini stats */}
-            <div className="grid grid-cols-2 gap-2 w-full mt-3">
-              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] px-3 py-2.5 text-center">
-                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Pendentes</p>
-                <p className="text-xl font-extrabold text-[hsl(var(--task-yellow))]">{stats.pending}</p>
+            {loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  className="h-6 w-6 rounded-full border-2 border-white/10 border-t-[hsl(var(--task-yellow))]"
+                />
+                <p className="text-xs text-[hsl(var(--task-text-muted))]">Carregando progresso…</p>
               </div>
-              <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] px-3 py-2.5 text-center">
-                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Feitas</p>
-                <p className="text-xl font-extrabold text-emerald-400">{stats.done}</p>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex-1 flex items-center justify-center w-full">
+                  <ProjectPerformanceGauge tasks={filteredTasks ?? []} footerHint="" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 w-full mt-3">
+                  <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] px-3 py-2.5 text-center">
+                    <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Pendentes</p>
+                    <p className="text-xl font-extrabold text-[hsl(var(--task-yellow))]">{stats.pending}</p>
+                  </div>
+                  <div className="rounded-xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border))] px-3 py-2.5 text-center">
+                    <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Feitas</p>
+                    <p className="text-xl font-extrabold text-emerald-400">{stats.done}</p>
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
 
           {/* RIGHT: Deadlines */}
@@ -816,7 +825,16 @@ export default function TarefasPage() {
             </div>
 
             <div className="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar">
-              {pendingHighlights.length === 0 ? (
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="h-6 w-6 rounded-full border-2 border-white/10 border-t-[hsl(var(--task-yellow))]"
+                  />
+                  <p className="text-xs text-[hsl(var(--task-text-muted))]">Carregando prazos…</p>
+                </div>
+              ) : pendingHighlights.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <CheckCircle2 className="h-10 w-10 text-emerald-400/20 mb-2" />
                   <p className="text-xs text-[hsl(var(--task-text-muted))]">Tudo em dia!</p>
