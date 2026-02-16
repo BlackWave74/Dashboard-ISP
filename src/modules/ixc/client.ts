@@ -3,23 +3,37 @@ import { storage } from "@/modules/shared/storage";
 
 /**
  * Reads the active IXC integration profile config from localStorage.
+ * Now requires userEmail to avoid cross-user credential leaks.
  */
-function getActiveIxcConfig(): Record<string, string> | null {
-  // Try to find the integration state for any user
+function getActiveIxcConfig(userEmail?: string): Record<string, string> | null {
+  // If we have the user email, use their specific key
+  if (userEmail) {
+    const key = `integrations_state:${userEmail}`;
+    const state = storage.get<Record<string, { status: string; config?: Record<string, string>; activeProfile?: string; profiles?: { name: string; data: Record<string, string> }[] }>>(key, {});
+    const ixc = state["ixc"];
+    if (!ixc || ixc.status !== "CONECTADO") return null;
+
+    const activeProfileName = ixc.activeProfile;
+    if (activeProfileName && ixc.profiles?.length) {
+      const profile = ixc.profiles.find((p) => p.name === activeProfileName);
+      if (profile?.data?.host) return profile.data;
+    }
+    if (ixc.config?.host) return ixc.config;
+    return null;
+  }
+
+  // Fallback: try all keys (backwards compat) — but only first match
   const keys = Object.keys(localStorage).filter((k) => k.startsWith("integrations_state:"));
   for (const key of keys) {
     const state = storage.get<Record<string, { status: string; config?: Record<string, string>; activeProfile?: string; profiles?: { name: string; data: Record<string, string> }[] }>>(key, {});
     const ixc = state["ixc"];
     if (!ixc || ixc.status !== "CONECTADO") continue;
 
-    // Get active profile data
     const activeProfileName = ixc.activeProfile;
     if (activeProfileName && ixc.profiles?.length) {
       const profile = ixc.profiles.find((p) => p.name === activeProfileName);
       if (profile?.data?.host) return profile.data;
     }
-
-    // Fallback to config
     if (ixc.config?.host) return ixc.config;
   }
   return null;
@@ -33,7 +47,7 @@ async function postIxc<T>(
   options?: { idempotencyKey?: string; auditUser?: string }
 ): Promise<ApiResult<T>> {
   try {
-    const config = getActiveIxcConfig();
+    const config = getActiveIxcConfig(options?.auditUser);
     if (!config?.host) {
       return { ok: false, error: "Integração IXC não configurada. Acesse Integrações para configurar." };
     }

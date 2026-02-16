@@ -475,8 +475,9 @@
   gap: 0.25rem;
 }
 
-* {
-  border-color: transparent;
+/* Reset border to theme default instead of transparent */
+*:not([class*="border"]) {
+  border-color: hsl(var(--task-border) / 0.15);
 }
 
 /* Global styled scrollbar */
@@ -551,6 +552,11 @@ body {
   --task-purple: 262 83% 58%;
   --task-green: 142 71% 45%;
   --task-red: 0 84% 60%;
+}
+
+.page-gradient {
+  background: linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%));
+  min-height: calc(100vh - 3.5rem);
 }
 
 .task-page {

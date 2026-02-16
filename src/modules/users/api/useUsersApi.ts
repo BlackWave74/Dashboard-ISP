@@ -216,9 +216,8 @@ export function useUsersApi(token: string | undefined) {
 
   useEffect(() => {
     if (token) {
-      loadUsers();
-      loadProjects();
-      loadClientes();
+      // Parallel load for better performance
+      Promise.all([loadUsers(), loadProjects(), loadClientes()]);
     }
   }, [token, loadUsers, loadProjects, loadClientes]);
 

@@ -218,9 +218,10 @@ export default function LoginPage() {
             <p className="login-forgot">
               <button
                 type="button"
-                onClick={() =>
-                  alert("Para recuperar o acesso, fale com seu gerente ou consultor responsável.")
-                }
+                className="login-forgot-link"
+                onClick={() => {
+                  setError("Para recuperar o acesso, entre em contato com seu gerente ou consultor responsável.");
+                }}
               >
                 Esqueci minha senha
               </button>
