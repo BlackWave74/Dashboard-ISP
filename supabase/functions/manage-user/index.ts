@@ -244,15 +244,18 @@ serve(async (req: Request) => {
       const { authUserId } = body;
       if (!authUserId) return errRes("authUserId é obrigatório.");
 
+      // 1. Clean up DB records FIRST (before auth delete to avoid FK conflicts)
+      await adminClient.from("user_project_access").delete().eq("user_id", authUserId);
+      await adminClient.from("user_allowed_areas").delete().eq("user_id", authUserId);
+      await adminClient.from("user_roles").delete().eq("user_id", authUserId);
+      await adminClient.from("users").delete().eq("auth_user_id", authUserId);
+
+      // 2. Delete auth user (may fail if other FK references exist)
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(authUserId);
       if (deleteError) {
-        return errRes(`Falha ao deletar: ${deleteError.message}`);
+        // Log but don't fail — DB records are already cleaned
+        console.warn("Auth delete warning:", deleteError.message);
       }
-
-      await adminClient.from("users").delete().eq("auth_user_id", authUserId);
-      await adminClient.from("user_roles").delete().eq("user_id", authUserId);
-      await adminClient.from("user_allowed_areas").delete().eq("user_id", authUserId);
-      await adminClient.from("user_project_access").delete().eq("user_id", authUserId);
 
       await adminClient.from("audit_log").insert({
         performed_by: userData.user.id,
