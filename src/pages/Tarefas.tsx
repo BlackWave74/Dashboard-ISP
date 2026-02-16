@@ -163,6 +163,7 @@ const stagger = {
 
 export default function TarefasPage() {
   const { session } = useAuth();
+  const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const [nowTs] = useState(() => Date.now());
 
   // Filter state
@@ -582,7 +583,7 @@ export default function TarefasPage() {
             dateTo={dateTo} setDateTo={setDateTo}
             deadlineTo={deadlineTo} setDeadlineTo={setDeadlineTo}
             consultant={consultant} setConsultant={setConsultant}
-            consultantOptions={consultantOptions}
+            consultantOptions={isAdmin ? consultantOptions : []}
             searchRef={searchInputRef}
             project={effectiveProjectFilter} setProject={setProject}
             projectOptions={projectOptions}
@@ -590,6 +591,7 @@ export default function TarefasPage() {
             hasActiveFilters={hasActiveFilters}
             onClearFilters={resetFilters}
             myProjectNames={myProjectNames}
+            hideFilters={!isAdmin}
           />
         </motion.div>
 

@@ -321,7 +321,11 @@ export function useAuth() {
     (area: AccessArea, roleOverride?: UserRole) => {
       const role = roleOverride ?? session?.role ?? "consultor";
       const allowed = session?.allowedAreas;
-      if (allowed && !allowed.includes(area)) return false;
+      // If allowedAreas is defined, it overrides role-based rules entirely
+      if (allowed && allowed.length > 0) {
+        return allowed.includes(area);
+      }
+      // Fallback to role-based rules when no custom areas are set
       const rules = ACCESS_RULES[role] ?? ACCESS_RULES.consultor;
       return Boolean(rules[area]);
     },

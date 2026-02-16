@@ -19,6 +19,7 @@ type Props = {
   consultants: string[];
   isAdmin: boolean;
   myProjectIds?: Set<number>;
+  hideFilters?: boolean;
 };
 
 const PERIODS: { value: string; label: string }[] = [
@@ -164,7 +165,7 @@ function CustomSelect({
   );
 }
 
-export default function AnalyticsFilters({ filters, onChange, projects, consultants, isAdmin, myProjectIds }: Props) {
+export default function AnalyticsFilters({ filters, onChange, projects, consultants, isAdmin, myProjectIds, hideFilters = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -226,24 +227,26 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
           )}
         </div>
 
-        {/* Filter toggle */}
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
-            expanded
-              ? "border-[hsl(262_83%_58%/0.4)] bg-[hsl(262_83%_58%/0.1)] text-[hsl(262_83%_58%)]"
-              : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
-          }`}
-        >
-          <Filter className="h-3.5 w-3.5" />
-          Filtros
-          {activeCount > 0 && (
-            <span className="rounded-full bg-[hsl(262_83%_58%)] px-1.5 py-0.5 text-[10px] font-bold text-white">
-              {activeCount}
-            </span>
-          )}
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-        </button>
+        {/* Filter toggle — hidden for non-admin users */}
+        {!hideFilters && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
+              expanded
+                ? "border-[hsl(262_83%_58%/0.4)] bg-[hsl(262_83%_58%/0.1)] text-[hsl(262_83%_58%)]"
+                : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
+            }`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Filtros
+            {activeCount > 0 && (
+              <span className="rounded-full bg-[hsl(262_83%_58%)] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {activeCount}
+              </span>
+            )}
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+        )}
 
         {activeCount > 0 && (
           <button
