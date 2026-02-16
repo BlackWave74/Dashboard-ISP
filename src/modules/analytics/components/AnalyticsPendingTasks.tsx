@@ -84,7 +84,7 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
           >
             <div className="border-t border-white/[0.04]">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_240px_160px_120px] gap-2 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-white/25">
+              <div className="grid grid-cols-[2fr_1fr_1fr_80px] gap-3 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-white/25">
                 <span>Tarefa</span>
                 <span>Projeto</span>
                 <span>Responsável</span>
@@ -102,7 +102,7 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
-                    className="grid grid-cols-[1fr_240px_160px_120px] gap-2 border-t border-white/[0.03] px-5 py-2.5 text-xs transition hover:bg-white/[0.02]"
+                    className="grid grid-cols-[2fr_1fr_1fr_80px] gap-3 border-t border-white/[0.03] px-5 py-2.5 text-xs transition hover:bg-white/[0.02]"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div

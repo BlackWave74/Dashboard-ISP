@@ -276,16 +276,25 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
             </>
           )}
 
-          {/* Data points with pulse effect on peaks */}
+          {/* Data points — show ALL weeks as interactive dots */}
           {weeklyData.map((d, i) => {
-            if (d.done === 0) return null;
             const x = padX + (i / (WEEKS - 1)) * graphW;
-            const normalizedVal = d.done / maxVal;
-            const y = padY + graphH * (1 - normalizedVal) * 0.7;
+            const hasDone = d.done > 0;
+            const hasOverdue = d.overdue > 0;
+            const normalizedVal = hasDone ? d.done / maxVal : 0;
+            const y = hasDone ? padY + graphH * (1 - normalizedVal) * 0.7 : padY + graphH * 0.75;
             const isRecent = i >= WEEKS - 2;
+            const dotR = isRecent ? 4.5 : hasDone ? 3.5 : 2.5;
+            const dotColor = hasOverdue && !hasDone ? "hsl(0 84% 60%)" : heartColor;
+
             return (
-              <g key={i}>
-                {isRecent && (
+              <g key={i} className="cursor-pointer">
+                {/* Invisible hover target */}
+                <rect x={x - 18} y={padY - 5} width={36} height={graphH + 10} fill="transparent">
+                  <title>{`${d.label}\n✅ ${d.done} concluída${d.done !== 1 ? "s" : ""}\n⚠️ ${d.overdue} atrasada${d.overdue !== 1 ? "s" : ""}\n⏳ ${d.pending} pendente${d.pending !== 1 ? "s" : ""}`}</title>
+                </rect>
+                {/* Pulse ring on recent */}
+                {isRecent && hasDone && (
                   <motion.circle
                     cx={x}
                     cy={y}
@@ -293,32 +302,46 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
                     fill="none"
                     stroke={heartColor}
                     strokeWidth={1}
-                    animate={{ r: [4, 12], opacity: [0.6, 0] }}
+                    animate={{ r: [4, 14], opacity: [0.6, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
                   />
                 )}
+                {/* Dot */}
                 <motion.circle
                   cx={x}
                   cy={y}
-                  r={isRecent ? 4 : 2.5}
-                  fill={heartColor}
+                  r={dotR}
+                  fill={dotColor}
                   stroke="hsl(270 50% 12%)"
-                  strokeWidth={isRecent ? 2 : 1}
+                  strokeWidth={isRecent ? 2 : 1.5}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 + i * 0.05 }}
+                  transition={{ delay: 0.5 + i * 0.04 }}
+                  className="hover:brightness-150 transition-all"
                 />
+                {/* Overdue secondary dot below */}
+                {hasOverdue && hasDone && (
+                  <motion.circle
+                    cx={x}
+                    cy={padY + graphH * 0.85}
+                    r={2}
+                    fill="hsl(0 84% 60% / 0.6)"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.6 + i * 0.04 }}
+                  />
+                )}
               </g>
             );
           })}
 
-          {/* Week labels — show every 2nd for readability */}
+          {/* Week labels — every 2nd */}
           {weeklyData.map((d, i) => {
             if (i % 2 !== 0 && i !== WEEKS - 1) return null;
             const x = padX + (i / (WEEKS - 1)) * graphW;
             return (
               <text
-                key={i}
+                key={`label-${i}`}
                 x={x}
                 y={H - 2}
                 textAnchor="middle"
@@ -326,21 +349,6 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
               >
                 {d.label}
               </text>
-            );
-          })}
-
-          {/* Hover targets for tooltips */}
-          {weeklyData.map((d, i) => {
-            if (d.done === 0 && d.overdue === 0) return null;
-            const x = padX + (i / (WEEKS - 1)) * graphW;
-            const normalizedVal = d.done / maxVal;
-            const y = d.done > 0 ? padY + graphH * (1 - normalizedVal) * 0.7 : padY + graphH * 0.75;
-            return (
-              <g key={`tooltip-${i}`}>
-                <rect x={x - 15} y={padY} width={30} height={graphH} fill="transparent" className="cursor-pointer">
-                  <title>{`${d.label}: ${d.done} concluídas, ${d.overdue} atrasadas`}</title>
-                </rect>
-              </g>
             );
           })}
         </svg>
