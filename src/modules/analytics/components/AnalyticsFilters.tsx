@@ -74,7 +74,7 @@ function CustomSelect({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-8 min-w-[180px] items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition-all ${
+        className={`flex h-9 min-w-[170px] items-center gap-2 rounded-xl border px-3 text-[12px] font-semibold transition-all ${
           value
             ? "border-[hsl(262_83%_58%/0.4)] bg-[hsl(262_83%_58%/0.1)] text-white/80"
             : "border-white/[0.08] bg-[hsl(260_30%_12%)] text-white/50"
@@ -92,13 +92,13 @@ function CustomSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[240px] overflow-auto rounded-xl border border-white/[0.08] p-1 shadow-xl shadow-black/40"
+            className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[240px] overflow-auto rounded-2xl border border-white/[0.08] p-1.5 shadow-xl shadow-black/40"
             style={{ background: "hsl(260 30% 12%)" }}
           >
             {/* "All" option */}
             <button
               onClick={() => { onChange(""); setOpen(false); }}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${
                 !value ? "bg-[hsl(262_83%_58%/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
               }`}
             >
@@ -112,7 +112,7 @@ function CustomSelect({
                   <button
                     key={o.value}
                     onClick={() => { onChange(o.value); setOpen(false); }}
-                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${
                       value === o.value
                         ? "bg-[hsl(262_83%_58%/0.15)] text-white/90"
                         : "text-white/50 hover:bg-white/[0.05] hover:text-white/70"
@@ -129,7 +129,7 @@ function CustomSelect({
                   <button
                     key={o.value}
                     onClick={() => { onChange(o.value); setOpen(false); }}
-                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${
                       value === o.value
                         ? "bg-[hsl(262_83%_58%/0.15)] text-white/90"
                         : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
@@ -145,7 +145,7 @@ function CustomSelect({
               <button
                 key={o.value}
                 onClick={() => { onChange(o.value); setOpen(false); }}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${
                   value === o.value
                     ? "bg-[hsl(262_83%_58%/0.15)] text-white/90"
                     : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
@@ -175,7 +175,11 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
       <div className="flex items-center gap-3 flex-wrap justify-center">
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-white/[0.12] hover:text-white/70"
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
+            expanded
+              ? "border-[hsl(262_83%_58%/0.4)] bg-[hsl(262_83%_58%/0.1)] text-[hsl(262_83%_58%)]"
+              : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
+          }`}
         >
           <Filter className="h-3.5 w-3.5" />
           Filtros
@@ -210,12 +214,12 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
               {/* Period */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
-                <div className="flex gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
                   {PERIODS.map((p) => (
                     <button
                       key={p.key}
                       onClick={() => onChange({ ...filters, period: p.key })}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                      className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
                         filters.period === p.key
                           ? "bg-[hsl(262_83%_58%)] text-white shadow"
                           : "text-white/30 hover:text-white/50"
@@ -230,12 +234,12 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
               {/* Status */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
-                <div className="flex gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
                   {STATUSES.map((s) => (
                     <button
                       key={s.key}
                       onClick={() => onChange({ ...filters, status: s.key })}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                      className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
                         filters.status === s.key
                           ? "bg-[hsl(262_83%_58%)] text-white shadow"
                           : "text-white/30 hover:text-white/50"
