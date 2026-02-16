@@ -49,17 +49,42 @@ serve(async (req: Request) => {
       return errRes("Token inválido.", 401);
     }
 
-    // Check admin via is_admin() on external DB
-    const { data: isAdmin } = await callerClient.rpc("is_admin");
-    if (!isAdmin) {
+    const callerUid = userData.user.id;
+
+    // Admin client with SERVICE ROLE on EXTERNAL DB — bypasses RLS
+    const adminClient = createClient(EXT_URL, extServiceRoleKey);
+
+    // Check admin: first user_roles, then fallback to users.user_profile
+    const { data: roleRows } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerUid)
+      .limit(1);
+
+    let callerRole = roleRows?.[0]?.role ?? null;
+
+    // Fallback: check users.user_profile if no role found
+    if (!callerRole) {
+      const { data: userRows } = await adminClient
+        .from("users")
+        .select("user_profile")
+        .eq("auth_user_id", callerUid)
+        .limit(1);
+      const profile = userRows?.[0]?.user_profile;
+      const profileToRole: Record<string, string> = {
+        Administrador: "admin", Gerente: "gerente", Coordenador: "coordenador",
+        Consultor: "consultor", Cliente: "cliente",
+      };
+      callerRole = profile ? (profileToRole[profile] ?? "consultor") : null;
+    }
+
+    const managerRoles = ["admin", "gerente", "coordenador"];
+    if (!callerRole || !managerRoles.includes(callerRole)) {
       return errRes("Apenas administradores podem gerenciar usuários.", 403);
     }
 
     const body = await req.json();
     const { action } = body;
-
-    // Admin client with SERVICE ROLE on EXTERNAL DB — bypasses RLS
-    const adminClient = createClient(EXT_URL, extServiceRoleKey);
 
     if (action === "create") {
       const { email, password, name, user_profile, cliente_id, areas, projects } = body;
