@@ -130,8 +130,25 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `${heartColor.replace(")", " / 0.15)")}` }}>
-            <Activity className="h-4 w-4" style={{ color: heartColor }} />
+          <motion.div
+            className="relative flex h-8 w-8 items-center justify-center rounded-lg"
+            style={{ background: `${heartColor.replace(")", " / 0.15)")}` }}
+            animate={{
+              scale: [1, 1.1, 1],
+              boxShadow: [
+                `0 0 0px ${heartColor.replace(")", " / 0)")}`,
+                `0 0 14px ${heartColor.replace(")", " / 0.4)")}`,
+                `0 0 0px ${heartColor.replace(")", " / 0)")}`,
+              ],
+            }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Activity className="h-4 w-4" style={{ color: heartColor }} />
+            </motion.div>
             {/* Pulse ring */}
             <motion.div
               className="absolute inset-0 rounded-lg"
@@ -139,7 +156,7 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
               animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
             />
-          </div>
+          </motion.div>
           <div>
             <h3 className="text-sm font-bold text-white/90">Pulso de Produtividade</h3>
             <p className="text-[10px] text-white/30">Ritmo de entregas · {WEEKS} semanas</p>

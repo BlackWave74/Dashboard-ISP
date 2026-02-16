@@ -151,7 +151,7 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
         <Info className="h-4 w-4" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto animate-scale-in fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto animate-scale-in fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl">
           <DialogHeader className="text-center items-center">
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
@@ -377,8 +377,8 @@ export function TaskCharts({
         >
           <div className="mb-3 flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Projetos</p>
-              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Horas por projeto</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Alocação por Projeto</p>
+              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Horas investidas por projeto</p>
             </div>
             <ChartInfoButton
               title="Horas por Projeto"

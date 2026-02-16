@@ -192,7 +192,7 @@ export default function AnaliticasPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-col items-center text-center gap-3"
+          className="flex items-start justify-between gap-4"
         >
           <div>
             <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
@@ -201,22 +201,41 @@ export default function AnaliticasPage() {
               {filters.period !== "180d" && ` · Últimos ${periodDays} dias`}
             </p>
           </div>
-          <AnalyticsSearch
-            projects={projects}
-            onSelect={setSelectedProject}
-            selected={selectedProject}
-          />
+          <div className="flex items-center gap-3 shrink-0 pt-1">
+            <div className="flex items-center gap-1.5 text-[10px] text-white/30">
+              <span className={`h-1.5 w-1.5 rounded-full ${loading ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
+              Auto-atualização
+            </div>
+            <button
+              type="button"
+              onClick={() => { reloadTasks(); reloadTimes(); }}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40 whitespace-nowrap"
+            >
+              <Loader2 className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              Atualizar
+            </button>
+          </div>
         </motion.div>
 
-        {/* Filters */}
-        <AnalyticsFilters
-          filters={filters}
-          onChange={setFilters}
-          projects={projectOptions}
-          consultants={consultants}
-          isAdmin={isAdmin}
-          myProjectIds={myProjectIds}
-        />
+        {/* Search + Filters */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center justify-center gap-3 flex-wrap w-full">
+            <AnalyticsSearch
+              projects={projects}
+              onSelect={setSelectedProject}
+              selected={selectedProject}
+            />
+          </div>
+          <AnalyticsFilters
+            filters={filters}
+            onChange={setFilters}
+            projects={projectOptions}
+            consultants={consultants}
+            isAdmin={isAdmin}
+            myProjectIds={myProjectIds}
+          />
+        </div>
 
         {/* KPI Cards */}
         <AnalyticsKpiCards

@@ -84,11 +84,11 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
           >
             <div className="border-t border-white/[0.04]">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_150px_120px_100px] gap-2 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-white/25">
+              <div className="grid grid-cols-[1fr_180px_160px_120px] gap-2 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-white/25">
                 <span>Tarefa</span>
                 <span>Projeto</span>
                 <span>Responsável</span>
-                <span className="text-right">Prazo</span>
+                <span className="text-center">Prazo</span>
               </div>
 
               {/* Rows */}
@@ -102,7 +102,7 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
-                    className="grid grid-cols-[1fr_150px_120px_100px] gap-2 border-t border-white/[0.03] px-5 py-2.5 text-xs transition hover:bg-white/[0.02]"
+                    className="grid grid-cols-[1fr_180px_160px_120px] gap-2 border-t border-white/[0.03] px-5 py-2.5 text-xs transition hover:bg-white/[0.02]"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div
@@ -116,7 +116,7 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
                     <span className="truncate text-white/40">{t._project}</span>
                     <span className="truncate text-white/40">{t._responsible}</span>
                     <span
-                      className="text-right font-medium"
+                      className="text-center font-medium"
                       style={{ color: t._status === "overdue" ? "hsl(0 84% 60%)" : "hsl(262 83% 58% / 0.7)" }}
                     >
                       {deadlineStr}

@@ -53,7 +53,7 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
   ];
 
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 justify-items-center">
       {kpis.map((k, i) => {
         const Icon = k.icon;
         return (

@@ -218,14 +218,14 @@ export function TaskFilters({
       {/* Search + Filter toggle */}
       <div className="flex items-center justify-center gap-3 flex-wrap">
         {/* Search */}
-        <div className="relative flex items-center w-full sm:w-auto sm:min-w-[200px] sm:max-w-[260px]">
-          <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+        <div className="relative flex items-center w-full sm:w-auto sm:min-w-[240px] sm:max-w-[340px]">
+          <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[hsl(var(--task-text-muted)/0.4)]" />
           <input
             ref={searchRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar tarefa..."
-            className="h-8 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-7 text-xs text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.4)] outline-none transition focus:border-[hsl(var(--task-yellow)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.15)]"
+            className="h-10 w-full rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-10 pr-9 text-sm text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.3)] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-purple)/0.2)] focus:bg-[hsl(var(--task-surface-hover))]"
           />
           {search && (
             <button
