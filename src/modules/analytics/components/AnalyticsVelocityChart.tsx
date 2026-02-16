@@ -172,11 +172,12 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
             y1={avgY}
             x2={chartW}
             y2={avgY}
-            stroke="hsl(262 83% 58% / 0.3)"
+            stroke="hsl(262 83% 58% / 0.4)"
             strokeWidth={1}
             strokeDasharray="4 4"
           />
-          <text x={chartW - 2} y={avgY - 4} textAnchor="end" className="text-[8px] fill-white/25">
+          <rect x={chartW - 90} y={avgY - 16} width={88} height={14} rx={4} fill="hsl(260 30% 12% / 0.85)" />
+          <text x={chartW - 4} y={avgY - 6} textAnchor="end" className="text-[9px] fill-white/50 font-semibold">
             média {avgVelocity.toFixed(1)}/sem
           </text>
 
@@ -211,7 +212,7 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
             </motion.g>
           ))}
 
-          {/* Week labels (show every other) */}
+          {/* Week labels — show every other, more visible */}
           {weekData.map((w, i) => (
             i % 2 === 0 && (
               <text
@@ -219,11 +220,20 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
                 x={points[i].x}
                 y={chartH + 14}
                 textAnchor="middle"
-                className="text-[7px] fill-white/20"
+                className="text-[9px] fill-white/40 font-medium"
               >
                 {w.label}
               </text>
             )
+          ))}
+
+          {/* Hover targets for data points */}
+          {weekData.map((w, i) => (
+            <g key={`tip-${i}`}>
+              <rect x={points[i].x - 12} y={padY} width={24} height={chartH} fill="transparent" className="cursor-pointer">
+                <title>{`${w.label}: ${w.count} tarefa${w.count !== 1 ? "s" : ""} concluída${w.count !== 1 ? "s" : ""}`}</title>
+              </rect>
+            </g>
           ))}
 
           <defs>
