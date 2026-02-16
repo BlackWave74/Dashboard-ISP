@@ -200,18 +200,41 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="space-y-2 text-[11px] text-white/60 leading-relaxed">
-                <p>O <strong className="text-white/80">Pulso de Produtividade</strong> mostra o ritmo de entregas nas últimas {WEEKS} semanas.</p>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full shrink-0" style={{ background: "hsl(262 83% 58%)" }} />
-                  <span><strong className="text-white/80">Roxa:</strong> concluídas/semana</span>
+              <div className="space-y-2.5 text-[11px] text-white/60 leading-relaxed">
+                <p>O <strong className="text-white/80">Pulso de Produtividade</strong> visualiza o ritmo de entregas e atrasos nas últimas <strong className="text-white/80">{WEEKS} semanas</strong>, no estilo de eletrocardiograma (EKG).</p>
+                <p className="text-white/50">Quanto maiores os picos, mais tarefas foram concluídas naquela semana. Picos vermelhos indicam semanas com mais atrasos.</p>
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-3 space-y-2">
+                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider mb-1">Legenda</p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full shrink-0" style={{ background: "hsl(262 83% 58%)" }} />
+                    <span><strong className="text-white/80">Linha roxa:</strong> tarefas concluídas por semana</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full shrink-0" style={{ background: "hsl(0 84% 60% / 0.6)" }} />
+                    <span><strong className="text-white/80">Linha vermelha:</strong> tarefas atrasadas por semana</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-white/50 shrink-0 w-4 text-center">N</span>
+                    <span><strong className="text-white/80">t/sem:</strong> média de tarefas entregues por semana no período</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full shrink-0" style={{ background: "hsl(0 84% 60% / 0.6)" }} />
-                  <span><strong className="text-white/80">Vermelha:</strong> atrasadas/semana</span>
+                <p className="text-white/50">A <strong className="text-white/70">barra de varredura</strong> animada simula um monitor cardíaco em tempo real.</p>
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-3 space-y-1.5">
+                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider mb-1">Resumo do período</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50">Concluídas</span>
+                    <span className="font-bold text-emerald-400">{totalDone}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50">Atrasadas</span>
+                    <span className="font-bold text-rose-400">{totalOverdue}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50">Tendência</span>
+                    <span className="font-bold text-white/80">{trend >= 0 ? `+${trend.toFixed(0)}%` : `${trend.toFixed(0)}%`}</span>
+                  </div>
                 </div>
-                <p><strong className="text-white/80">t/sem</strong> = média de entregas por semana.</p>
-                <p className="text-white/40 italic">💡 Passe o mouse nas bolinhas para detalhes.</p>
+                <p className="text-white/40 italic">💡 Passe o mouse nos pontos do gráfico para ver detalhes de cada semana.</p>
               </div>
             </div>
           </motion.div>
