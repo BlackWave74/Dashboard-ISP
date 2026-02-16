@@ -26,10 +26,10 @@ const VARIANT_ICON: Record<Variant, LucideIcon> = {
 };
 
 const VARIANT_MSG: Record<Variant, string> = {
-  chart: "Nenhum dado disponível para exibir o gráfico.",
+  chart: "Sem dados suficientes para exibir este gráfico. Ajuste os filtros ou aguarde novos registros.",
   table: "Nenhum registro encontrado.",
-  users: "Nenhum colaborador encontrado.",
-  timeline: "Nenhum prazo registrado no período.",
+  users: "Nenhum usuário encontrado com os filtros atuais.",
+  timeline: "Nenhum prazo registrado no período selecionado.",
   default: "Nenhum dado disponível no momento.",
 };
 
