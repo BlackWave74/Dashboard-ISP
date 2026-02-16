@@ -89,7 +89,7 @@ export default function SuportePage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
+    <div className="min-h-screen w-full overflow-y-auto" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
       <div className="mx-auto w-full max-w-[1000px] space-y-5 p-5 md:p-8">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">

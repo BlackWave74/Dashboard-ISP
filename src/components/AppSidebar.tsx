@@ -29,6 +29,15 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseExt = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/** Set auth session on the standalone client so storage/DB calls work */
+async function ensureSession(accessToken?: string, refreshToken?: string) {
+  if (!accessToken || !refreshToken) return;
+  const { data } = await supabaseExt.auth.getSession();
+  if (!data.session) {
+    await supabaseExt.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  }
+}
 import { AnimatePresence, motion } from "framer-motion";
 
 function UserAvatar({ name, email, collapsed, avatarUrl, onChangePhoto }: { name?: string; email?: string; collapsed?: boolean; avatarUrl?: string | null; onChangePhoto?: () => void }) {
@@ -177,21 +186,28 @@ export function AppSidebar() {
     if (!session?.accessToken) return;
     const loadAvatar = async () => {
       try {
+        await ensureSession(session.accessToken, session.refreshToken);
+        const { data: { user } } = await supabaseExt.auth.getUser();
+        if (!user) return;
         const { data: userData } = await supabaseExt
           .from("users")
           .select("avatar_url")
-          .eq("auth_user_id", (await supabaseExt.auth.getUser()).data.user?.id ?? "")
+          .eq("auth_user_id", user.id)
           .maybeSingle();
         if (userData?.avatar_url) setAvatarUrl(userData.avatar_url);
       } catch { /* ignore */ }
     };
     loadAvatar();
-  }, [session?.accessToken]);
+  }, [session?.accessToken, session?.refreshToken]);
 
   const handleAvatarUpload = useCallback(async (file: File) => {
     try {
+      await ensureSession(session?.accessToken, session?.refreshToken);
       const { data: { user } } = await supabaseExt.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error("Avatar upload failed: no authenticated user");
+        return;
+      }
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/avatar.${ext}`;
       
@@ -208,7 +224,7 @@ export function AppSidebar() {
     } catch (err) {
       console.error("Avatar upload failed:", err);
     }
-  }, []);
+  }, [session?.accessToken, session?.refreshToken]);
 
   const [projectsOpen, setProjectsOpen] = useState(() => {
     return ["/tarefas", "/analiticas"].some((p) =>
