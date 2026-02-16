@@ -337,55 +337,61 @@ export function AppSidebar() {
           <nav className="flex flex-col gap-0.5">
             <SidebarNavItem to="/" icon={Home} label="Página Inicial" end />
 
-            {/* Projetos collapsible */}
-            {collapsed ? (
-              <>
-                <SidebarNavItem to="/tarefas" icon={ListTodo} label="Tarefas" />
-                <SidebarNavItem to="/analiticas" icon={BarChart3} label="Analíticas" />
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => setProjectsOpen((o) => !o)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 ${
-                    isProjectsActive
-                      ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
-                      : "text-white/60 hover:bg-white/[0.08] hover:text-white"
-                  }`}
-                >
-                  <FolderKanban className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                  <span className="flex-1 text-left">Projetos</span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${
-                      projectsOpen ? "rotate-0" : "-rotate-90"
+            {/* Projetos collapsible — only show if user can access tarefas or analiticas */}
+            {(canAccess("tarefas") || canAccess("analiticas")) && (
+              collapsed ? (
+                <>
+                  {canAccess("tarefas") && <SidebarNavItem to="/tarefas" icon={ListTodo} label="Tarefas" />}
+                  {canAccess("analiticas") && <SidebarNavItem to="/analiticas" icon={BarChart3} label="Analíticas" />}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setProjectsOpen((o) => !o)}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 ${
+                      isProjectsActive
+                        ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
+                        : "text-white/60 hover:bg-white/[0.08] hover:text-white"
                     }`}
-                  />
-                </button>
+                  >
+                    <FolderKanban className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                    <span className="flex-1 text-left">Projetos</span>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${
+                        projectsOpen ? "rotate-0" : "-rotate-90"
+                      }`}
+                    />
+                  </button>
 
-                {(projectsOpen || isProjectsActive) && (
-                  <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
-                    <NavLink
-                      to="/tarefas"
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                      activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
-                    >
-                      <ListTodo className="h-4 w-4" />
-                      <span>Tarefas</span>
-                    </NavLink>
-                    <NavLink
-                      to="/analiticas"
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                      activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>Analíticas</span>
-                    </NavLink>
-                  </div>
-                )}
-              </>
+                  {(projectsOpen || isProjectsActive) && (
+                    <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
+                      {canAccess("tarefas") && (
+                        <NavLink
+                          to="/tarefas"
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                          activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
+                        >
+                          <ListTodo className="h-4 w-4" />
+                          <span>Tarefas</span>
+                        </NavLink>
+                      )}
+                      {canAccess("analiticas") && (
+                        <NavLink
+                          to="/analiticas"
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                          activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          <span>Analíticas</span>
+                        </NavLink>
+                      )}
+                    </div>
+                  )}
+                </>
+              )
             )}
 
-            <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />
+            {canAccess("comodato") && <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />}
           </nav>
         </div>
 
