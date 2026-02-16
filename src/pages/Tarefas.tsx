@@ -543,7 +543,7 @@ export default function TarefasPage() {
               <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
                 Acompanhamento de Tarefas
               </h1>
-              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))]">
+              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] whitespace-nowrap">
                 Acompanhe o progresso, prazos e desempenho das atividades em tempo real.
               </p>
             </div>

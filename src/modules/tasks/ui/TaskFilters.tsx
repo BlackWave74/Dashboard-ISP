@@ -225,7 +225,7 @@ export function TaskFilters({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar tarefa..."
-            className="h-[34px] w-[200px] rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-xs font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(var(--task-purple)/0.4)] focus:bg-[hsl(var(--task-purple)/0.1)] focus:text-[hsl(var(--task-purple))]"
+            className="h-[38px] w-[210px] rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-[13px] font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(var(--task-purple)/0.4)] focus:bg-[hsl(var(--task-purple)/0.1)] focus:text-[hsl(var(--task-purple))]"
           />
           {search && (
             <button
@@ -242,7 +242,7 @@ export function TaskFilters({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[7px] text-xs font-semibold transition ${
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
             expanded
               ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-[hsl(var(--task-purple))]"
               : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
