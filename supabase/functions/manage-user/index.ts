@@ -22,6 +22,26 @@ function errRes(message: string, status = 400) {
   return jsonRes({ ok: false, error: message }, status);
 }
 
+/** Translate common Supabase Auth errors to Portuguese */
+function translateError(msg: string): string {
+  const map: Record<string, string> = {
+    "A user with this email address has already been registered": "Já existe um usuário com este e-mail.",
+    "User not found": "Usuário não encontrado.",
+    "Invalid login credentials": "Credenciais inválidas.",
+    "Email not confirmed": "E-mail não confirmado.",
+    "Password should be at least 6 characters": "A senha deve ter pelo menos 6 caracteres.",
+    "Unable to validate email address: invalid format": "Formato de e-mail inválido.",
+    "Signup requires a valid password": "É necessário uma senha válida.",
+    "User already registered": "Usuário já registrado.",
+    "Database error deleting user": "Erro ao excluir usuário do banco de dados.",
+    "Database error saving new user": "Erro ao salvar novo usuário no banco de dados.",
+  };
+  for (const [en, pt] of Object.entries(map)) {
+    if (msg.toLowerCase().includes(en.toLowerCase())) return pt;
+  }
+  return msg;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -86,8 +106,94 @@ serve(async (req: Request) => {
     const body = await req.json();
     const { action } = body;
 
+    /* ═══════════════════════════════════════════ */
+    /* ─── LIST ─── */
+    /* ═══════════════════════════════════════════ */
+    if (action === "list") {
+      // Fetch all users via service_role (bypasses RLS)
+      const { data: allUsers, error: listErr } = await adminClient
+        .from("users")
+        .select("id,auth_user_id,email,name,user_profile,active")
+        .order("name", { ascending: true })
+        .limit(500);
+
+      if (listErr) {
+        return errRes(`Falha ao listar usuários: ${listErr.message}`);
+      }
+
+      // Fetch all roles
+      const { data: allRoles } = await adminClient
+        .from("user_roles")
+        .select("user_id,role")
+        .limit(1000);
+
+      const roleMap = new Map<string, string>();
+      if (Array.isArray(allRoles)) {
+        allRoles.forEach((r: { user_id: string; role: string }) => roleMap.set(r.user_id, r.role));
+      }
+
+      // Fetch all areas
+      const { data: allAreas } = await adminClient
+        .from("user_allowed_areas")
+        .select("user_id,area_name")
+        .limit(5000);
+
+      const areaMap = new Map<string, string[]>();
+      if (Array.isArray(allAreas)) {
+        allAreas.forEach((a: { user_id: string; area_name: string }) => {
+          const existing = areaMap.get(a.user_id) || [];
+          existing.push(a.area_name);
+          areaMap.set(a.user_id, existing);
+        });
+      }
+
+      // Fetch all project access
+      const { data: allAccess } = await adminClient
+        .from("user_project_access")
+        .select("user_id,project_id")
+        .limit(5000);
+
+      const projectMap = new Map<string, number[]>();
+      if (Array.isArray(allAccess)) {
+        allAccess.forEach((p: { user_id: string; project_id: number }) => {
+          const existing = projectMap.get(p.user_id) || [];
+          existing.push(p.project_id);
+          projectMap.set(p.user_id, existing);
+        });
+      }
+
+      const ROLE_TO_PERFIL: Record<string, string> = {
+        admin: "Administrador",
+        consultor: "Consultor",
+        gerente: "Gerente",
+        coordenador: "Coordenador",
+        cliente: "Cliente",
+      };
+
+      const users = (allUsers || []).map((u: Record<string, unknown>) => {
+        const authUid = String(u.auth_user_id ?? "");
+        const dbRole = roleMap.get(authUid);
+        return {
+          id: String(u.id ?? ""),
+          auth_user_id: authUid,
+          email: String(u.email ?? ""),
+          name: String(u.name ?? ""),
+          user_profile: dbRole ? (ROLE_TO_PERFIL[dbRole] ?? String(u.user_profile ?? "Consultor")) : String(u.user_profile ?? "Consultor"),
+          active: u.active !== false,
+          role: dbRole ?? null,
+          areas: areaMap.get(authUid) ?? [],
+          projects: projectMap.get(authUid) ?? [],
+        };
+      });
+
+      return jsonRes({ ok: true, data: users });
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* ─── CREATE ─── */
+    /* ═══════════════════════════════════════════ */
     if (action === "create") {
-      const { email, password, name, user_profile, cliente_id, areas, projects } = body;
+      const { email, password, name, user_profile, areas, projects } = body;
 
       if (!email || !password) {
         return errRes("E-mail e senha são obrigatórios.");
@@ -102,7 +208,7 @@ serve(async (req: Request) => {
       });
 
       if (authError) {
-        return errRes(authError.message);
+        return errRes(translateError(authError.message));
       }
 
       const authUserId = authData.user.id;
@@ -123,7 +229,7 @@ serve(async (req: Request) => {
 
       if (userInsertError) {
         await adminClient.auth.admin.deleteUser(authUserId);
-        return errRes(`Falha ao criar registro: ${userInsertError.message}`);
+        return errRes(`Falha ao criar registro: ${translateError(userInsertError.message)}`);
       }
 
       // 3. Insert role
@@ -163,6 +269,9 @@ serve(async (req: Request) => {
       });
     }
 
+    /* ═══════════════════════════════════════════ */
+    /* ─── UPDATE ─── */
+    /* ═══════════════════════════════════════════ */
     if (action === "update") {
       const { userId, authUserId: targetAuthUserId, payload, areas, projects } = body;
 
@@ -176,7 +285,6 @@ serve(async (req: Request) => {
       if (payload?.email !== undefined) userPayload.email = payload.email;
       if (payload?.user_profile !== undefined) userPayload.user_profile = payload.user_profile;
       if (payload?.active !== undefined) userPayload.active = payload.active;
-      if (payload?.cliente_id !== undefined) userPayload.cliente_id = payload.cliente_id;
 
       if (Object.keys(userPayload).length > 0) {
         const { error: updateError } = await adminClient
@@ -184,7 +292,7 @@ serve(async (req: Request) => {
           .update(userPayload)
           .eq("id", userId);
         if (updateError) {
-          return errRes(`Falha ao atualizar usuário: ${updateError.message}`);
+          return errRes(`Falha ao atualizar usuário: ${translateError(updateError.message)}`);
         }
       }
 
@@ -201,7 +309,7 @@ serve(async (req: Request) => {
         await adminClient.from("user_roles").delete().eq("user_id", targetAuthUserId);
         const { error: roleError } = await adminClient.from("user_roles").insert({ user_id: targetAuthUserId, role });
         if (roleError) {
-          return errRes(`Falha ao sincronizar role: ${roleError.message}`);
+          return errRes(`Falha ao sincronizar perfil: ${translateError(roleError.message)}`);
         }
       }
 
@@ -212,7 +320,7 @@ serve(async (req: Request) => {
           const areaRows = areas.map((a: string) => ({ user_id: targetAuthUserId, area_name: a }));
           const { error: areasError } = await adminClient.from("user_allowed_areas").insert(areaRows);
           if (areasError) {
-            return errRes(`Falha ao sincronizar áreas: ${areasError.message}`);
+            return errRes(`Falha ao salvar áreas permitidas: ${translateError(areasError.message)}`);
           }
         }
       }
@@ -224,7 +332,7 @@ serve(async (req: Request) => {
           const projRows = projects.map((pid: number) => ({ user_id: targetAuthUserId, project_id: pid }));
           const { error: projError } = await adminClient.from("user_project_access").insert(projRows);
           if (projError) {
-            return errRes(`Falha ao sincronizar projetos: ${projError.message}`);
+            return errRes(`Falha ao salvar projetos: ${translateError(projError.message)}`);
           }
         }
       }
@@ -240,6 +348,9 @@ serve(async (req: Request) => {
       return jsonRes({ ok: true });
     }
 
+    /* ═══════════════════════════════════════════ */
+    /* ─── DELETE ─── */
+    /* ═══════════════════════════════════════════ */
     if (action === "delete") {
       const { authUserId } = body;
       if (!authUserId) return errRes("authUserId é obrigatório.");
@@ -250,11 +361,10 @@ serve(async (req: Request) => {
       await adminClient.from("user_roles").delete().eq("user_id", authUserId);
       await adminClient.from("users").delete().eq("auth_user_id", authUserId);
 
-      // 2. Delete auth user (may fail if other FK references exist)
+      // 2. Delete auth user
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(authUserId);
       if (deleteError) {
-        // Log but don't fail — DB records are already cleaned
-        console.warn("Auth delete warning:", deleteError.message);
+        console.warn("Aviso ao excluir auth:", deleteError.message);
       }
 
       await adminClient.from("audit_log").insert({
@@ -267,11 +377,13 @@ serve(async (req: Request) => {
       return jsonRes({ ok: true });
     }
 
+    /* ═══════════════════════════════════════════ */
+    /* ─── DEACTIVATE ─── */
+    /* ═══════════════════════════════════════════ */
     if (action === "deactivate") {
       const { userId, authUserId: targetAuthUserId } = body;
       if (!userId || !targetAuthUserId) return errRes("userId e authUserId são obrigatórios.");
 
-      // Set user inactive and clear areas/projects
       await adminClient.from("users").update({ active: false }).eq("id", userId);
       await adminClient.from("user_allowed_areas").delete().eq("user_id", targetAuthUserId);
       await adminClient.from("user_project_access").delete().eq("user_id", targetAuthUserId);
@@ -286,9 +398,9 @@ serve(async (req: Request) => {
       return jsonRes({ ok: true });
     }
 
-    return errRes("Ação inválida. Use 'create', 'update', 'delete' ou 'deactivate'.");
+    return errRes("Ação inválida. Use 'list', 'create', 'update', 'delete' ou 'deactivate'.");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro interno";
-    return errRes(message, 500);
+    const message = error instanceof Error ? error.message : "Erro interno do servidor";
+    return errRes(translateError(message), 500);
   }
 });
