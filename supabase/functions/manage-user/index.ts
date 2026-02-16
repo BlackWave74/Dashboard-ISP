@@ -1,15 +1,55 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+/* ═══════════════════════════════════════════════════════════════
+ *  CORS
+ * ═══════════════════════════════════════════════════════════════ */
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// External Supabase (ISP Consulte) — public keys are safe
+/* ═══════════════════════════════════════════════════════════════
+ *  External Supabase (ISP Consulte) — public keys are safe
+ * ═══════════════════════════════════════════════════════════════ */
 const EXT_URL = "https://stubkeeuttixteqckshd.supabase.co";
-const EXT_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0dWJrZWV1dHRpeHRlcWNrc2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQ0OTIsImV4cCI6MjA3MzA0MDQ5Mn0.YcpSKrTSb1P1REC8lgkdduDITX52h_z7ArPD6XIkrlU";
+const EXT_ANON =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0dWJrZWV1dHRpeHRlcWNrc2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQ0OTIsImV4cCI6MjA3MzA0MDQ5Mn0.YcpSKrTSb1P1REC8lgkdduDITX52h_z7ArPD6XIkrlU";
+
+/* ═══════════════════════════════════════════════════════════════
+ *  Constants & helpers
+ * ═══════════════════════════════════════════════════════════════ */
+const VALID_ACTIONS = ["list", "create", "update", "delete", "deactivate", "cleanup_orphans"] as const;
+type Action = (typeof VALID_ACTIONS)[number];
+
+const MANAGER_ROLES = new Set(["admin", "gerente", "coordenador"]);
+
+const PROFILE_TO_ROLE: Record<string, string> = {
+  Administrador: "admin",
+  Consultor: "consultor",
+  Gerente: "gerente",
+  Coordenador: "coordenador",
+  Cliente: "cliente",
+};
+
+const ROLE_TO_PERFIL: Record<string, string> = {
+  admin: "Administrador",
+  consultor: "Consultor",
+  gerente: "Gerente",
+  coordenador: "Coordenador",
+  cliente: "Cliente",
+};
+
+const VALID_AREAS = new Set(["home", "tarefas", "analiticas", "comodato", "integracoes", "usuarios"]);
+
+/** Structured log helper */
+function log(level: "info" | "warn" | "error", action: string, msg: string, meta?: Record<string, unknown>) {
+  const entry = { ts: new Date().toISOString(), level, action, msg, ...meta };
+  if (level === "error") console.error(JSON.stringify(entry));
+  else if (level === "warn") console.warn(JSON.stringify(entry));
+  else console.log(JSON.stringify(entry));
+}
 
 function jsonRes(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -42,12 +82,137 @@ function translateError(msg: string): string {
   return msg;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+ *  Input validation helpers
+ * ═══════════════════════════════════════════════════════════════ */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateEmail(email: unknown): string | null {
+  if (typeof email !== "string" || !EMAIL_RE.test(email.trim())) return null;
+  return email.trim().toLowerCase();
+}
+
+function validateString(value: unknown, maxLen = 255): string | null {
+  if (typeof value !== "string") return null;
+  const s = value.trim().slice(0, maxLen);
+  return s.length > 0 ? s : null;
+}
+
+function validateAreas(areas: unknown): string[] | null {
+  if (!Array.isArray(areas)) return null;
+  return areas.filter((a): a is string => typeof a === "string" && VALID_AREAS.has(a));
+}
+
+function validateProjectIds(ids: unknown): number[] | null {
+  if (!Array.isArray(ids)) return null;
+  return ids.filter((id): id is number => typeof id === "number" && Number.isInteger(id) && id > 0);
+}
+
+function validateClienteId(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ *  Safe DB operations with error aggregation
+ * ═══════════════════════════════════════════════════════════════ */
+type DbResult = { ok: boolean; error?: string };
+
+async function safeDelete(client: SupabaseClient, table: string, column: string, value: string): Promise<DbResult> {
+  const { error } = await client.from(table).delete().eq(column, value);
+  if (error) {
+    log("warn", "safeDelete", `Failed to delete from ${table}`, { column, value, err: error.message });
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
+async function safeInsert(client: SupabaseClient, table: string, rows: Record<string, unknown>[]): Promise<DbResult> {
+  if (rows.length === 0) return { ok: true };
+  const { error } = await client.from(table).insert(rows);
+  if (error) {
+    log("warn", "safeInsert", `Failed to insert into ${table}`, { count: rows.length, err: error.message });
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
+/** Sync pattern: delete all existing + insert new. Returns warnings. */
+async function syncRelated(
+  client: SupabaseClient,
+  table: string,
+  userIdCol: string,
+  userId: string,
+  rows: Record<string, unknown>[],
+): Promise<string[]> {
+  const warnings: string[] = [];
+  const del = await safeDelete(client, table, userIdCol, userId);
+  if (!del.ok) warnings.push(`Aviso: falha ao limpar ${table}: ${del.error}`);
+  if (rows.length > 0) {
+    const ins = await safeInsert(client, table, rows);
+    if (!ins.ok) warnings.push(`Aviso: falha ao inserir em ${table}: ${ins.error}`);
+  }
+  return warnings;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ *  Auth & role resolution
+ * ═══════════════════════════════════════════════════════════════ */
+async function resolveCallerRole(adminClient: SupabaseClient, uid: string): Promise<string | null> {
+  // 1. Try user_roles table
+  const { data: roleRows } = await adminClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", uid)
+    .limit(1);
+
+  if (roleRows?.[0]?.role) return roleRows[0].role;
+
+  // 2. Fallback: users.user_profile
+  const { data: userRows } = await adminClient
+    .from("users")
+    .select("user_profile")
+    .eq("auth_user_id", uid)
+    .limit(1);
+
+  const profile = userRows?.[0]?.user_profile;
+  return profile ? (PROFILE_TO_ROLE[profile] ?? "consultor") : null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ *  Audit helper
+ * ═══════════════════════════════════════════════════════════════ */
+async function audit(
+  client: SupabaseClient,
+  performedBy: string,
+  targetUserId: string | null,
+  action: string,
+  details: Record<string, unknown>,
+) {
+  const { error } = await client.from("audit_log").insert({
+    performed_by: performedBy,
+    target_user_id: targetUserId,
+    action,
+    details,
+  });
+  if (error) {
+    log("warn", action, "Failed to write audit log", { err: error.message });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ *  MAIN HANDLER
+ * ═══════════════════════════════════════════════════════════════ */
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID().slice(0, 8);
+
   try {
+    /* ── Auth check ── */
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return errRes("Não autorizado.", 401);
@@ -55,124 +220,79 @@ serve(async (req: Request) => {
 
     const extServiceRoleKey = Deno.env.get("EXT_SUPABASE_SERVICE_ROLE_KEY");
     if (!extServiceRoleKey) {
+      log("error", "init", "EXT_SUPABASE_SERVICE_ROLE_KEY not set");
       return errRes("Configuração do servidor incompleta.", 500);
     }
 
-    // Verify caller against EXTERNAL Supabase
+    const token = authHeader.replace("Bearer ", "");
     const callerClient = createClient(EXT_URL, EXT_ANON, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await callerClient.auth.getUser(token);
     if (userError || !userData?.user) {
       return errRes("Token inválido.", 401);
     }
 
     const callerUid = userData.user.id;
-
-    // Admin client with SERVICE ROLE on EXTERNAL DB — bypasses RLS
     const adminClient = createClient(EXT_URL, extServiceRoleKey);
 
-    // Check admin: first user_roles, then fallback to users.user_profile
-    const { data: roleRows } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", callerUid)
-      .limit(1);
-
-    let callerRole = roleRows?.[0]?.role ?? null;
-
-    // Fallback: check users.user_profile if no role found
-    if (!callerRole) {
-      const { data: userRows } = await adminClient
-        .from("users")
-        .select("user_profile")
-        .eq("auth_user_id", callerUid)
-        .limit(1);
-      const profile = userRows?.[0]?.user_profile;
-      const profileToRole: Record<string, string> = {
-        Administrador: "admin", Gerente: "gerente", Coordenador: "coordenador",
-        Consultor: "consultor", Cliente: "cliente",
-      };
-      callerRole = profile ? (profileToRole[profile] ?? "consultor") : null;
-    }
-
-    const managerRoles = ["admin", "gerente", "coordenador"];
-    if (!callerRole || !managerRoles.includes(callerRole)) {
+    /* ── Role gate ── */
+    const callerRole = await resolveCallerRole(adminClient, callerUid);
+    if (!callerRole || !MANAGER_ROLES.has(callerRole)) {
+      log("warn", "auth", "Non-manager attempted access", { uid: callerUid, role: callerRole });
       return errRes("Apenas administradores podem gerenciar usuários.", 403);
     }
 
-    const body = await req.json();
-    const { action } = body;
+    /* ── Parse & validate action ── */
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return errRes("Corpo da requisição inválido (JSON esperado).");
+    }
+
+    const action = body.action as string;
+    if (!VALID_ACTIONS.includes(action as Action)) {
+      return errRes(`Ação inválida: '${action}'. Use: ${VALID_ACTIONS.join(", ")}.`);
+    }
+
+    log("info", action, "Request started", { rid: requestId, caller: callerUid });
 
     /* ═══════════════════════════════════════════ */
     /* ─── LIST ─── */
     /* ═══════════════════════════════════════════ */
     if (action === "list") {
-      // Fetch all users via service_role (bypasses RLS)
-      const { data: allUsers, error: listErr } = await adminClient
-        .from("users")
-        .select("id,auth_user_id,email,name,user_profile,active,cliente_id")
-        .order("name", { ascending: true })
-        .limit(500);
+      const [usersRes, rolesRes, areasRes, accessRes] = await Promise.all([
+        adminClient.from("users").select("id,auth_user_id,email,name,user_profile,active,cliente_id").order("name", { ascending: true }).limit(500),
+        adminClient.from("user_roles").select("user_id,role").limit(1000),
+        adminClient.from("user_allowed_areas").select("user_id,area_name").limit(5000),
+        adminClient.from("user_project_access").select("user_id,project_id").limit(5000),
+      ]);
 
-      console.log("[manage-user] list: allUsers count =", allUsers?.length ?? 0, "listErr =", listErr?.message ?? "none");
-
-      if (listErr) {
-        return errRes(`Falha ao listar usuários: ${listErr.message}`);
+      if (usersRes.error) {
+        log("error", "list", "Failed to fetch users", { err: usersRes.error.message });
+        return errRes(`Falha ao listar usuários: ${usersRes.error.message}`);
       }
-
-      // Fetch all roles
-      const { data: allRoles } = await adminClient
-        .from("user_roles")
-        .select("user_id,role")
-        .limit(1000);
 
       const roleMap = new Map<string, string>();
-      if (Array.isArray(allRoles)) {
-        allRoles.forEach((r: { user_id: string; role: string }) => roleMap.set(r.user_id, r.role));
-      }
-
-      // Fetch all areas
-      const { data: allAreas } = await adminClient
-        .from("user_allowed_areas")
-        .select("user_id,area_name")
-        .limit(5000);
+      (rolesRes.data ?? []).forEach((r: { user_id: string; role: string }) => roleMap.set(r.user_id, r.role));
 
       const areaMap = new Map<string, string[]>();
-      if (Array.isArray(allAreas)) {
-        allAreas.forEach((a: { user_id: string; area_name: string }) => {
-          const existing = areaMap.get(a.user_id) || [];
-          existing.push(a.area_name);
-          areaMap.set(a.user_id, existing);
-        });
-      }
-
-      // Fetch all project access
-      const { data: allAccess } = await adminClient
-        .from("user_project_access")
-        .select("user_id,project_id")
-        .limit(5000);
+      (areasRes.data ?? []).forEach((a: { user_id: string; area_name: string }) => {
+        const arr = areaMap.get(a.user_id) ?? [];
+        arr.push(a.area_name);
+        areaMap.set(a.user_id, arr);
+      });
 
       const projectMap = new Map<string, number[]>();
-      if (Array.isArray(allAccess)) {
-        allAccess.forEach((p: { user_id: string; project_id: number }) => {
-          const existing = projectMap.get(p.user_id) || [];
-          existing.push(p.project_id);
-          projectMap.set(p.user_id, existing);
-        });
-      }
+      (accessRes.data ?? []).forEach((p: { user_id: string; project_id: number }) => {
+        const arr = projectMap.get(p.user_id) ?? [];
+        arr.push(p.project_id);
+        projectMap.set(p.user_id, arr);
+      });
 
-      const ROLE_TO_PERFIL: Record<string, string> = {
-        admin: "Administrador",
-        consultor: "Consultor",
-        gerente: "Gerente",
-        coordenador: "Coordenador",
-        cliente: "Cliente",
-      };
-
-      const users = (allUsers || []).map((u: Record<string, unknown>) => {
+      const users = (usersRes.data ?? []).map((u: Record<string, unknown>) => {
         const authUid = String(u.auth_user_id ?? "");
         const dbRole = roleMap.get(authUid);
         return {
@@ -189,6 +309,7 @@ serve(async (req: Request) => {
         };
       });
 
+      log("info", "list", "Success", { rid: requestId, count: users.length });
       return jsonRes({ ok: true, data: users });
     }
 
@@ -196,123 +317,121 @@ serve(async (req: Request) => {
     /* ─── CREATE ─── */
     /* ═══════════════════════════════════════════ */
     if (action === "create") {
-      const { email, password, name, user_profile, areas, projects } = body;
+      const email = validateEmail(body.email);
+      if (!email) return errRes("E-mail inválido ou ausente.");
 
-      if (!email || !password) {
-        return errRes("E-mail e senha são obrigatórios.");
-      }
+      const password = validateString(body.password, 128);
+      if (!password || password.length < 6) return errRes("Senha deve ter pelo menos 6 caracteres.");
 
-      // 1. Try to create auth user
+      const name = validateString(body.name) ?? "";
+      const userProfile = validateString(body.user_profile) ?? "Consultor";
+      const areas = validateAreas(body.areas) ?? [];
+      const projects = validateProjectIds(body.projects) ?? [];
+      const clienteId = validateClienteId(body.cliente_id);
+      const role = PROFILE_TO_ROLE[userProfile] ?? "consultor";
+
+      // 1. Create or recover auth user
       let authUserId: string;
+      let recoveredOrphan = false;
+
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { name: name || "", user_profile: user_profile || "Consultor" },
+        user_metadata: { name, user_profile: userProfile },
       });
 
       if (authError) {
-        // Check if this is an "already registered" error — try to recover orphan
         const isAlreadyRegistered =
           authError.message.toLowerCase().includes("already been registered") ||
           authError.message.toLowerCase().includes("already registered") ||
           authError.message.toLowerCase().includes("user already");
 
-        if (isAlreadyRegistered) {
-          // List auth users to find the existing one by email
-          const { data: listData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
-          const existingAuthUser = listData?.users?.find(
-            (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
-          );
-
-          if (!existingAuthUser) {
-            return errRes("E-mail já registrado no Auth, mas não foi possível localizar o usuário.");
-          }
-
-          // Check if they already exist in the users table
-          const { data: existingRows } = await adminClient
-            .from("users")
-            .select("id")
-            .eq("auth_user_id", existingAuthUser.id)
-            .limit(1);
-
-          if (existingRows && existingRows.length > 0) {
-            return errRes("Já existe um usuário ativo com este e-mail. Edite-o na lista ao invés de criar um novo.");
-          }
-
-          // Orphan auth user — update password and re-link
-          await adminClient.auth.admin.updateUserById(existingAuthUser.id, {
-            password,
-            email_confirm: true,
-            user_metadata: { name: name || "", user_profile: user_profile || "Consultor" },
-          });
-
-          authUserId = existingAuthUser.id;
-          console.log(`[manage-user] Re-linked orphan auth user ${email} (${authUserId})`);
-        } else {
+        if (!isAlreadyRegistered) {
           return errRes(translateError(authError.message));
         }
+
+        // Attempt orphan recovery
+        const { data: listData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+        const existingAuthUser = listData?.users?.find(
+          (u: { email?: string }) => u.email?.toLowerCase() === email,
+        );
+
+        if (!existingAuthUser) {
+          return errRes("E-mail já registrado no Auth, mas não foi possível localizar o usuário.");
+        }
+
+        // Check if already linked in users table
+        const { data: existingRows } = await adminClient
+          .from("users")
+          .select("id")
+          .eq("auth_user_id", existingAuthUser.id)
+          .limit(1);
+
+        if (existingRows && existingRows.length > 0) {
+          return errRes("Já existe um usuário ativo com este e-mail. Edite-o na lista.");
+        }
+
+        // Re-link orphan
+        await adminClient.auth.admin.updateUserById(existingAuthUser.id, {
+          password,
+          email_confirm: true,
+          user_metadata: { name, user_profile: userProfile },
+        });
+
+        authUserId = existingAuthUser.id;
+        recoveredOrphan = true;
+        log("info", "create", "Recovered orphan auth user", { email, authUserId });
       } else {
         authUserId = authData.user.id;
       }
 
-      // 2. Upsert into users table
-      const { cliente_id } = body;
-      const { error: userInsertError } = await adminClient
-        .from("users")
-        .upsert(
-          {
-            auth_user_id: authUserId,
-            email,
-            name: name || "",
-            user_profile: user_profile || "Consultor",
-            active: true,
-            ...(cliente_id !== undefined && cliente_id !== null ? { cliente_id: Number(cliente_id) } : {}),
-          },
-          { onConflict: "auth_user_id" }
-        );
-
-      if (userInsertError) {
-        return errRes(`Falha ao criar registro: ${translateError(userInsertError.message)}`);
-      }
-
-      // 3. Sync role (delete old + insert new)
-      const profileToRole: Record<string, string> = {
-        Administrador: "admin",
-        Consultor: "consultor",
-        Gerente: "gerente",
-        Coordenador: "coordenador",
-        Cliente: "cliente",
+      // 2. Upsert users table
+      const userRow: Record<string, unknown> = {
+        auth_user_id: authUserId,
+        email,
+        name,
+        user_profile: userProfile,
+        active: true,
       };
-      const role = profileToRole[user_profile] ?? "consultor";
-      await adminClient.from("user_roles").delete().eq("user_id", authUserId);
-      await adminClient.from("user_roles").insert({ user_id: authUserId, role });
+      if (clienteId !== null) userRow.cliente_id = clienteId;
 
-      // 4. Sync allowed areas
-      await adminClient.from("user_allowed_areas").delete().eq("user_id", authUserId);
-      if (Array.isArray(areas) && areas.length > 0) {
-        const areaRows = areas.map((a: string) => ({ user_id: authUserId, area_name: a }));
-        await adminClient.from("user_allowed_areas").insert(areaRows);
+      const { error: upsertErr } = await adminClient
+        .from("users")
+        .upsert(userRow, { onConflict: "auth_user_id" });
+
+      if (upsertErr) {
+        log("error", "create", "Failed to upsert user row", { email, err: upsertErr.message });
+        return errRes(`Falha ao criar registro: ${translateError(upsertErr.message)}`);
       }
 
-      // 5. Sync project access
-      await adminClient.from("user_project_access").delete().eq("user_id", authUserId);
-      if (Array.isArray(projects) && projects.length > 0) {
-        const projRows = projects.map((pid: number) => ({ user_id: authUserId, project_id: pid }));
-        await adminClient.from("user_project_access").insert(projRows);
-      }
+      // 3. Sync role, areas, projects (collect warnings)
+      const warnings: string[] = [];
 
-      // 6. Audit log
-      await adminClient.from("audit_log").insert({
-        performed_by: userData.user.id,
-        target_user_id: authUserId,
-        action: "create_user",
-        details: { email, name, user_profile, areas, projects, recovered_orphan: !authData },
+      const roleWarnings = await syncRelated(adminClient, "user_roles", "user_id", authUserId, [
+        { user_id: authUserId, role },
+      ]);
+      warnings.push(...roleWarnings);
+
+      const areaRows = areas.map((a) => ({ user_id: authUserId, area_name: a }));
+      const areaWarnings = await syncRelated(adminClient, "user_allowed_areas", "user_id", authUserId, areaRows);
+      warnings.push(...areaWarnings);
+
+      const projRows = projects.map((pid) => ({ user_id: authUserId, project_id: pid }));
+      const projWarnings = await syncRelated(adminClient, "user_project_access", "user_id", authUserId, projRows);
+      warnings.push(...projWarnings);
+
+      // 4. Audit
+      await audit(adminClient, callerUid, authUserId, "create_user", {
+        email, name, user_profile: userProfile, areas, projects, clienteId,
+        recovered_orphan: recoveredOrphan,
       });
 
+      log("info", "create", "User created", { rid: requestId, authUserId, warnings });
       return jsonRes({
         ok: true,
-        data: { authUserId, email, name, user_profile },
+        data: { authUserId, email, name, user_profile: userProfile },
+        ...(warnings.length > 0 ? { warnings } : {}),
       });
     }
 
@@ -320,19 +439,29 @@ serve(async (req: Request) => {
     /* ─── UPDATE ─── */
     /* ═══════════════════════════════════════════ */
     if (action === "update") {
-      const { userId, authUserId: targetAuthUserId, payload, areas, projects } = body;
+      const userId = validateString(body.userId as string);
+      const targetAuthUserId = validateString(body.authUserId as string);
 
       if (!userId || !targetAuthUserId) {
         return errRes("userId e authUserId são obrigatórios.");
       }
 
-      // 1. Update users table
+      const payload = (body.payload ?? {}) as Record<string, unknown>;
+      const warnings: string[] = [];
+
+      // 1. Build & apply user table update
       const userPayload: Record<string, unknown> = {};
-      if (payload?.name !== undefined) userPayload.name = payload.name;
-      if (payload?.email !== undefined) userPayload.email = payload.email;
-      if (payload?.user_profile !== undefined) userPayload.user_profile = payload.user_profile;
-      if (payload?.active !== undefined) userPayload.active = payload.active;
-      if (payload?.cliente_id !== undefined) userPayload.cliente_id = payload.cliente_id;
+      if (payload.name !== undefined) userPayload.name = validateString(payload.name) ?? "";
+      if (payload.email !== undefined) {
+        const validEmail = validateEmail(payload.email);
+        if (!validEmail) return errRes("E-mail inválido.");
+        userPayload.email = validEmail;
+      }
+      if (payload.user_profile !== undefined) userPayload.user_profile = validateString(payload.user_profile) ?? "Consultor";
+      if (payload.active !== undefined) userPayload.active = Boolean(payload.active);
+      if (payload.cliente_id !== undefined) {
+        userPayload.cliente_id = payload.cliente_id === null ? null : validateClienteId(payload.cliente_id);
+      }
 
       if (Object.keys(userPayload).length > 0) {
         const { error: updateError } = await adminClient
@@ -340,88 +469,72 @@ serve(async (req: Request) => {
           .update(userPayload)
           .eq("id", userId);
         if (updateError) {
+          log("error", "update", "Failed to update user row", { userId, err: updateError.message });
           return errRes(`Falha ao atualizar usuário: ${translateError(updateError.message)}`);
         }
       }
 
       // 2. Sync role
-      if (payload?.user_profile) {
-        const profileToRole: Record<string, string> = {
-          Administrador: "admin",
-          Consultor: "consultor",
-          Gerente: "gerente",
-          Coordenador: "coordenador",
-          Cliente: "cliente",
-        };
-        const role = profileToRole[payload.user_profile] ?? "consultor";
-        await adminClient.from("user_roles").delete().eq("user_id", targetAuthUserId);
-        const { error: roleError } = await adminClient.from("user_roles").insert({ user_id: targetAuthUserId, role });
-        if (roleError) {
-          return errRes(`Falha ao sincronizar perfil: ${translateError(roleError.message)}`);
-        }
+      if (payload.user_profile) {
+        const role = PROFILE_TO_ROLE[String(payload.user_profile)] ?? "consultor";
+        const roleW = await syncRelated(adminClient, "user_roles", "user_id", targetAuthUserId, [
+          { user_id: targetAuthUserId, role },
+        ]);
+        warnings.push(...roleW);
       }
 
       // 3. Sync allowed areas
-      if (Array.isArray(areas)) {
-        await adminClient.from("user_allowed_areas").delete().eq("user_id", targetAuthUserId);
-        if (areas.length > 0) {
-          const areaRows = areas.map((a: string) => ({ user_id: targetAuthUserId, area_name: a }));
-          const { error: areasError } = await adminClient.from("user_allowed_areas").insert(areaRows);
-          if (areasError) {
-            return errRes(`Falha ao salvar áreas permitidas: ${translateError(areasError.message)}`);
-          }
-        }
+      if (Array.isArray(body.areas)) {
+        const validAreas = validateAreas(body.areas) ?? [];
+        const areaRows = validAreas.map((a) => ({ user_id: targetAuthUserId, area_name: a }));
+        const areaW = await syncRelated(adminClient, "user_allowed_areas", "user_id", targetAuthUserId, areaRows);
+        warnings.push(...areaW);
       }
 
       // 4. Sync project access
-      if (Array.isArray(projects)) {
-        await adminClient.from("user_project_access").delete().eq("user_id", targetAuthUserId);
-        if (projects.length > 0) {
-          const projRows = projects.map((pid: number) => ({ user_id: targetAuthUserId, project_id: pid }));
-          const { error: projError } = await adminClient.from("user_project_access").insert(projRows);
-          if (projError) {
-            return errRes(`Falha ao salvar projetos: ${translateError(projError.message)}`);
-          }
-        }
+      if (Array.isArray(body.projects)) {
+        const validProjects = validateProjectIds(body.projects) ?? [];
+        const projRows = validProjects.map((pid) => ({ user_id: targetAuthUserId, project_id: pid }));
+        const projW = await syncRelated(adminClient, "user_project_access", "user_id", targetAuthUserId, projRows);
+        warnings.push(...projW);
       }
 
-      // 5. Audit log
-      await adminClient.from("audit_log").insert({
-        performed_by: userData.user.id,
-        target_user_id: targetAuthUserId,
-        action: "update_user",
-        details: { userId, changes: userPayload, areas, projects },
+      // 5. Audit
+      await audit(adminClient, callerUid, targetAuthUserId, "update_user", {
+        userId, changes: userPayload, areas: body.areas, projects: body.projects,
       });
 
-      return jsonRes({ ok: true });
+      log("info", "update", "User updated", { rid: requestId, userId, warnings });
+      return jsonRes({ ok: true, ...(warnings.length > 0 ? { warnings } : {}) });
     }
 
     /* ═══════════════════════════════════════════ */
     /* ─── DELETE ─── */
     /* ═══════════════════════════════════════════ */
     if (action === "delete") {
-      const { authUserId } = body;
+      const authUserId = validateString(body.authUserId as string);
       if (!authUserId) return errRes("authUserId é obrigatório.");
 
-      // 1. Clean up DB records FIRST (before auth delete to avoid FK conflicts)
-      await adminClient.from("user_project_access").delete().eq("user_id", authUserId);
-      await adminClient.from("user_allowed_areas").delete().eq("user_id", authUserId);
-      await adminClient.from("user_roles").delete().eq("user_id", authUserId);
-      await adminClient.from("users").delete().eq("auth_user_id", authUserId);
+      // Prevent self-deletion
+      if (authUserId === callerUid) {
+        return errRes("Não é possível excluir seu próprio usuário.");
+      }
+
+      // 1. Clean up DB records FIRST
+      const tables = ["user_project_access", "user_allowed_areas", "user_roles"];
+      for (const table of tables) {
+        await safeDelete(adminClient, table, "user_id", authUserId);
+      }
+      await safeDelete(adminClient, "users", "auth_user_id", authUserId);
 
       // 2. Delete auth user
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(authUserId);
       if (deleteError) {
-        console.warn("Aviso ao excluir auth:", deleteError.message);
+        log("warn", "delete", "Auth user deletion failed (may already be deleted)", { authUserId, err: deleteError.message });
       }
 
-      await adminClient.from("audit_log").insert({
-        performed_by: userData.user.id,
-        target_user_id: authUserId,
-        action: "delete_user",
-        details: { authUserId },
-      });
-
+      await audit(adminClient, callerUid, authUserId, "delete_user", { authUserId });
+      log("info", "delete", "User deleted", { rid: requestId, authUserId });
       return jsonRes({ ok: true });
     }
 
@@ -429,20 +542,21 @@ serve(async (req: Request) => {
     /* ─── DEACTIVATE ─── */
     /* ═══════════════════════════════════════════ */
     if (action === "deactivate") {
-      const { userId, authUserId: targetAuthUserId } = body;
+      const userId = validateString(body.userId as string);
+      const targetAuthUserId = validateString(body.authUserId as string);
       if (!userId || !targetAuthUserId) return errRes("userId e authUserId são obrigatórios.");
 
-      await adminClient.from("users").update({ active: false }).eq("id", userId);
-      await adminClient.from("user_allowed_areas").delete().eq("user_id", targetAuthUserId);
-      await adminClient.from("user_project_access").delete().eq("user_id", targetAuthUserId);
+      const { error } = await adminClient.from("users").update({ active: false }).eq("id", userId);
+      if (error) {
+        return errRes(`Falha ao desativar: ${translateError(error.message)}`);
+      }
 
-      await adminClient.from("audit_log").insert({
-        performed_by: userData.user.id,
-        target_user_id: targetAuthUserId,
-        action: "deactivate_user",
-        details: { userId },
-      });
+      // Revoke access but keep records for reactivation
+      await safeDelete(adminClient, "user_allowed_areas", "user_id", targetAuthUserId);
+      await safeDelete(adminClient, "user_project_access", "user_id", targetAuthUserId);
 
+      await audit(adminClient, callerUid, targetAuthUserId, "deactivate_user", { userId });
+      log("info", "deactivate", "User deactivated", { rid: requestId, userId });
       return jsonRes({ ok: true });
     }
 
@@ -450,11 +564,9 @@ serve(async (req: Request) => {
     /* ─── CLEANUP ORPHANS ─── */
     /* ═══════════════════════════════════════════ */
     if (action === "cleanup_orphans") {
-      // List all auth users
       const { data: listData, error: listErr } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
       if (listErr) return errRes(`Falha ao listar auth: ${listErr.message}`);
 
-      // Get all auth_user_ids from users table
       const { data: dbUsers } = await adminClient
         .from("users")
         .select("auth_user_id")
@@ -463,33 +575,36 @@ serve(async (req: Request) => {
       const dbSet = new Set((dbUsers ?? []).map((u: { auth_user_id: string }) => u.auth_user_id));
 
       const orphans: string[] = [];
-      for (const authUser of (listData?.users ?? [])) {
+      const errors: string[] = [];
+
+      for (const authUser of listData?.users ?? []) {
         if (!dbSet.has(authUser.id)) {
           // Clean up related records
-          await adminClient.from("user_project_access").delete().eq("user_id", authUser.id);
-          await adminClient.from("user_allowed_areas").delete().eq("user_id", authUser.id);
-          await adminClient.from("user_roles").delete().eq("user_id", authUser.id);
-          // Delete auth user
-          await adminClient.auth.admin.deleteUser(authUser.id);
-          orphans.push(authUser.email ?? authUser.id);
+          for (const table of ["user_project_access", "user_allowed_areas", "user_roles"]) {
+            await safeDelete(adminClient, table, "user_id", authUser.id);
+          }
+          const { error: delErr } = await adminClient.auth.admin.deleteUser(authUser.id);
+          if (delErr) {
+            errors.push(`${authUser.email ?? authUser.id}: ${delErr.message}`);
+          } else {
+            orphans.push(authUser.email ?? authUser.id);
+          }
         }
       }
 
-      console.log(`[manage-user] Cleaned up ${orphans.length} orphan auth users`);
-
-      await adminClient.from("audit_log").insert({
-        performed_by: userData.user.id,
-        target_user_id: null,
-        action: "cleanup_orphans",
-        details: { removed: orphans },
+      await audit(adminClient, callerUid, null, "cleanup_orphans", {
+        removed: orphans,
+        errors: errors.length > 0 ? errors : undefined,
       });
 
-      return jsonRes({ ok: true, data: { removed: orphans, count: orphans.length } });
+      log("info", "cleanup_orphans", "Completed", { rid: requestId, removed: orphans.length, errors: errors.length });
+      return jsonRes({ ok: true, data: { removed: orphans, count: orphans.length, errors } });
     }
 
-    return errRes("Ação inválida. Use 'list', 'create', 'update', 'delete', 'deactivate' ou 'cleanup_orphans'.");
+    return errRes(`Ação inválida: '${action}'. Use: ${VALID_ACTIONS.join(", ")}.`);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno do servidor";
+    log("error", "unhandled", message, { rid: requestId, stack: error instanceof Error ? error.stack : undefined });
     return errRes(translateError(message), 500);
   }
 });
