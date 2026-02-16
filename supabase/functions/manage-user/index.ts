@@ -117,6 +117,8 @@ serve(async (req: Request) => {
         .order("name", { ascending: true })
         .limit(500);
 
+      console.log("[manage-user] list: allUsers count =", allUsers?.length ?? 0, "listErr =", listErr?.message ?? "none");
+
       if (listErr) {
         return errRes(`Falha ao listar usuários: ${listErr.message}`);
       }
