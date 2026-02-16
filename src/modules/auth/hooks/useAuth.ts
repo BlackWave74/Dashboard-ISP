@@ -49,30 +49,47 @@ const normalizeRole = (value?: string): UserRole => {
   return "consultor";
 };
 
-/** Fetch role from user_roles table */
+/** Fetch role: user_roles → users.user_profile → JWT metadata fallback */
 const fetchUserRole = async (
   accessToken: string,
-  authUserId: string
+  authUserId: string,
+  jwtMetadata?: Record<string, unknown>
 ): Promise<UserRole> => {
   const base = SUPABASE_URL.replace(/\/$/, "");
+
+  // 1. Try user_roles table
   try {
     const res = await fetch(
       `${base}/rest/v1/user_roles?user_id=eq.${authUserId}&select=role&limit=1`,
-      {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` } }
     );
-    if (!res.ok) return "consultor";
-    const rows = await res.json();
-    if (Array.isArray(rows) && rows.length > 0) {
-      return normalizeRole(rows[0].role);
+    if (res.ok) {
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length > 0) {
+        return normalizeRole(rows[0].role);
+      }
     }
-  } catch {
-    // fallback
+  } catch { /* fallback */ }
+
+  // 2. Fallback: users.user_profile
+  try {
+    const res2 = await fetch(
+      `${base}/rest/v1/users?auth_user_id=eq.${authUserId}&select=user_profile&limit=1`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` } }
+    );
+    if (res2.ok) {
+      const rows2 = await res2.json();
+      if (Array.isArray(rows2) && rows2.length > 0) {
+        return normalizeRole(rows2[0].user_profile);
+      }
+    }
+  } catch { /* fallback */ }
+
+  // 3. Fallback: JWT user_metadata
+  if (jwtMetadata?.user_profile) {
+    return normalizeRole(jwtMetadata.user_profile as string);
   }
+
   return "consultor";
 };
 
@@ -139,8 +156,9 @@ export function useAuth() {
         const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
         // Fetch role and allowed areas from DB tables
+        const refreshMeta = metadata as Record<string, unknown>;
         const [role, allowedAreas] = await Promise.all([
-          fetchUserRole(data?.access_token, user?.id),
+          fetchUserRole(data?.access_token, user?.id, refreshMeta),
           fetchAllowedAreas(data?.access_token, user?.id),
         ]);
 
@@ -237,7 +255,7 @@ export function useAuth() {
 
         // Fetch role and allowed areas from DB tables
         const [role, allowedAreas] = await Promise.all([
-          fetchUserRole(data?.access_token, user?.id),
+          fetchUserRole(data?.access_token, user?.id, metaObj),
           fetchAllowedAreas(data?.access_token, user?.id),
         ]);
 
