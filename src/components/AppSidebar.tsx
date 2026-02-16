@@ -239,7 +239,7 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="!border-r-0 ml-0 !rounded-l-none rounded-r-2xl shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)]"
+      className="!border-r-0 ml-0 !rounded-l-none rounded-r-2xl shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)] overflow-hidden"
       style={{
         zIndex: 20,
         background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",

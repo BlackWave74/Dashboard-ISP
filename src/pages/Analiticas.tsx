@@ -8,11 +8,9 @@ import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
 import { Loader2, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
-import AnalyticsActivityHeatmap from "@/modules/analytics/components/AnalyticsActivityHeatmap";
 import AnalyticsProductivityPulse from "@/modules/analytics/components/AnalyticsProductivityPulse";
 import AnalyticsVelocityChart from "@/modules/analytics/components/AnalyticsVelocityChart";
 import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjectList";
-import AnalyticsSearch from "@/modules/analytics/components/AnalyticsSearch";
 import AnalyticsFilters from "@/modules/analytics/components/AnalyticsFilters";
 import AnalyticsPendingTasks from "@/modules/analytics/components/AnalyticsPendingTasks";
 import AnalyticsProjectDrawer from "@/modules/analytics/components/AnalyticsProjectDrawer";
@@ -61,7 +59,6 @@ export default function AnaliticasPage() {
 
   const loading = loadingTasks || loadingTimes || loadingHours;
 
-  // Admin sees all tasks (or filtered by consultant); consultor sees only their own
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)
@@ -118,7 +115,7 @@ export default function AnaliticasPage() {
     return result;
   }, [userTasks, filters.status, filters.projectId]);
 
-  // Period-aware hours: compute hours within selected period from elapsed times
+  // Period-aware hours
   const periodHours = useMemo(() => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - periodDays);
@@ -141,7 +138,7 @@ export default function AnaliticasPage() {
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
 
-  // Compute which projects the current user participates in (by matching responsible name)
+  // Compute which projects the current user participates in
   const myProjectIds = useMemo(() => {
     if (!userName) return new Set<number>();
     const ids = new Set<number>();
@@ -187,31 +184,22 @@ export default function AnaliticasPage() {
   return (
     <div className="page-gradient w-full">
       <div className="mx-auto w-full max-w-[1900px] space-y-5 p-5 md:p-8">
-        {/* Header */}
+        {/* Header with Atualizar button top-right */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-col items-center gap-1 text-center"
+          className="flex items-start justify-between"
         >
-          <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
-          <p className="text-sm text-white/35">
-            {effectiveUser ? `Projetos de ${effectiveUser}` : "Visão geral de desempenho dos projetos."}
-            {filters.period !== "180d" && ` · Últimos ${periodDays} dias`}
-          </p>
-        </motion.div>
-
-        {/* Search + Filters (same layout as Tarefas) */}
-        <div className="space-y-2 flex flex-col items-center">
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            {/* Search field */}
-            <AnalyticsSearch
-              projects={projects}
-              onSelect={setSelectedProject}
-              selected={selectedProject}
-            />
-
-            {/* Update button */}
+          <div className="flex-1" />
+          <div className="flex flex-col items-center gap-1 text-center">
+            <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
+            <p className="text-sm text-white/35">
+              {effectiveUser ? `Projetos de ${effectiveUser}` : "Visão geral de desempenho dos projetos."}
+              {filters.period !== "180d" && ` · Últimos ${periodDays} dias`}
+            </p>
+          </div>
+          <div className="flex-1 flex justify-end">
             <button
               type="button"
               onClick={() => { reloadTasks(); reloadTimes(); }}
@@ -227,17 +215,17 @@ export default function AnaliticasPage() {
               <span className={`ml-1 h-1.5 w-1.5 rounded-full ${loading ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
             </button>
           </div>
+        </motion.div>
 
-          {/* Filters */}
-          <AnalyticsFilters
-            filters={filters}
-            onChange={setFilters}
-            projects={projectOptions}
-            consultants={consultants}
-            isAdmin={isAdmin}
-            myProjectIds={myProjectIds}
-          />
-        </div>
+        {/* Search + Filters (same layout as Tarefas) */}
+        <AnalyticsFilters
+          filters={filters}
+          onChange={setFilters}
+          projects={projectOptions}
+          consultants={consultants}
+          isAdmin={isAdmin}
+          myProjectIds={myProjectIds}
+        />
 
         {/* KPI Cards */}
         <AnalyticsKpiCards
