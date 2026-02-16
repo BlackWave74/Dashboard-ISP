@@ -1,5 +1,6 @@
-import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { Search, X, Filter, ChevronDown, FolderKanban, User } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type TaskFiltersProps = {
   search: string;
@@ -43,8 +44,85 @@ const periodChips = [
   { value: "custom", label: "Período" },
 ];
 
-const selectClass =
-  "h-8 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-[hsl(var(--task-text))] outline-none transition hover:border-[hsl(var(--task-yellow)/0.4)] focus:border-[hsl(var(--task-yellow)/0.6)] focus:ring-1 focus:ring-[hsl(var(--task-yellow)/0.2)] appearance-none cursor-pointer";
+/* ── Custom dropdown (same style as analytics) ── */
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  icon: Icon,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex h-8 min-w-[170px] items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition-all ${
+          value && value !== "all"
+            ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-white/80"
+            : "border-white/[0.08] bg-[hsl(var(--task-surface))] text-white/50"
+        } hover:border-white/[0.15]`}
+      >
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0 opacity-50" />}
+        <span className="flex-1 truncate text-left">{selected?.label || placeholder}</span>
+        <ChevronDown className={`h-3 w-3 shrink-0 opacity-40 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[220px] overflow-auto rounded-xl border border-white/[0.08] p-1 shadow-xl shadow-black/40"
+            style={{ background: "hsl(260 30% 12%)" }}
+          >
+            <button
+              onClick={() => { onChange("all"); setOpen(false); }}
+              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                value === "all" || !value ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+              }`}
+            >
+              {placeholder}
+            </button>
+            {options.map((o) => (
+              <button
+                key={o.value}
+                onClick={() => { onChange(o.value); setOpen(false); }}
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                  value === o.value
+                    ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
+                    : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                }`}
+              >
+                <span className="truncate">{o.label}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function TaskFilters({
   search,
@@ -74,12 +152,19 @@ export function TaskFilters({
 }: TaskFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
+  const activeCount =
+    (status !== "all" ? 1 : 0) +
+    (period !== "all" ? 1 : 0) +
+    (consultant !== "all" && consultant ? 1 : 0) +
+    (project !== "all" && project ? 1 : 0) +
+    (deadline !== "all" ? 1 : 0);
+
   return (
-    <div className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface)/0.6)] p-3 space-y-2.5">
-      {/* Row 1: Search + Status + Period + toggle */}
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-2">
+      {/* Collapsed: filter toggle button */}
+      <div className="flex items-center gap-3">
         {/* Search */}
-        <div className="relative flex items-center w-full sm:w-auto sm:min-w-[200px] sm:flex-1 sm:max-w-[280px]">
+        <div className="relative flex items-center w-full sm:w-auto sm:min-w-[200px] sm:max-w-[260px]">
           <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
           <input
             ref={searchRef}
@@ -99,117 +184,150 @@ export function TaskFilters({
           )}
         </div>
 
-        {/* Status chips */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-0.5">
-          {statusChips.map((chip) => (
-            <button
-              key={chip.value}
-              type="button"
-              onClick={() => setStatus(chip.value)}
-              className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
-                status === chip.value
-                  ? "bg-[hsl(var(--task-yellow))] text-[hsl(var(--task-bg))] shadow-sm"
-                  : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
-              }`}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
+        {/* Project dropdown */}
+        <CustomSelect
+          value={project}
+          onChange={setProject}
+          options={projectOptions.map(o => ({ value: o, label: o }))}
+          placeholder="Todos projetos"
+          icon={FolderKanban}
+        />
 
-        {/* Period chips */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] p-0.5">
-          {periodChips.map((chip) => (
-            <button
-              key={chip.value}
-              type="button"
-              onClick={() => setPeriod(chip.value)}
-              className={`whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium transition ${
-                period === chip.value
-                  ? "bg-[hsl(var(--task-purple))] text-white shadow-sm"
-                  : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
-              }`}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
+        {/* Consultant dropdown */}
+        {consultantOptions.length > 0 && (
+          <CustomSelect
+            value={consultant}
+            onChange={setConsultant}
+            options={consultantOptions.map(o => ({ value: o, label: o }))}
+            placeholder="Todos consultores"
+            icon={User}
+          />
+        )}
 
-        {/* More filters + clear */}
-        <div className="flex items-center gap-1.5 ml-auto">
+        {/* Filter toggle */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-1.5 text-[11px] font-semibold transition ${
+            expanded
+              ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-[hsl(var(--task-purple))]"
+              : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
+          }`}
+        >
+          <Filter className="h-3.5 w-3.5" />
+          Filtros
+          {activeCount > 0 && (
+            <span className="rounded-full bg-[hsl(var(--task-purple))] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {activeCount}
+            </span>
+          )}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+
+        {/* Clear */}
+        {hasActiveFilters && (
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className={`flex items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
-              expanded
-                ? "border-[hsl(var(--task-yellow)/0.4)] bg-[hsl(var(--task-yellow)/0.1)] text-[hsl(var(--task-yellow))]"
-                : "border-[hsl(var(--task-border))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-border-light))] hover:text-[hsl(var(--task-text))]"
-            }`}
+            onClick={onClearFilters}
+            className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
           >
-            <SlidersHorizontal className="h-3 w-3" />
-            Filtros
-            <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            Limpar
           </button>
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={onClearFilters}
-              className="flex items-center gap-1 whitespace-nowrap rounded-lg border border-rose-500/20 bg-rose-500/5 px-2 py-1 text-[10px] font-medium text-rose-400 transition hover:bg-rose-500/10"
-            >
-              <X className="h-3 w-3" />
-              Limpar
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Expanded filters */}
-      {expanded && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[hsl(var(--task-border)/0.5)] bg-[hsl(var(--task-bg)/0.5)] p-2.5">
-          <select value={deadline} onChange={(e) => setDeadline(e.target.value)} className={selectClass}>
-            <option value="all">Todos os prazos</option>
-            <option value="overdue">Atrasados</option>
-            <option value="done">Concluídos</option>
-            <option value="pending">Pendentes</option>
-          </select>
-
-          <select value={consultant} onChange={(e) => setConsultant(e.target.value)} className={selectClass}>
-            <option value="all">Todos consultores</option>
-            {consultantOptions.map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
-
-          <select
-            value={project}
-            onChange={(e) => setProject(e.target.value)}
-            disabled={projectDisabled}
-            className={`${selectClass} disabled:opacity-50 disabled:cursor-not-allowed`}
+      {/* Expanded filters panel */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-visible"
           >
-            <option value="all">Todos projetos</option>
-            {projectOptions.map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
+            <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
+              {/* Status */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
+                <div className="flex gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                  {statusChips.map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      onClick={() => setStatus(chip.value)}
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                        status === chip.value
+                          ? "bg-[hsl(var(--task-purple))] text-white shadow"
+                          : "text-white/30 hover:text-white/50"
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {period === "custom" && (
-            <>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className={`${selectClass} w-[130px]`}
-              />
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className={`${selectClass} w-[130px]`}
-              />
-            </>
-          )}
-        </div>
-      )}
+              {/* Period */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
+                <div className="flex gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                  {periodChips.map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      onClick={() => setPeriod(chip.value)}
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                        period === chip.value
+                          ? "bg-[hsl(var(--task-purple))] text-white shadow"
+                          : "text-white/30 hover:text-white/50"
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Deadline filter */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Prazo</label>
+                <CustomSelect
+                  value={deadline}
+                  onChange={setDeadline}
+                  options={[
+                    { value: "overdue", label: "Atrasados" },
+                    { value: "done", label: "Concluídos" },
+                    { value: "pending", label: "Pendentes" },
+                  ]}
+                  placeholder="Todos os prazos"
+                />
+              </div>
+
+              {/* Custom date range */}
+              {period === "custom" && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Intervalo</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="h-8 rounded-lg border border-white/[0.08] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-white/70 outline-none"
+                    />
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="h-8 rounded-lg border border-white/[0.08] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-white/70 outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
