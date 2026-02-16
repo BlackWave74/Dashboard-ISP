@@ -78,6 +78,19 @@ export default function AnaliticasPage() {
   // Note: 'refreshing' is computed above after hooks, 'loading' includes hours for initial load
 
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
+  const accessibleProjectIds = session?.accessibleProjectIds;
+
+  // Filter tasks by project access for non-admin users
+  const accessFilteredTasks = useMemo(() => {
+    if (isAdmin) return allTasks;
+    if (!accessibleProjectIds || accessibleProjectIds.length === 0) return allTasks;
+    const allowedIds = new Set(accessibleProjectIds);
+    return allTasks.filter((t) => {
+      const pid = Number(t.project_id);
+      return pid && allowedIds.has(pid);
+    });
+  }, [allTasks, isAdmin, accessibleProjectIds]);
+
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)
     : userName;
@@ -93,7 +106,7 @@ export default function AnaliticasPage() {
     userTaskCount,
     userTimes,
     userTasks,
-  } = useAnalyticsData(allTasks, projectHours, times, effectiveUser);
+  } = useAnalyticsData(accessFilteredTasks, projectHours, times, effectiveUser);
 
   // Extract unique consultant names for admin filter
   const consultants = useMemo(() => {
@@ -242,7 +255,7 @@ export default function AnaliticasPage() {
           consultants={consultants}
           isAdmin={isAdmin}
           myProjectIds={myProjectIds}
-          hideFilters={!isAdmin}
+          hideFilters={false}
         />
 
         {/* KPI Cards */}

@@ -260,20 +260,36 @@ export default function TarefasPage() {
     });
   }, [tasks, durationByTaskId]);
 
-  // Scope by company
+  // Filter by accessible projects (non-admin users only see assigned projects)
   const companyName = session?.company?.trim();
-  const scopedTasks = useMemo(() => {
-    if (!companyName || session?.role !== "cliente") return normalizedTasks;
-    const needle = companyName.toLowerCase();
+  const accessibleProjectIds = session?.accessibleProjectIds;
+  const projectFilteredTasks = useMemo(() => {
+    // Admins, gerentes, coordenadores see everything
+    if (isAdmin) return normalizedTasks;
+    // If no project access configured, fall back to company-based scoping
+    if (!accessibleProjectIds || accessibleProjectIds.length === 0) {
+      // Company-based scoping for clients
+      if (!companyName || session?.role !== "cliente") return normalizedTasks;
+      const needle = companyName.toLowerCase();
+      return normalizedTasks.filter((task) => {
+        const projectName = (task.project || "").toLowerCase();
+        const joinedProject =
+          typeof task.raw.projects === "object" && task.raw.projects !== null
+            ? String((task.raw.projects as TaskRecord)["name"] ?? "").toLowerCase()
+            : "";
+        return projectName.includes(needle) || joinedProject.includes(needle);
+      });
+    }
+    // Filter by explicit project access
+    const allowedIds = new Set(accessibleProjectIds);
     return normalizedTasks.filter((task) => {
-      const projectName = (task.project || "").toLowerCase();
-      const joinedProject =
-        typeof task.raw.projects === "object" && task.raw.projects !== null
-          ? String((task.raw.projects as TaskRecord)["name"] ?? "").toLowerCase()
-          : "";
-      return projectName.includes(needle) || joinedProject.includes(needle);
+      const pid = Number(task.raw["project_id"] ?? task.raw["projectId"]);
+      return pid && allowedIds.has(pid);
     });
-  }, [normalizedTasks, companyName, session?.role]);
+  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName, session?.role]);
+
+  // Scope by company (kept for backward compat, now uses projectFilteredTasks)
+  const scopedTasks = projectFilteredTasks;
 
   // Compute user's project names for "mine first" sorting in filter dropdown
   const myProjectNames = useMemo(() => {
@@ -591,7 +607,7 @@ export default function TarefasPage() {
             hasActiveFilters={hasActiveFilters}
             onClearFilters={resetFilters}
             myProjectNames={myProjectNames}
-            hideFilters={!isAdmin}
+            hideFilters={false}
           />
         </motion.div>
 

@@ -11,6 +11,7 @@ export type AuthSession = {
   role: UserRole;
   company?: string | null;
   allowedAreas?: AccessArea[] | null;
+  accessibleProjectIds?: number[] | null;
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: number;
@@ -120,6 +121,33 @@ const fetchAllowedAreas = async (
   return null;
 };
 
+/** Fetch accessible project IDs from user_project_access table */
+const fetchAccessibleProjects = async (
+  accessToken: string,
+  authUserId: string
+): Promise<number[] | null> => {
+  const base = SUPABASE_URL.replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${base}/rest/v1/user_project_access?user_id=eq.${authUserId}&select=project_id`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (Array.isArray(rows) && rows.length > 0) {
+      return rows.map((r: { project_id: number }) => r.project_id);
+    }
+  } catch {
+    // fallback
+  }
+  return null;
+};
+
 export function useAuth() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -159,9 +187,10 @@ export function useAuth() {
 
         // Fetch role and allowed areas from DB tables
         const refreshMeta = metadata as Record<string, unknown>;
-        const [role, allowedAreas] = await Promise.all([
+        const [role, allowedAreas, accessibleProjectIds] = await Promise.all([
           fetchUserRole(data?.access_token, user?.id, refreshMeta),
           fetchAllowedAreas(data?.access_token, user?.id),
+          fetchAccessibleProjects(data?.access_token, user?.id),
         ]);
 
         const refreshed: AuthSession = {
@@ -170,6 +199,7 @@ export function useAuth() {
           role,
           company: clientName ?? stored.company ?? null,
           allowedAreas,
+          accessibleProjectIds,
           accessToken: data?.access_token,
           refreshToken: data?.refresh_token ?? stored.refreshToken,
           expiresAt,
@@ -277,10 +307,11 @@ export function useAuth() {
         const expiresIn = Number(data?.expires_in ?? 0);
         const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-        // Fetch role and allowed areas from DB tables
-        const [role, allowedAreas] = await Promise.all([
+        // Fetch role, allowed areas, and accessible projects from DB tables
+        const [role, allowedAreas, accessibleProjectIds] = await Promise.all([
           fetchUserRole(data?.access_token, user?.id, metaObj),
           fetchAllowedAreas(data?.access_token, user?.id),
+          fetchAccessibleProjects(data?.access_token, user?.id),
         ]);
 
         const authSession: AuthSession = {
@@ -289,6 +320,7 @@ export function useAuth() {
           role,
           company: clientName ?? null,
           allowedAreas,
+          accessibleProjectIds,
           accessToken: data?.access_token,
           refreshToken: data?.refresh_token,
           expiresAt,
