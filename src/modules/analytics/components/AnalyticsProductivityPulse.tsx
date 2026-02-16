@@ -312,9 +312,9 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
             );
           })}
 
-          {/* Week labels (every 4th) */}
+          {/* Week labels — show every 2nd for readability */}
           {weeklyData.map((d, i) => {
-            if (i % 4 !== 0 && i !== WEEKS - 1) return null;
+            if (i % 2 !== 0 && i !== WEEKS - 1) return null;
             const x = padX + (i / (WEEKS - 1)) * graphW;
             return (
               <text
@@ -322,10 +322,25 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
                 x={x}
                 y={H - 2}
                 textAnchor="middle"
-                className="text-[8px] fill-white/20"
+                className="text-[9px] fill-white/40 font-medium"
               >
                 {d.label}
               </text>
+            );
+          })}
+
+          {/* Hover targets for tooltips */}
+          {weeklyData.map((d, i) => {
+            if (d.done === 0 && d.overdue === 0) return null;
+            const x = padX + (i / (WEEKS - 1)) * graphW;
+            const normalizedVal = d.done / maxVal;
+            const y = d.done > 0 ? padY + graphH * (1 - normalizedVal) * 0.7 : padY + graphH * 0.75;
+            return (
+              <g key={`tooltip-${i}`}>
+                <rect x={x - 15} y={padY} width={30} height={graphH} fill="transparent" className="cursor-pointer">
+                  <title>{`${d.label}: ${d.done} concluídas, ${d.overdue} atrasadas`}</title>
+                </rect>
+              </g>
             );
           })}
         </svg>

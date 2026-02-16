@@ -204,11 +204,7 @@ export default function AnaliticasPage() {
               type="button"
               onClick={() => { reloadTasks(); reloadTimes(); }}
               disabled={loading}
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
-                loading
-                  ? "border-white/[0.06] bg-white/[0.03] text-white/30"
-                  : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
-              }`}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-[9px] text-[13px] font-semibold text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
             >
               <Loader2 className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
               Atualizar
