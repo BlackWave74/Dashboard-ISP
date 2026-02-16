@@ -1,4 +1,4 @@
-import { Search, X, Filter, ChevronDown, FolderKanban, User } from "lucide-react";
+import { Search, X, Filter, ChevronDown, FolderKanban, User, Calendar } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -87,7 +87,7 @@ function CustomSelect({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-9 min-w-[170px] items-center gap-2 rounded-lg border px-3 text-[12px] font-semibold transition-all ${
+        className={`flex h-9 min-w-[170px] items-center gap-2 rounded-xl border px-3 text-[12px] font-semibold transition-all ${
           value && value !== "all"
             ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-white/80"
             : "border-white/[0.08] bg-[hsl(var(--task-surface))] text-white/50"
@@ -105,7 +105,7 @@ function CustomSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[220px] overflow-auto rounded-xl border border-white/[0.08] p-1 shadow-xl shadow-black/40"
+            className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[220px] overflow-auto rounded-2xl border border-white/[0.08] p-1.5 shadow-xl shadow-black/40"
             style={{ background: "hsl(260 30% 12%)" }}
           >
             <button
@@ -210,8 +210,7 @@ export function TaskFilters({
     (status !== "all" ? 1 : 0) +
     (period !== "all" ? 1 : 0) +
     (consultant !== "all" && consultant ? 1 : 0) +
-    (project !== "all" && project ? 1 : 0) +
-    (deadline !== "all" ? 1 : 0);
+    (project !== "all" && project ? 1 : 0);
 
   return (
     <div className="space-y-2 flex flex-col items-center">
@@ -291,28 +290,32 @@ export function TaskFilters({
                 </div>
               </div>
 
-              {/* Period */}
+              {/* Period dropdown */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
-                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
-                  {periodChips.map((chip) => (
-                    <button
-                      key={chip.value}
-                      type="button"
-                      onClick={() => setPeriod(chip.value)}
-                      className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
-                        period === chip.value
-                          ? "bg-[hsl(var(--task-purple))] text-white shadow"
-                          : "text-white/30 hover:text-white/50"
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
+                <CustomSelect
+                  value={period}
+                  onChange={setPeriod}
+                  options={periodChips.map(c => ({ value: c.value, label: c.label }))}
+                  placeholder="Todos períodos"
+                  icon={Calendar}
+                />
               </div>
 
-              {/* Consultant dropdown */}
+              {/* Project dropdown — first */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
+                <CustomSelect
+                  value={project}
+                  onChange={setProject}
+                  options={projectOptions.map(o => ({ value: o, label: o }))}
+                  placeholder="Todos projetos"
+                  icon={FolderKanban}
+                  mineSet={myProjectNames}
+                />
+              </div>
+
+              {/* Consultant dropdown — after project */}
               {consultantOptions.length > 0 && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Consultor</label>
@@ -326,34 +329,6 @@ export function TaskFilters({
                 </div>
               )}
 
-              {/* Project dropdown */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
-                <CustomSelect
-                  value={project}
-                  onChange={setProject}
-                  options={projectOptions.map(o => ({ value: o, label: o }))}
-                  placeholder="Todos projetos"
-                  icon={FolderKanban}
-                  mineSet={myProjectNames}
-                />
-              </div>
-
-              {/* Deadline filter */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Prazo</label>
-                <CustomSelect
-                  value={deadline}
-                  onChange={setDeadline}
-                  options={[
-                    { value: "overdue", label: "Atrasados" },
-                    { value: "done", label: "Concluídos" },
-                    { value: "pending", label: "Pendentes" },
-                  ]}
-                  placeholder="Todos os prazos"
-                />
-              </div>
-
               {/* Custom date range */}
               {period === "custom" && (
                 <div className="space-y-1.5">
@@ -363,13 +338,13 @@ export function TaskFilters({
                       type="date"
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
-                      className="h-8 rounded-lg border border-white/[0.08] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-white/70 outline-none"
+                      className="h-9 rounded-xl border border-white/[0.08] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-white/70 outline-none"
                     />
                     <input
                       type="date"
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
-                      className="h-8 rounded-lg border border-white/[0.08] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-white/70 outline-none"
+                      className="h-9 rounded-xl border border-white/[0.08] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-white/70 outline-none"
                     />
                   </div>
                 </div>
@@ -382,7 +357,7 @@ export function TaskFilters({
                   <button
                     type="button"
                     onClick={onClearFilters}
-                    className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[12px] font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.15] transition"
+                    className="flex h-9 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-[12px] font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.15] transition"
                   >
                     <X className="h-3 w-3" />
                     Limpar
