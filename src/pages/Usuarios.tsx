@@ -469,7 +469,7 @@ export default function UsuariosPage() {
             {/* ═══ CREATE FORM ═══ */}
             <AnimatePresence>
               {showCreate && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-visible">
                   <div className="task-card p-5 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
@@ -479,8 +479,8 @@ export default function UsuariosPage() {
                       <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"><X className="h-4 w-4" /></button>
                     </div>
 
-                    {/* Basic info */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {/* Row 1: Name + Email */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Nome *</label>
                         <div className="relative">
@@ -497,6 +497,10 @@ export default function UsuariosPage() {
                             className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
                         </div>
                       </div>
+                    </div>
+
+                    {/* Row 2: Profile + Password (aligned) */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Perfil</label>
                         <select value={createForm.user_profile} onChange={e => setCreateForm(p => ({ ...p, user_profile: e.target.value as Perfil }))}
@@ -536,7 +540,7 @@ export default function UsuariosPage() {
                       </div>
                     </div>
 
-                    {/* Areas & Projects dropdowns */}
+                    {/* Row 3: Areas & Projects dropdowns */}
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <MultiSelectDropdown
                         label="Áreas Permitidas"
@@ -603,7 +607,7 @@ export default function UsuariosPage() {
             <div className={`grid gap-5 ${showEditPanel ? "lg:grid-cols-[1fr_420px]" : "grid-cols-1"}`}>
               {/* ─── USER LIST ─── */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="task-card overflow-hidden"
+                className="task-card overflow-visible"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4 pb-3 border-b border-[hsl(var(--task-border))]">
                   <h2 className="text-base font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
@@ -710,7 +714,7 @@ export default function UsuariosPage() {
                 {showEditPanel && editingUser && (
                   <motion.div
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                    className="task-card p-5 space-y-4 h-fit sticky top-20"
+                    className="task-card p-5 space-y-4 h-fit sticky top-20 overflow-visible"
                   >
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
