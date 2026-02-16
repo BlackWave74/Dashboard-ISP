@@ -127,7 +127,7 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
             <p className="text-[10px] text-white/30">Tarefas concluídas por semana</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mr-9">
           <span
             className="rounded-full px-2 py-0.5 text-[10px] font-bold"
             style={{ color: tc.color, background: `${tc.color.replace(")", " / 0.15)")}` }}
@@ -163,17 +163,18 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
                 </button>
               </div>
               <div className="space-y-2.5 text-[12px] text-white/60 leading-relaxed">
-                <p>A <strong className="text-white/80">Velocidade de Entrega</strong> mostra quantas tarefas foram concluídas por semana nas últimas {WEEKS} semanas.</p>
+                <p>A <strong className="text-white/80">Velocidade de Entrega</strong> mostra o volume de tarefas concluídas por semana nas últimas {WEEKS} semanas, ajudando a identificar tendências de produtividade.</p>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-6 rounded-full" style={{ background: "linear-gradient(90deg, hsl(234 89% 64%), hsl(160 84% 39%))" }} />
-                  <span><strong className="text-white/80">Linha gradiente:</strong> volume de entregas</span>
+                  <span><strong className="text-white/80">Linha colorida:</strong> volume de entregas por semana</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-px w-6 border-t border-dashed" style={{ borderColor: "hsl(262 83% 58% / 0.6)" }} />
-                  <span><strong className="text-white/80">Linha tracejada:</strong> média semanal</span>
+                  <span><strong className="text-white/80">Linha tracejada:</strong> média de entregas no período</span>
                 </div>
-                <p>Os indicadores mostram: <strong className="text-white/80">🚀 Acelerando</strong> (entregas aumentando), <strong className="text-white/80">📉 Desacelerando</strong> (diminuindo) ou <strong className="text-white/80">➡️ Estável</strong>.</p>
-                <p>Passe o mouse sobre as <strong className="text-white/80">bolinhas</strong> para ver o total de cada semana.</p>
+                <p>O indicador mostra se a equipe está <strong className="text-white/80">🚀 Acelerando</strong> (mais entregas recentes), <strong className="text-white/80">📉 Desacelerando</strong> (menos entregas) ou <strong className="text-white/80">➡️ Estável</strong>.</p>
+                <p>Os cards abaixo resumem: média semanal, melhor semana e total de tarefas entregues no período.</p>
+                <p className="text-white/40 italic">💡 Passe o mouse sobre as bolinhas para ver o total de cada semana.</p>
               </div>
             </div>
           </motion.div>
@@ -296,16 +297,16 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
             );
           })}
 
-          {/* Week labels — bigger font */}
+          {/* Week labels — with padding to stay inside card */}
           {weekData.map((w, i) => (
             i % 2 === 0 && (
               <text
                 key={i}
-                x={points[i].x}
-                y={chartH + 16}
-                textAnchor="middle"
+                x={Math.max(points[i].x, 20)}
+                y={chartH + 18}
+                textAnchor={i === 0 ? "start" : i >= WEEKS - 2 ? "end" : "middle"}
                 className="fill-white/45 font-medium"
-                style={{ fontSize: "10px" }}
+                style={{ fontSize: "9px" }}
               >
                 {w.label}
               </text>

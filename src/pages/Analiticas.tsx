@@ -202,7 +202,9 @@ export default function AnaliticasPage() {
           <div className="flex-1 flex justify-end">
             <button
               type="button"
-              onClick={() => { reloadTasks(); reloadTimes(); }}
+              onClick={() => {
+                if (!loading) { reloadTasks(); reloadTimes(); }
+              }}
               disabled={loading}
               className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-[9px] text-[13px] font-semibold text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
             >

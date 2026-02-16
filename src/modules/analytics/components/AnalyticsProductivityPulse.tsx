@@ -201,17 +201,18 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
                 </button>
               </div>
               <div className="space-y-2.5 text-[12px] text-white/60 leading-relaxed">
-                <p>O <strong className="text-white/80">Pulso de Produtividade</strong> simula um eletrocardiograma (EKG) que reflete o ritmo de entregas da equipe nas últimas {WEEKS} semanas.</p>
+                <p>O <strong className="text-white/80">Pulso de Produtividade</strong> mostra o ritmo de entregas da equipe nas últimas {WEEKS} semanas, representado como um eletrocardiograma.</p>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full" style={{ background: "hsl(262 83% 58%)" }} />
-                  <span><strong className="text-white/80">Linha roxa:</strong> tarefas concluídas por semana</span>
+                  <span><strong className="text-white/80">Linha roxa:</strong> quantidade de tarefas concluídas por semana</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full" style={{ background: "hsl(0 84% 60% / 0.6)" }} />
-                  <span><strong className="text-white/80">Linha vermelha:</strong> tarefas atrasadas</span>
+                  <span><strong className="text-white/80">Linha vermelha:</strong> quantidade de tarefas atrasadas</span>
                 </div>
-                <p>O valor <strong className="text-white/80">t/sem</strong> indica a média de tarefas concluídas por semana. Picos maiores = mais entregas naquela semana.</p>
-                <p>Passe o mouse sobre as <strong className="text-white/80">bolinhas</strong> para ver os detalhes de cada semana.</p>
+                <p>O número <strong className="text-white/80">t/sem</strong> representa a média de tarefas entregues por semana. Quanto maior o pico, mais entregas naquela semana.</p>
+                <p>A porcentagem <strong className="text-white/80">▲/▼</strong> compara as últimas 4 semanas com as 4 anteriores, indicando se a produtividade está subindo ou caindo.</p>
+                <p className="text-white/40 italic">💡 Passe o mouse sobre as bolinhas para ver os detalhes de cada semana.</p>
               </div>
             </div>
           </motion.div>
