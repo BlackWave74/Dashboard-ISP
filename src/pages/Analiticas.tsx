@@ -280,8 +280,8 @@ export default function AnaliticasPage() {
 
         {/* Row 1: Client Radar + Velocity Chart */}
         <div className="grid gap-5 lg:grid-cols-2">
-          <AnalyticsProductivityPulse tasks={userTasks} classifyTask={classifyTask} />
-          <AnalyticsVelocityChart tasks={userTasks} classifyTask={classifyTask} />
+          <AnalyticsProductivityPulse tasks={filteredTasks} classifyTask={classifyTask} />
+          <AnalyticsVelocityChart tasks={filteredTasks} classifyTask={classifyTask} />
         </div>
 
         {/* Pending tasks list */}
