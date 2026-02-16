@@ -10,26 +10,37 @@ export function useUsersApi(token: string | undefined) {
   const [clientes, setClientes] = useState<ClienteRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Cache areas/projects per auth_user_id from the list response
+  const [userAreasMap, setUserAreasMap] = useState<Map<string, string[]>>(new Map());
+  const [userProjectsMap, setUserProjectsMap] = useState<Map<string, number[]>>(new Map());
 
   const loadUsers = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     setError(null);
     try {
-      // Use edge function with service_role to bypass RLS and list ALL users
       const result = await callManageUser(token, { action: "list" });
       const data = result.data;
       if (Array.isArray(data)) {
-        setUsers(data.map((u: Record<string, unknown>) => ({
-          id: String(u.id ?? ""),
-          auth_user_id: String(u.auth_user_id ?? ""),
-          email: String(u.email ?? ""),
-          name: String(u.name ?? ""),
-          user_profile: String(u.user_profile ?? "Consultor"),
-          active: u.active !== false,
-          role: u.role ? String(u.role) : undefined,
-          cliente_id: null,
-        })));
+        const areasMap = new Map<string, string[]>();
+        const projMap = new Map<string, number[]>();
+        setUsers(data.map((u: Record<string, unknown>) => {
+          const authUid = String(u.auth_user_id ?? "");
+          if (Array.isArray(u.areas)) areasMap.set(authUid, u.areas as string[]);
+          if (Array.isArray(u.projects)) projMap.set(authUid, u.projects as number[]);
+          return {
+            id: String(u.id ?? ""),
+            auth_user_id: authUid,
+            email: String(u.email ?? ""),
+            name: String(u.name ?? ""),
+            user_profile: String(u.user_profile ?? "Consultor"),
+            active: u.active !== false,
+            role: u.role ? String(u.role) : undefined,
+            cliente_id: null,
+          };
+        }));
+        setUserAreasMap(areasMap);
+        setUserProjectsMap(projMap);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao carregar usuários.");
@@ -104,22 +115,12 @@ export function useUsersApi(token: string | undefined) {
   }, [token]);
 
   const getUserAreas = useCallback(async (authUserId: string): Promise<string[]> => {
-    if (!token || !authUserId) return [];
-    try {
-      const res = await supabaseRest(`user_allowed_areas?user_id=eq.${authUserId}&select=area_name`, token);
-      const data = await safeJson(res);
-      return Array.isArray(data) ? data.map((r: { area_name: string }) => r.area_name) : [];
-    } catch { return []; }
-  }, [token]);
+    return userAreasMap.get(authUserId) ?? [];
+  }, [userAreasMap]);
 
   const getUserProjects = useCallback(async (authUserId: string): Promise<number[]> => {
-    if (!token || !authUserId) return [];
-    try {
-      const res = await supabaseRest(`user_project_access?user_id=eq.${authUserId}&select=project_id`, token);
-      const data = await safeJson(res);
-      return Array.isArray(data) ? data.map((r: { project_id: number }) => r.project_id) : [];
-    } catch { return []; }
-  }, [token]);
+    return userProjectsMap.get(authUserId) ?? [];
+  }, [userProjectsMap]);
 
   const getAuditLog = useCallback(async (): Promise<AuditRow[]> => {
     if (!token) return [];
