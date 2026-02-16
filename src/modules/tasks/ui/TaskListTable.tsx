@@ -160,7 +160,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                 </div>
 
                 {/* Consultant */}
-                <div className="hidden md:flex items-center justify-center gap-2 px-2 py-3">
+                <div className="hidden md:flex items-center justify-start gap-2 px-2 py-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-[9px] font-bold text-[hsl(var(--task-purple))]">
                     {task.consultant ? task.consultant.charAt(0).toUpperCase() : "?"}
                   </div>
