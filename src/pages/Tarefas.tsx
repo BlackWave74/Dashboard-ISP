@@ -535,8 +535,8 @@ export default function TarefasPage() {
       <div className="relative z-10 w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
-        <motion.div {...fadeUp} className="mb-5 flex flex-col items-center text-center gap-2">
-          <div>
+        <motion.div {...fadeUp} className="mb-5 flex items-start justify-between gap-4">
+          <div className="text-left">
             <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
               Acompanhamento de Tarefas
             </h1>
@@ -544,7 +544,7 @@ export default function TarefasPage() {
               Acompanhe o progresso, prazos e desempenho das atividades em tempo real.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 pt-1">
             <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
               <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
               {formatLastUpdated(combinedLastUpdated)}
