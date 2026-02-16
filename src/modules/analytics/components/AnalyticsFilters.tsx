@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Filter, ChevronDown, User, FolderKanban } from "lucide-react";
+import { Search, X, Filter, ChevronDown, User, FolderKanban, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { ProjectAnalytics } from "../types";
 
 export type AnalyticsFilterState = {
   period: "30d" | "90d" | "180d" | "all";
   status: "all" | "done" | "pending" | "overdue";
   projectId: number | null;
-  consultant: string; // "" = all (admin only)
+  consultant: string;
 };
 
 type ProjectOption = { id: number; name: string };
@@ -20,11 +21,11 @@ type Props = {
   myProjectIds?: Set<number>;
 };
 
-const PERIODS: { key: AnalyticsFilterState["period"]; label: string }[] = [
-  { key: "30d", label: "30 dias" },
-  { key: "90d", label: "90 dias" },
-  { key: "180d", label: "180 dias" },
-  { key: "all", label: "Tudo" },
+const PERIODS: { value: string; label: string }[] = [
+  { value: "30d", label: "30 dias" },
+  { value: "90d", label: "90 dias" },
+  { value: "180d", label: "180 dias" },
+  { value: "all", label: "Tudo" },
 ];
 
 const STATUSES: { key: AnalyticsFilterState["status"]; label: string }[] = [
@@ -107,7 +108,9 @@ function CustomSelect({
             {/* Mine first if provided */}
             {mineIds && sortedOptions.length > 0 && (
               <>
-                <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(262_83%_58%/0.6)]">Projetos que faço parte</div>
+                {sortedOptions.some(o => mineIds.has(o.value)) && (
+                  <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(262_83%_58%/0.6)]">Projetos que faço parte</div>
+                )}
                 {sortedOptions.filter(o => mineIds.has(o.value)).map((o) => (
                   <button
                     key={o.value}
@@ -163,6 +166,7 @@ function CustomSelect({
 
 export default function AnalyticsFilters({ filters, onChange, projects, consultants, isAdmin, myProjectIds }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const activeCount =
     (filters.period !== "180d" ? 1 : 0) +
@@ -170,9 +174,59 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
     (filters.projectId !== null ? 1 : 0) +
     (filters.consultant ? 1 : 0);
 
+  // Search filters project list inline
+  const handleSearchSelect = (projectId: number | null) => {
+    onChange({ ...filters, projectId });
+  };
+
+  // Filter projects by search
+  const searchResults = searchQuery.trim()
+    ? projects.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
+
   return (
     <div className="space-y-2 flex flex-col items-center">
-      <div className="flex items-center gap-3 flex-wrap justify-center">
+      {/* Search + Filter toggle side by side (same as Tarefas) */}
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        {/* Search field */}
+        <div className="relative flex items-center">
+          <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-white/30" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar projeto ou cliente..."
+            className="h-[38px] w-[210px] rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-[13px] font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(262_83%_58%/0.4)] focus:bg-[hsl(262_83%_58%/0.1)] focus:text-[hsl(262_83%_58%)]"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => { setSearchQuery(""); handleSearchSelect(null); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+          {/* Search dropdown */}
+          {searchQuery.trim() && searchResults.length > 0 && (
+            <div
+              className="absolute left-0 top-full z-[100] mt-1 max-h-60 w-full min-w-[240px] overflow-auto rounded-2xl border border-white/[0.08] p-1.5 shadow-xl shadow-black/40"
+              style={{ background: "hsl(260 30% 12%)" }}
+            >
+              {searchResults.slice(0, 10).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => { handleSearchSelect(p.id); setSearchQuery(p.name); }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold text-white/50 hover:bg-white/[0.05] hover:text-white/70 transition"
+                >
+                  <FolderKanban className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                  <span className="truncate">{p.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Filter toggle */}
         <button
           onClick={() => setExpanded((v) => !v)}
           className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
@@ -193,7 +247,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
 
         {activeCount > 0 && (
           <button
-            onClick={() => onChange({ period: "180d", status: "all", projectId: null, consultant: "" })}
+            onClick={() => { onChange({ period: "180d", status: "all", projectId: null, consultant: "" }); setSearchQuery(""); }}
             className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
           >
             Limpar filtros
@@ -201,6 +255,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
         )}
       </div>
 
+      {/* Expanded filters panel */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -211,26 +266,6 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
             className="overflow-visible w-full"
           >
             <div className="flex flex-wrap items-end justify-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
-              {/* Period */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
-                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
-                  {PERIODS.map((p) => (
-                    <button
-                      key={p.key}
-                      onClick={() => onChange({ ...filters, period: p.key })}
-                      className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
-                        filters.period === p.key
-                          ? "bg-[hsl(262_83%_58%)] text-white shadow"
-                          : "text-white/30 hover:text-white/50"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Status */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
@@ -251,21 +286,19 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
                 </div>
               </div>
 
-              {/* Consultant – admin only */}
-              {isAdmin && consultants.length > 1 && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Consultor</label>
-                  <CustomSelect
-                    value={filters.consultant}
-                    onChange={(v) => onChange({ ...filters, consultant: v })}
-                    options={consultants.map((c) => ({ value: c, label: c }))}
-                    placeholder="Todos os consultores"
-                    icon={User}
-                  />
-                </div>
-              )}
+              {/* Period dropdown (same as Tarefas) */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
+                <CustomSelect
+                  value={filters.period}
+                  onChange={(v) => onChange({ ...filters, period: v as AnalyticsFilterState["period"] })}
+                  options={PERIODS}
+                  placeholder="Todos períodos"
+                  icon={Calendar}
+                />
+              </div>
 
-              {/* Project */}
+              {/* Project dropdown */}
               {projects.length > 1 && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
@@ -276,6 +309,20 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
                     placeholder="Todos os projetos"
                     icon={FolderKanban}
                     mineIds={myProjectIds ? new Set([...myProjectIds].map(String)) : undefined}
+                  />
+                </div>
+              )}
+
+              {/* Consultant – admin only */}
+              {isAdmin && consultants.length > 1 && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Consultor</label>
+                  <CustomSelect
+                    value={filters.consultant}
+                    onChange={(v) => onChange({ ...filters, consultant: v })}
+                    options={consultants.map((c) => ({ value: c, label: c }))}
+                    placeholder="Todos os consultores"
+                    icon={User}
                   />
                 </div>
               )}
