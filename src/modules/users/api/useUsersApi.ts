@@ -16,7 +16,7 @@ export function useUsersApi(token: string | undefined) {
     setError(null);
     try {
       const res = await supabaseRest(
-        "users?select=id,auth_user_id,email,name,user_profile,active&order=name.asc&limit=200",
+        "users?select=id,auth_user_id,email,name,user_profile,active,cliente_id&order=name.asc&limit=200",
         token,
       );
       const data = await res.json();
