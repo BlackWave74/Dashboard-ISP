@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   Home,
   FolderKanban,
@@ -27,6 +28,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
+import { supabase as cloudSupabase } from "@/integrations/supabase/client";
 
 const supabaseExt = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -38,6 +40,8 @@ async function ensureSession(accessToken?: string, refreshToken?: string) {
     await supabaseExt.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
   }
 }
+
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
 import { AnimatePresence, motion } from "framer-motion";
 
 function UserAvatar({ name, email, collapsed, avatarUrl, onChangePhoto }: { name?: string; email?: string; collapsed?: boolean; avatarUrl?: string | null; onChangePhoto?: () => void }) {
@@ -201,28 +205,55 @@ export function AppSidebar() {
   }, [session?.accessToken, session?.refreshToken]);
 
   const handleAvatarUpload = useCallback(async (file: File) => {
+    // Validate file size
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error("Arquivo muito grande", { description: "O tamanho máximo é 2 MB. Escolha uma imagem menor." });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Formato inválido", { description: "Selecione um arquivo de imagem (JPG, PNG, etc.)." });
+      return;
+    }
+
     try {
       await ensureSession(session?.accessToken, session?.refreshToken);
       const { data: { user } } = await supabaseExt.auth.getUser();
       if (!user) {
-        console.error("Avatar upload failed: no authenticated user");
+        toast.error("Erro de autenticação", { description: "Faça login novamente e tente outra vez." });
         return;
       }
-      const ext = file.name.split(".").pop() || "jpg";
+
+      toast.loading("Enviando foto...", { id: "avatar-upload" });
+
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${user.id}/avatar.${ext}`;
-      
-      const { error: uploadError } = await supabaseExt.storage
+
+      // Upload to Lovable Cloud storage (has the avatars bucket)
+      const { error: uploadError } = await cloudSupabase.storage
         .from("avatars")
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabaseExt.storage.from("avatars").getPublicUrl(path);
+      const { data: urlData } = cloudSupabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-      await supabaseExt.from("users").update({ avatar_url: publicUrl } as any).eq("auth_user_id", user.id);
+      // Save URL to external DB
+      const { error: dbError } = await supabaseExt
+        .from("users")
+        .update({ avatar_url: publicUrl } as any)
+        .eq("auth_user_id", user.id);
+      if (dbError) throw dbError;
+
       setAvatarUrl(publicUrl);
+      toast.success("Foto atualizada!", { id: "avatar-upload" });
     } catch (err) {
       console.error("Avatar upload failed:", err);
+      toast.error("Falha ao enviar foto", {
+        id: "avatar-upload",
+        description: err instanceof Error ? err.message : "Tente novamente mais tarde.",
+      });
     }
   }, [session?.accessToken, session?.refreshToken]);
 
