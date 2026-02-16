@@ -106,7 +106,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
       {/* Header */}
-      <div className="hidden md:grid grid-cols-[minmax(120px,1.2fr)_90px_90px_185px_185px_110px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+      <div className="hidden md:grid grid-cols-[minmax(120px,1.2fr)_90px_90px_189px_189px_110px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
         <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
           Tarefa
         </div>
@@ -131,7 +131,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.025, duration: 0.2 }}
                 onClick={() => setExpandedId(isExpanded ? null : key)}
-                className={`group grid grid-cols-1 md:grid-cols-[minmax(120px,1.2fr)_90px_90px_185px_185px_110px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
+                className={`group grid grid-cols-1 md:grid-cols-[minmax(120px,1.2fr)_90px_90px_189px_189px_110px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
               >
                 {/* Task name */}
                 <div className="flex items-center gap-3 px-4 py-3.5">

@@ -215,13 +215,34 @@ export function TaskFilters({
 
   return (
     <div className="space-y-2 flex flex-col items-center">
-      {/* Filter toggle only */}
-      <div className="flex items-center justify-center gap-3 flex-wrap">
+      {/* Search + Filter toggle side by side */}
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        {/* Search field — same style as filter button */}
+        <div className="relative flex items-center">
+          <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-white/30" />
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar tarefa..."
+            className="h-[34px] w-[200px] rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-xs font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(var(--task-purple)/0.4)] focus:bg-[hsl(var(--task-purple)/0.1)] focus:text-[hsl(var(--task-purple))]"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
         {/* Filter toggle */}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-2 text-xs font-semibold transition ${
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[7px] text-xs font-semibold transition ${
             expanded
               ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-[hsl(var(--task-purple))]"
               : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
@@ -249,30 +270,6 @@ export function TaskFilters({
             className="overflow-visible w-full"
           >
             <div className="flex flex-wrap items-end justify-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
-              {/* Search inside filters */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Buscar</label>
-                <div className="relative flex items-center">
-                  <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-white/30" />
-                  <input
-                    ref={searchRef}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar tarefa..."
-                    className="h-8 w-[200px] rounded-lg border border-white/[0.08] bg-[hsl(var(--task-surface))] pl-9 pr-7 text-[11px] text-white/70 placeholder:text-white/20 outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-purple)/0.15)]"
-                  />
-                  {search && (
-                    <button
-                      type="button"
-                      onClick={() => setSearch("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
               {/* Status */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
