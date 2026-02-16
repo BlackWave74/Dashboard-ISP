@@ -4,7 +4,9 @@
  * which uses service_role on the server to bypass RLS.
  */
 
-const EDGE_FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user`;
+// Use the Lovable Cloud Supabase URL for edge functions
+const LOVABLE_CLOUD_URL = "https://phughcqnevoziyqmpvoj.supabase.co";
+const EDGE_FN_URL = `${LOVABLE_CLOUD_URL}/functions/v1/manage-user`;
 
 export async function callManageUser(
   token: string,
