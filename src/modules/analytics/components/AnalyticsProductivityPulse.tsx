@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { motion } from "framer-motion";
-import { Activity } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Activity, Info, X } from "lucide-react";
 import type { TaskRecord } from "@/modules/tasks/types";
 
 type Props = {
@@ -11,6 +11,9 @@ type Props = {
 const WEEKS = 16;
 
 export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Props) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+
   // Build weekly done/overdue data for the last WEEKS weeks
   const weeklyData = useMemo(() => {
     const now = Date.now();
@@ -19,7 +22,6 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
 
     for (let i = WEEKS - 1; i >= 0; i--) {
       const weekStart = now - (i + 1) * msPerWeek;
-      const weekEnd = now - i * msPerWeek;
       const startDate = new Date(weekStart);
       const label = `${startDate.getDate().toString().padStart(2, "0")}/${(startDate.getMonth() + 1).toString().padStart(2, "0")}`;
       buckets.push({ done: 0, overdue: 0, pending: 0, label });
@@ -63,21 +65,15 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
       const normalizedVal = val / max;
 
       if (val === 0) {
-        // Flat line when no activity
         points.push({ x, y: padY + graphH * 0.75 });
       } else {
-        // EKG spike pattern
         const baseY = padY + graphH * 0.75;
         const peakY = padY + graphH * (1 - normalizedVal) * 0.7;
         const spikeWidth = stepX * 0.15;
 
-        // Pre-spike dip
         points.push({ x: x - spikeWidth * 2, y: baseY + 4 });
-        // Sharp rise
         points.push({ x: x - spikeWidth, y: peakY });
-        // Sharp fall
         points.push({ x: x + spikeWidth, y: baseY + graphH * 0.15 });
-        // Recovery
         points.push({ x: x + spikeWidth * 2, y: baseY - 2 });
       }
     });
@@ -88,7 +84,6 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
     for (let i = 1; i < points.length; i++) {
       const prev = points[i - 1];
       const curr = points[i];
-      // Sharp lines for EKG effect
       const cpx1 = prev.x + (curr.x - prev.x) * 0.3;
       const cpx2 = prev.x + (curr.x - prev.x) * 0.7;
       d += ` C ${cpx1} ${prev.y}, ${cpx2} ${curr.y}, ${curr.x} ${curr.y}`;
@@ -111,7 +106,7 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
   const prevDone = prevWeeks.reduce((s, d) => s + d.done, 0);
 
   const trend = prevDone > 0 ? ((recentDone - prevDone) / prevDone) * 100 : recentDone > 0 ? 100 : 0;
-  const bpm = Math.round((totalDone / WEEKS) * 7); // "beats" per week avg, displayed as BPM metaphor
+  const bpm = Math.round((totalDone / WEEKS) * 7);
 
   const heartColor = totalOverdue > totalDone * 0.3
     ? "hsl(0 84% 60%)"
@@ -119,12 +114,14 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
     ? "hsl(262 83% 58%)"
     : "hsl(45 100% 55%)";
 
+  const hoveredData = hoveredIdx !== null ? weeklyData[hoveredIdx] : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] flex flex-col"
+      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] flex flex-col relative"
       style={{ background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))" }}
     >
       {/* Header */}
@@ -149,7 +146,6 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
             >
               <Activity className="h-4 w-4" style={{ color: heartColor }} />
             </motion.div>
-            {/* Pulse ring */}
             <motion.div
               className="absolute inset-0 rounded-lg"
               style={{ border: `1px solid ${heartColor}` }}
@@ -163,25 +159,95 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
           </div>
         </div>
 
-        {/* BPM Display */}
-        <div className="flex items-baseline gap-1">
-          <motion.span
-            className="text-2xl font-black tabular-nums"
-            style={{ color: heartColor }}
-            animate={{ opacity: [1, 0.6, 1] }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+        <div className="flex items-center gap-2">
+          {/* Info button */}
+          <button
+            onClick={() => setShowInfo(true)}
+            className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all"
           >
-            {bpm}
-          </motion.span>
-          <span className="text-[10px] text-white/30 font-medium">t/sem</span>
+            <Info className="h-3.5 w-3.5" />
+          </button>
+          {/* BPM Display */}
+          <div className="flex items-baseline gap-1">
+            <motion.span
+              className="text-2xl font-black tabular-nums"
+              style={{ color: heartColor }}
+              animate={{ opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              {bpm}
+            </motion.span>
+            <span className="text-[10px] text-white/30 font-medium">t/sem</span>
+          </div>
         </div>
       </div>
 
+      {/* Info Modal */}
+      <AnimatePresence>
+        {showInfo && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl"
+            style={{ background: "hsl(260 30% 10% / 0.97)", backdropFilter: "blur(8px)" }}
+          >
+            <div className="p-6 max-w-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-white/90">Sobre este gráfico</h4>
+                <button onClick={() => setShowInfo(false)} className="text-white/30 hover:text-white/60 transition">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-2.5 text-[12px] text-white/60 leading-relaxed">
+                <p>O <strong className="text-white/80">Pulso de Produtividade</strong> simula um eletrocardiograma (EKG) que reflete o ritmo de entregas da equipe nas últimas {WEEKS} semanas.</p>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full" style={{ background: "hsl(262 83% 58%)" }} />
+                  <span><strong className="text-white/80">Linha roxa:</strong> tarefas concluídas por semana</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full" style={{ background: "hsl(0 84% 60% / 0.6)" }} />
+                  <span><strong className="text-white/80">Linha vermelha:</strong> tarefas atrasadas</span>
+                </div>
+                <p>O valor <strong className="text-white/80">t/sem</strong> indica a média de tarefas concluídas por semana. Picos maiores = mais entregas naquela semana.</p>
+                <p>Passe o mouse sobre as <strong className="text-white/80">bolinhas</strong> para ver os detalhes de cada semana.</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* EKG Chart */}
       <div className="relative flex-1">
+        {/* Floating tooltip */}
+        <AnimatePresence>
+          {hoveredData && hoveredIdx !== null && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute z-10 pointer-events-none rounded-xl border border-white/[0.08] px-3 py-2 shadow-xl"
+              style={{
+                background: "hsl(260 30% 12% / 0.95)",
+                backdropFilter: "blur(8px)",
+                left: `${Math.min(Math.max((hoveredIdx / (WEEKS - 1)) * 100, 10), 85)}%`,
+                top: -8,
+                transform: "translateX(-50%)",
+              }}
+            >
+              <p className="text-[11px] font-bold text-white/80 mb-1">{hoveredData.label}</p>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] text-white/60">✅ {hoveredData.done} concluída{hoveredData.done !== 1 ? "s" : ""}</span>
+                <span className="text-[10px] text-white/60">⚠️ {hoveredData.overdue} atrasada{hoveredData.overdue !== 1 ? "s" : ""}</span>
+                <span className="text-[10px] text-white/60">⏳ {hoveredData.pending} pendente{hoveredData.pending !== 1 ? "s" : ""}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="overflow-visible">
           <defs>
-            {/* Main pulse glow */}
             <filter id="pulseGlow" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
               <feMerge>
@@ -189,7 +255,6 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            {/* Overdue glow */}
             <filter id="overdueGlow" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="2" result="blur" />
               <feMerge>
@@ -197,12 +262,10 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            {/* Gradient under main line */}
             <linearGradient id="pulseAreaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="hsl(262 83% 58% / 0.2)" />
               <stop offset="100%" stopColor="hsl(262 83% 58% / 0)" />
             </linearGradient>
-            {/* Scan line gradient */}
             <linearGradient id="scanGrad" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="transparent" />
               <stop offset="50%" stopColor="hsl(262 83% 58% / 0.15)" />
@@ -261,22 +324,20 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
 
           {/* Main done pulse */}
           {pulsePath && (
-            <>
-              <motion.path
-                d={pulsePath}
-                fill="none"
-                stroke={heartColor}
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                filter="url(#pulseGlow)"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
-              />
-            </>
+            <motion.path
+              d={pulsePath}
+              fill="none"
+              stroke={heartColor}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              filter="url(#pulseGlow)"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
+            />
           )}
 
-          {/* Data points — show ALL weeks as interactive dots */}
+          {/* Data points — interactive dots */}
           {weeklyData.map((d, i) => {
             const x = padX + (i / (WEEKS - 1)) * graphW;
             const hasDone = d.done > 0;
@@ -284,15 +345,23 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
             const normalizedVal = hasDone ? d.done / maxVal : 0;
             const y = hasDone ? padY + graphH * (1 - normalizedVal) * 0.7 : padY + graphH * 0.75;
             const isRecent = i >= WEEKS - 2;
-            const dotR = isRecent ? 4.5 : hasDone ? 3.5 : 2.5;
+            const isHovered = hoveredIdx === i;
+            const dotR = isHovered ? 6 : isRecent ? 4.5 : hasDone ? 3.5 : 2.5;
             const dotColor = hasOverdue && !hasDone ? "hsl(0 84% 60%)" : heartColor;
 
             return (
-              <g key={i} className="cursor-pointer">
+              <g
+                key={i}
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+              >
                 {/* Invisible hover target */}
-                <rect x={x - 18} y={padY - 5} width={36} height={graphH + 10} fill="transparent">
-                  <title>{`${d.label}\n✅ ${d.done} concluída${d.done !== 1 ? "s" : ""}\n⚠️ ${d.overdue} atrasada${d.overdue !== 1 ? "s" : ""}\n⏳ ${d.pending} pendente${d.pending !== 1 ? "s" : ""}`}</title>
-                </rect>
+                <rect x={x - 18} y={padY - 5} width={36} height={graphH + 10} fill="transparent" />
+                {/* Hover highlight line */}
+                {isHovered && (
+                  <line x1={x} y1={padY} x2={x} y2={padY + graphH} stroke="hsl(262 83% 58% / 0.2)" strokeWidth={1} strokeDasharray="3 3" />
+                )}
                 {/* Pulse ring on recent */}
                 {isRecent && hasDone && (
                   <motion.circle
@@ -307,35 +376,29 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
                   />
                 )}
                 {/* Dot */}
-                <motion.circle
+                <circle
                   cx={x}
                   cy={y}
                   r={dotR}
-                  fill={dotColor}
-                  stroke="hsl(270 50% 12%)"
-                  strokeWidth={isRecent ? 2 : 1.5}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 + i * 0.04 }}
-                  className="hover:brightness-150 transition-all"
+                  fill={isHovered ? "white" : dotColor}
+                  stroke={isHovered ? dotColor : "hsl(270 50% 12%)"}
+                  strokeWidth={isHovered ? 2.5 : isRecent ? 2 : 1.5}
+                  style={{ transition: "all 0.15s ease" }}
                 />
                 {/* Overdue secondary dot below */}
                 {hasOverdue && hasDone && (
-                  <motion.circle
+                  <circle
                     cx={x}
                     cy={padY + graphH * 0.85}
                     r={2}
                     fill="hsl(0 84% 60% / 0.6)"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.6 + i * 0.04 }}
                   />
                 )}
               </g>
             );
           })}
 
-          {/* Week labels — every 2nd */}
+          {/* Week labels — every 2nd, bigger font */}
           {weeklyData.map((d, i) => {
             if (i % 2 !== 0 && i !== WEEKS - 1) return null;
             const x = padX + (i / (WEEKS - 1)) * graphW;
@@ -343,9 +406,10 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
               <text
                 key={`label-${i}`}
                 x={x}
-                y={H - 2}
+                y={H - 1}
                 textAnchor="middle"
-                className="text-[9px] fill-white/40 font-medium"
+                className="fill-white/45 font-medium"
+                style={{ fontSize: "10px" }}
               >
                 {d.label}
               </text>
