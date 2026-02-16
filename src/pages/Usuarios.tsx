@@ -642,28 +642,36 @@ export default function UsuariosPage() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 className="task-card overflow-visible"
               >
-                <div className="p-4 pb-3 border-b border-[hsl(var(--task-border))] space-y-3">
+                {/* ── Header com busca ── */}
+                <div className="p-5 pb-4 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-base font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
-                      <Users className="h-4 w-4 text-[hsl(var(--task-purple))]" />
-                      Usuários Cadastrados
-                      <span className="text-xs font-normal text-[hsl(var(--task-text-muted))]">({filteredUsers.length})</span>
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
-                        <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Buscar por nome, e-mail..."
-                          className="h-8 w-48 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--task-purple)/0.15)]">
+                        <Users className="h-3.5 w-3.5 text-[hsl(var(--task-purple))]" />
                       </div>
-                      <select value={clienteFilter === "all" ? "" : clienteFilter} onChange={e => setClienteFilter(e.target.value ? Number(e.target.value) : "all")}
-                        className="h-8 w-40 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-2 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)]">
-                        <option value="">Todos os clientes</option>
-                        {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                      </select>
-                    </div>
+                      Usuários Cadastrados
+                      <span className="ml-1 inline-flex items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--task-purple))]">
+                        {filteredUsers.length}
+                      </span>
+                    </h2>
                   </div>
+
+                  {/* Search + Client filter row */}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--task-text-muted)/0.5)]" />
+                      <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Buscar por nome, e-mail..."
+                        className="h-10 w-full rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg)/0.6)] pl-10 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition-all focus:border-[hsl(var(--task-purple)/0.5)] focus:bg-[hsl(var(--task-bg))] focus:shadow-[0_0_0_3px_hsl(var(--task-purple)/0.08)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                    </div>
+                    <select value={clienteFilter === "all" ? "" : clienteFilter} onChange={e => setClienteFilter(e.target.value ? Number(e.target.value) : "all")}
+                      className="h-10 w-full sm:w-48 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg)/0.6)] px-3 text-xs text-[hsl(var(--task-text))] outline-none transition-all focus:border-[hsl(var(--task-purple)/0.5)] focus:shadow-[0_0_0_3px_hsl(var(--task-purple)/0.08)]">
+                      <option value="">Todos os clientes</option>
+                      {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </div>
+
                   {/* Profile filter chips */}
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {[
                       { key: "all", label: "Todos" },
                       ...PERFIS.map(p => ({ key: p, label: p })),
@@ -672,13 +680,17 @@ export default function UsuariosPage() {
                       const count = chip.key === "all" ? api.users.length : api.users.filter(u => u.user_profile === chip.key).length;
                       return (
                         <button key={chip.key} onClick={() => setProfileFilter(chip.key)}
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
                             isActive
-                              ? "bg-[hsl(var(--task-purple)/0.2)] text-[hsl(var(--task-purple))] border border-[hsl(var(--task-purple)/0.3)]"
-                              : "bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] border border-[hsl(var(--task-border))] hover:border-[hsl(var(--task-purple)/0.2)] hover:text-[hsl(var(--task-text))]"
+                              ? "bg-[hsl(var(--task-purple)/0.2)] text-[hsl(var(--task-purple))] border border-[hsl(var(--task-purple)/0.3)] shadow-[0_0_8px_hsl(var(--task-purple)/0.15)]"
+                              : "bg-[hsl(var(--task-bg)/0.5)] text-[hsl(var(--task-text-muted))] border border-[hsl(var(--task-border)/0.5)] hover:border-[hsl(var(--task-purple)/0.25)] hover:text-[hsl(var(--task-text))] hover:bg-[hsl(var(--task-bg))]"
                           }`}>
                           {chip.label}
-                          <span className={`text-[9px] ${isActive ? "text-[hsl(var(--task-purple)/0.7)]" : "text-[hsl(var(--task-text-muted)/0.5)]"}`}>
+                          <span className={`inline-flex items-center justify-center rounded-full px-1.5 min-w-[18px] h-[18px] text-[9px] font-bold ${
+                            isActive 
+                              ? "bg-[hsl(var(--task-purple)/0.25)] text-[hsl(var(--task-purple))]" 
+                              : "bg-[hsl(var(--task-border)/0.3)] text-[hsl(var(--task-text-muted)/0.6)]"
+                          }`}>
                             {count}
                           </span>
                         </button>
@@ -686,6 +698,9 @@ export default function UsuariosPage() {
                     })}
                   </div>
                 </div>
+
+                {/* Divider */}
+                <div className="mx-5 border-t border-[hsl(var(--task-border)/0.3)]" />
 
                 {api.loading && api.users.length === 0 && (
                   <div className="flex items-center justify-center py-16">
@@ -696,10 +711,13 @@ export default function UsuariosPage() {
 
                 {!api.loading && filteredUsers.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <Users className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.15)] mb-3" />
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--task-bg))] border border-[hsl(var(--task-border)/0.3)] mb-4">
+                      <Users className="h-6 w-6 text-[hsl(var(--task-text-muted)/0.25)]" />
+                    </div>
                     <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">
-                      {api.users.length === 0 ? "Nenhum usuário encontrado no banco." : "Nenhum resultado para o filtro."}
+                      {api.users.length === 0 ? "Nenhum usuário encontrado." : "Nenhum resultado para o filtro."}
                     </p>
+                    <p className="text-xs text-[hsl(var(--task-text-muted)/0.5)] mt-1">Tente ajustar os filtros acima.</p>
                     {api.error && (
                       <p className="text-xs text-rose-400 mt-2">{api.error}</p>
                     )}
@@ -707,7 +725,7 @@ export default function UsuariosPage() {
                 )}
 
                 {filteredUsers.length > 0 && (
-                  <div className="divide-y divide-[hsl(var(--task-border)/0.4)]">
+                  <div className="p-3 space-y-2">
                     {filteredUsers.map((user, idx) => {
                       const initials = (user.name || user.email || "U")
                         .split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -719,60 +737,64 @@ export default function UsuariosPage() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-                          className={`flex items-center gap-4 px-4 py-3.5 transition-all duration-200 group cursor-pointer border-l-2 ${
+                          className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group cursor-pointer ${
                             isSelected 
-                              ? "bg-[hsl(var(--task-purple)/0.06)] border-l-[hsl(var(--task-purple))]" 
-                              : "hover:bg-[hsl(var(--task-bg)/0.4)] border-l-transparent"
+                              ? "bg-[hsl(var(--task-purple)/0.08)] border border-[hsl(var(--task-purple)/0.25)] shadow-[0_0_12px_hsl(var(--task-purple)/0.08)]" 
+                              : "bg-[hsl(var(--task-bg)/0.3)] border border-transparent hover:bg-[hsl(var(--task-bg)/0.6)] hover:border-[hsl(var(--task-border)/0.4)]"
                           }`}
                           onClick={() => startEdit(user)}
                         >
                           <div className="relative">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-xs font-bold text-[hsl(var(--task-purple))]">
+                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xs font-bold transition-all ${
+                              isSelected
+                                ? "bg-gradient-to-br from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg shadow-[hsl(262_83%_58%/0.3)]"
+                                : "bg-[hsl(var(--task-purple)/0.12)] text-[hsl(var(--task-purple))]"
+                            }`}>
                               {initials}
                             </div>
                             <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[hsl(var(--task-surface))] ${
-                              user.active !== false ? "bg-emerald-400" : "bg-rose-400"
+                              user.active !== false ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]" : "bg-rose-400"
                             }`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-semibold text-[hsl(var(--task-text))] truncate">{user.name || "Sem nome"}</p>
-                              <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${profileColor(user.user_profile)}`}>
+                              <span className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${profileColor(user.user_profile)}`}>
                                 {user.user_profile || "Consultor"}
                               </span>
                               {user.active === false && (
-                                <span className="inline-flex items-center rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">Inativo</span>
+                                <span className="inline-flex items-center rounded-lg border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">Inativo</span>
                               )}
                             </div>
-                            <div className="flex items-center gap-3 mt-0.5 text-[11px] text-[hsl(var(--task-text-muted))]">
-                              <span className="flex items-center gap-1 truncate"><Mail className="h-3 w-3 shrink-0" />{user.email}</span>
+                            <div className="flex items-center gap-3 mt-1 text-[11px] text-[hsl(var(--task-text-muted)/0.7)]">
+                              <span className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0 opacity-50" />{user.email}</span>
                               {user.cliente_id && clienteMap.get(user.cliente_id) && (
-                                <span className="flex items-center gap-1 truncate"><Building2 className="h-3 w-3 shrink-0" />{clienteMap.get(user.cliente_id)}</span>
+                                <span className="flex items-center gap-1.5 truncate"><Building2 className="h-3 w-3 shrink-0 opacity-50" />{clienteMap.get(user.cliente_id)}</span>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                             <button onClick={() => startEdit(user)}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-[hsl(var(--task-purple)/0.1)] hover:text-[hsl(var(--task-purple))] transition" title="Editar">
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-[hsl(var(--task-purple)/0.12)] hover:text-[hsl(var(--task-purple))] transition" title="Editar">
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button onClick={() => handleDeactivate(user)}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-amber-500/10 hover:text-amber-400 transition" title="Desconectar">
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-amber-500/10 hover:text-amber-400 transition" title="Desconectar">
                               <Power className="h-3.5 w-3.5" />
                             </button>
                             {confirmDeleteId === user.id ? (
                               <div className="flex items-center gap-1">
                                 <button onClick={() => handleDelete(user)} disabled={deletingId === user.id}
-                                  className="flex h-7 items-center gap-1 rounded-lg bg-rose-500/20 border border-rose-500/30 px-2 text-[10px] font-semibold text-rose-400 hover:bg-rose-500/30 transition disabled:opacity-50">
+                                  className="flex h-8 items-center gap-1 rounded-lg bg-rose-500/20 border border-rose-500/30 px-2.5 text-[10px] font-semibold text-rose-400 hover:bg-rose-500/30 transition disabled:opacity-50">
                                   {deletingId === user.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} Confirmar
                                 </button>
-                                <button onClick={() => setConfirmDeleteId(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]">
+                                <button onClick={() => setConfirmDeleteId(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]">
                                   <X className="h-3 w-3" />
                                 </button>
                               </div>
                             ) : (
                               <button onClick={() => setConfirmDeleteId(user.id)}
-                                className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-rose-500/10 hover:text-rose-400 transition" title="Excluir">
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-rose-500/10 hover:text-rose-400 transition" title="Excluir">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             )}
