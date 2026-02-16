@@ -5,7 +5,7 @@ import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
 import AnalyticsProductivityPulse from "@/modules/analytics/components/AnalyticsProductivityPulse";
@@ -39,8 +39,25 @@ export default function AnaliticasPage() {
 
   const periodDays = PERIOD_DAYS[filters.period];
 
-  const { tasks: allTasks, loading: loadingTasks, error: errorTasks, reload: reloadTasks } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
-  const { times, loading: loadingTimes, reload: reloadTimes } = useElapsedTimes({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
+  const { tasks: allTasks, loading: loadingTasks, error: errorTasks, reload: reloadTasks, lastUpdated } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
+  const { times, loading: loadingTimes, reload: reloadTimes, lastUpdated: lastUpdatedTimes } = useElapsedTimes({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
+
+  const refreshing = loadingTasks || loadingTimes;
+  const combinedLastUpdated =
+    lastUpdated && lastUpdatedTimes
+      ? Math.min(lastUpdated, lastUpdatedTimes)
+      : lastUpdated ?? lastUpdatedTimes ?? null;
+
+  const formatLastUpdated = (timestamp: number | null) => {
+    if (!timestamp) return "Nunca atualizado";
+    const diff = Date.now() - timestamp;
+    if (diff < 60_000) return "Atualizado agora";
+    const minutes = Math.floor(diff / 60_000);
+    if (minutes < 60) return `Atualizado há ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return `Atualizado há ${hours}h${rest ? ` ${rest} min` : ""}`;
+  };
 
   // Auto-refresh every 5 minutes
   useEffect(() => {
@@ -58,6 +75,7 @@ export default function AnaliticasPage() {
   const { data: projectHours, loading: loadingHours } = useProjectHours({ startIso, endIso });
 
   const loading = loadingTasks || loadingTimes || loadingHours;
+  // Note: 'refreshing' is computed above after hooks, 'loading' includes hours for initial load
 
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const effectiveUser = isAdmin
@@ -199,18 +217,19 @@ export default function AnaliticasPage() {
               {filters.period !== "180d" && ` · Últimos ${periodDays} dias`}
             </p>
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex items-center gap-3 shrink-0 flex-1 justify-end">
+            <div className="flex items-center gap-1.5 text-[10px] text-white/35">
+              <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
+              {formatLastUpdated(combinedLastUpdated)}
+            </div>
             <button
               type="button"
-              onClick={() => {
-                if (!loading) { reloadTasks(); reloadTimes(); }
-              }}
-              disabled={loading}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-[9px] text-[13px] font-semibold text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
+              onClick={() => { reloadTasks(); reloadTimes(); }}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
             >
-              <Loader2 className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
               Atualizar
-              <span className={`ml-1 h-1.5 w-1.5 rounded-full ${loading ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
             </button>
           </div>
         </motion.div>

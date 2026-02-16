@@ -62,7 +62,12 @@ const Sparkline = () => {
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const [rememberMe, setRememberMe] = useState(() => {
+    try { return localStorage.getItem("login_remember") === "1"; } catch { return false; }
+  });
+  const [email, setEmail] = useState(() => {
+    try { return rememberMe ? (localStorage.getItem("login_email") ?? "") : ""; } catch { return ""; }
+  });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -86,6 +91,15 @@ export default function LoginPage() {
     setSubmitting(false);
 
     if (result.success) {
+      try {
+        if (rememberMe) {
+          localStorage.setItem("login_remember", "1");
+          localStorage.setItem("login_email", email);
+        } else {
+          localStorage.removeItem("login_remember");
+          localStorage.removeItem("login_email");
+        }
+      } catch { /* ignore */ }
       navigate("/");
     } else {
       setError(result.message || "Credenciais inválidas.");
@@ -203,6 +217,18 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+              </div>
+
+              <div className="login-remember">
+                <label className="login-remember-label">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="login-remember-checkbox"
+                  />
+                  <span>Lembrar credenciais</span>
+                </label>
               </div>
 
               <button type="submit" disabled={submitting} className="login-submit">
