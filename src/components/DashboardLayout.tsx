@@ -1,12 +1,21 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { useAuth, type AccessArea } from "@/modules/auth/hooks/useAuth";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 
+/** Map route paths to access areas */
+const ROUTE_TO_AREA: Record<string, AccessArea> = {
+  "/tarefas": "tarefas",
+  "/analiticas": "analiticas",
+  "/comodato": "comodato",
+  "/integracoes": "integracoes",
+  "/usuarios": "usuarios",
+};
+
 export default function DashboardLayout() {
-  const { isAuthenticated, loadingSession } = useAuth();
+  const { isAuthenticated, loadingSession, canAccess } = useAuth();
   const location = useLocation();
 
   if (loadingSession) {
@@ -19,6 +28,12 @@ export default function DashboardLayout() {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Check if current route requires access control
+  const requiredArea = ROUTE_TO_AREA[location.pathname];
+  if (requiredArea && !canAccess(requiredArea)) {
+    return <Navigate to="/" replace />;
   }
 
   return (
