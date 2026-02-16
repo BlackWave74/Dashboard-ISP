@@ -179,6 +179,7 @@ export default function TarefasPage() {
   const [page, setPage] = useState(1);
   const [chartSlide, setChartSlide] = useState(0);
   const [showCharts, setShowCharts] = useState(true);
+  const [showDashboard, setShowDashboard] = useState(true);
   const pageSize = 10;
 
   const searchInputRef = useRef<HTMLInputElement>(null!);
@@ -535,8 +536,8 @@ export default function TarefasPage() {
       <div className="relative z-10 w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
-        <motion.div {...fadeUp} className="mb-5 flex items-start justify-between gap-4">
-          <div className="text-left">
+        <motion.div {...fadeUp} className="mb-5 flex flex-col items-center text-center gap-2">
+          <div>
             <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
               Acompanhamento de Tarefas
             </h1>
@@ -544,7 +545,7 @@ export default function TarefasPage() {
               Acompanhe o progresso, prazos e desempenho das atividades em tempo real.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0 pt-1">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
               <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
               {formatLastUpdated(combinedLastUpdated)}
@@ -598,8 +599,33 @@ export default function TarefasPage() {
           <KpiCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="red" delay={0.2} />
         </motion.div>
 
-        {/* ═══ MAIN DASHBOARD: 3-column ═══ */}
-        <div className="mb-5 grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_260px_320px]">
+        {/* ═══ MAIN DASHBOARD: Collapsible 3-column ═══ */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="mb-5"
+        >
+          <button
+            type="button"
+            onClick={() => setShowDashboard((v) => !v)}
+            className="flex items-center gap-2 mb-3 text-sm font-semibold text-[hsl(var(--task-text))] hover:text-[hsl(var(--task-yellow))] transition"
+          >
+            <Layers className="h-4 w-4" />
+            Painel de Desempenho
+            <ChevronDown className={`h-4 w-4 transition-transform ${showDashboard ? "rotate-180" : ""}`} />
+          </button>
+
+          <AnimatePresence>
+            {showDashboard && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_260px_320px]">
 
           {/* LEFT: Focus — Top performers */}
           <motion.div
@@ -798,6 +824,10 @@ export default function TarefasPage() {
             )}
           </motion.div>
         </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* ═══ CHARTS SECTION (Collapsible + Slides) ═══ */}
         <motion.div

@@ -215,34 +215,13 @@ export function TaskFilters({
 
   return (
     <div className="space-y-2 flex flex-col items-center">
-      {/* Search + Filter toggle */}
+      {/* Filter toggle only */}
       <div className="flex items-center justify-center gap-3 flex-wrap">
-        {/* Search */}
-        <div className="relative flex items-center w-full sm:w-auto sm:min-w-[240px] sm:max-w-[340px]">
-          <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[hsl(var(--task-text-muted)/0.4)]" />
-          <input
-            ref={searchRef}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar tarefa..."
-            className="h-10 w-full rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-10 pr-9 text-sm text-[hsl(var(--task-text))] placeholder:text-[hsl(var(--task-text-muted)/0.3)] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-purple)/0.2)] focus:bg-[hsl(var(--task-surface-hover))]"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
         {/* Filter toggle */}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-1.5 text-[11px] font-semibold transition ${
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-2 text-xs font-semibold transition ${
             expanded
               ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-[hsl(var(--task-purple))]"
               : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
@@ -257,17 +236,6 @@ export function TaskFilters({
           )}
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
-
-        {/* Clear */}
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={onClearFilters}
-            className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
-          >
-            Limpar
-          </button>
-        )}
       </div>
 
       {/* Expanded filters panel */}
@@ -281,6 +249,30 @@ export function TaskFilters({
             className="overflow-visible w-full"
           >
             <div className="flex flex-wrap items-end justify-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
+              {/* Search inside filters */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Buscar</label>
+                <div className="relative flex items-center">
+                  <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-white/30" />
+                  <input
+                    ref={searchRef}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar tarefa..."
+                    className="h-8 w-[200px] rounded-lg border border-white/[0.08] bg-[hsl(var(--task-surface))] pl-9 pr-7 text-[11px] text-white/70 placeholder:text-white/20 outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] focus:ring-1 focus:ring-[hsl(var(--task-purple)/0.15)]"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Status */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
@@ -383,6 +375,21 @@ export function TaskFilters({
                       className="h-8 rounded-lg border border-white/[0.08] bg-[hsl(var(--task-surface))] px-2.5 text-xs text-white/70 outline-none"
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Clear filters */}
+              {hasActiveFilters && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-transparent">‎</label>
+                  <button
+                    type="button"
+                    onClick={onClearFilters}
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[11px] font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.15] transition"
+                  >
+                    <X className="h-3 w-3" />
+                    Limpar
+                  </button>
                 </div>
               )}
             </div>
