@@ -53,7 +53,7 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
   ];
 
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 justify-items-center">
+    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 w-full">
       {kpis.map((k, i) => {
         const Icon = k.icon;
         return (
@@ -62,7 +62,7 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: i * 0.06, ease: "easeOut" }}
-            className="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-white/[0.12] hover:shadow-xl"
+            className="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-white/[0.12] hover:shadow-xl w-full"
             style={{
               background: "linear-gradient(145deg, hsl(270 50% 14% / 0.7), hsl(234 45% 10% / 0.5))",
             }}

@@ -30,9 +30,9 @@ export default function AnalyticsSearch({ projects, onSelect, selected }: Props)
   }, []);
 
   return (
-    <div ref={ref} className="relative w-full sm:max-w-[340px]">
+    <div ref={ref} className="relative w-[210px]">
       <div className="relative flex items-center">
-        <Search className="pointer-events-none absolute left-3 h-4 w-4 text-white/30" />
+        <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-white/30" />
         <input
           value={selected ? selected.projectName : query}
           onChange={(e) => {
@@ -42,7 +42,7 @@ export default function AnalyticsSearch({ projects, onSelect, selected }: Props)
           }}
           onFocus={() => setOpen(true)}
           placeholder="Buscar projeto ou cliente..."
-          className="h-10 w-full rounded-xl border border-white/[0.06] bg-white/[0.03] pl-10 pr-9 text-sm text-white/80 placeholder:text-white/20 outline-none transition focus:border-[hsl(262_83%_58%/0.5)] focus:ring-1 focus:ring-[hsl(262_83%_58%/0.2)] focus:bg-white/[0.05]"
+          className="h-[38px] w-full rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-[13px] font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(262_83%_58%/0.4)] focus:bg-[hsl(262_83%_58%/0.1)] focus:text-[hsl(262_83%_58%)]"
         />
         {(query || selected) && (
           <button
