@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -7,11 +7,150 @@ import { PERFIS, ALL_AREAS, type Perfil, type UserRow, type AuditRow } from "@/m
 import {
   Users, Search, RefreshCw, Pencil, Trash2, Save, X, Shield,
   Loader2, AlertCircle, CheckCircle2, UserPlus, Mail, User,
-  Eye, EyeOff, FolderOpen, Clock, ChevronDown, ChevronUp,
-  History, MapPin, Briefcase,
+  Eye, EyeOff, FolderOpen, Clock, ChevronDown,
+  History, MapPin, Key, Copy, Power, Check,
 } from "lucide-react";
 
-/* ─── Component ─── */
+/* ─── Password generator ─── */
+function generatePassword(length = 14): string {
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const digits = "0123456789";
+  const specials = "!@#$%&*?";
+  const all = upper + lower + digits + specials;
+  // Ensure at least one from each
+  let pw = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+    specials[Math.floor(Math.random() * specials.length)],
+  ];
+  for (let i = pw.length; i < length; i++) {
+    pw.push(all[Math.floor(Math.random() * all.length)]);
+  }
+  // Shuffle
+  for (let i = pw.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pw[i], pw[j]] = [pw[j], pw[i]];
+  }
+  return pw.join("");
+}
+
+/* ─── MultiSelect Dropdown ─── */
+function MultiSelectDropdown({
+  label,
+  icon: Icon,
+  options,
+  selected,
+  onToggle,
+  renderOption,
+  emptyText = "Nenhuma opção.",
+  searchable = false,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  options: { value: string | number; label: string }[];
+  selected: (string | number)[];
+  onToggle: (value: string | number) => void;
+  renderOption?: (opt: { value: string | number; label: string }, isSelected: boolean) => React.ReactNode;
+  emptyText?: string;
+  searchable?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = searchable && search.trim()
+    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  return (
+    <div className="space-y-1.5" ref={ref}>
+      <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1.5">
+        <Icon className="h-3 w-3" /> {label}
+        <span className="text-[hsl(var(--task-text-muted)/0.5)]">({selected.length})</span>
+      </label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="flex h-9 w-full items-center justify-between rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] transition hover:border-[hsl(var(--task-purple)/0.4)]"
+        >
+          <span className="truncate">
+            {selected.length === 0
+              ? "Selecionar..."
+              : `${selected.length} selecionado${selected.length > 1 ? "s" : ""}`}
+          </span>
+          <ChevronDown className={`h-3.5 w-3.5 text-[hsl(var(--task-text-muted))] transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] shadow-xl shadow-black/30"
+            >
+              {searchable && (
+                <div className="sticky top-0 border-b border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[hsl(var(--task-text-muted))]" />
+                    <input
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="Buscar..."
+                      className="h-7 w-full rounded-md border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-7 pr-2 text-[11px] text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              )}
+              {filtered.length === 0 && (
+                <p className="px-3 py-4 text-center text-[11px] text-[hsl(var(--task-text-muted))]">{emptyText}</p>
+              )}
+              {filtered.map(opt => {
+                const isSelected = selected.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => onToggle(opt.value)}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] transition hover:bg-[hsl(var(--task-surface-hover))] ${
+                      isSelected ? "text-[hsl(var(--task-purple))]" : "text-[hsl(var(--task-text))]"
+                    }`}
+                  >
+                    <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
+                      isSelected
+                        ? "border-[hsl(var(--task-purple))] bg-[hsl(var(--task-purple)/0.2)]"
+                        : "border-[hsl(var(--task-border-light))]"
+                    }`}>
+                      {isSelected && <Check className="h-2.5 w-2.5" />}
+                    </div>
+                    {renderOption ? renderOption(opt, isSelected) : <span className="truncate">{opt.label}</span>}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════ */
+/* ─── Main Component ─── */
+/* ═══════════════════════════════════════════════ */
 export default function UsuariosPage() {
   const navigate = useNavigate();
   const { session, loadingSession } = useAuth();
@@ -38,10 +177,12 @@ export default function UsuariosPage() {
 
   // Create state
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: "", email: "", user_profile: "Consultor" as Perfil });
+  const [createForm, setCreateForm] = useState({ name: "", email: "", user_profile: "Consultor" as Perfil, password: "" });
   const [createAreas, setCreateAreas] = useState<string[]>(["home"]);
   const [createProjects, setCreateProjects] = useState<number[]>([]);
   const [creating, setCreating] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [copiedPw, setCopiedPw] = useState(false);
 
   // Delete
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -50,10 +191,26 @@ export default function UsuariosPage() {
   // Audit
   const [auditLog, setAuditLog] = useState<AuditRow[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+  const auditLoadedRef = useRef(false);
 
   const showFeedback = (type: "ok" | "error", message: string) => {
     setFeedback({ type, message });
     if (type === "ok") setTimeout(() => setFeedback(null), 4000);
+  };
+
+  /* ─── Password helpers ─── */
+  const handleGeneratePassword = () => {
+    const pw = generatePassword();
+    setCreateForm(p => ({ ...p, password: pw }));
+    setShowPassword(true);
+  };
+
+  const handleCopyPassword = async () => {
+    if (createForm.password) {
+      await navigator.clipboard.writeText(createForm.password);
+      setCopiedPw(true);
+      setTimeout(() => setCopiedPw(false), 2000);
+    }
   };
 
   /* ─── Start edit ─── */
@@ -89,19 +246,9 @@ export default function UsuariosPage() {
     if (!editingUser || !session) return;
     setLoadingEdit(true);
     try {
-      // Get current auth user id for performedBy
-      // We need the auth_user_id from the users table for the current session user
       const currentUser = api.users.find(u => u.email === session.email);
       const performedBy = currentUser?.auth_user_id || "";
-
-      await api.saveUser(
-        editingUser.id,
-        editingUser.auth_user_id,
-        editForm,
-        editAreas,
-        editProjects,
-        performedBy,
-      );
+      await api.saveUser(editingUser.id, editingUser.auth_user_id, editForm, editAreas, editProjects, performedBy);
       showFeedback("ok", "Usuário atualizado com sucesso.");
       cancelEdit();
       api.loadUsers();
@@ -115,9 +262,13 @@ export default function UsuariosPage() {
   /* ─── Create user ─── */
   const handleCreate = async () => {
     if (!token || !session) return;
-    const { name, email, user_profile } = createForm;
+    const { name, email, user_profile, password } = createForm;
     if (!name.trim() || !email.trim()) {
       showFeedback("error", "Nome e e-mail são obrigatórios.");
+      return;
+    }
+    if (!password.trim()) {
+      showFeedback("error", "Gere ou insira uma senha para o usuário.");
       return;
     }
     setCreating(true);
@@ -128,10 +279,11 @@ export default function UsuariosPage() {
         body: JSON.stringify({ email: email.trim(), name: name.trim(), user_profile, active: true }),
       });
       showFeedback("ok", `Usuário "${name.trim()}" criado com sucesso.`);
-      setCreateForm({ name: "", email: "", user_profile: "Consultor" });
+      setCreateForm({ name: "", email: "", user_profile: "Consultor", password: "" });
       setCreateAreas(["home"]);
       setCreateProjects([]);
       setShowCreate(false);
+      setShowPassword(false);
       api.loadUsers();
     } catch (err) {
       showFeedback("error", err instanceof Error ? err.message : "Falha ao criar usuário.");
@@ -157,17 +309,47 @@ export default function UsuariosPage() {
     }
   };
 
-  /* ─── Load audit ─── */
+  /* ─── Deactivate / Disconnect ─── */
+  const handleDeactivate = async (user: UserRow) => {
+    if (!session) return;
+    try {
+      const currentUser = api.users.find(u => u.email === session.email);
+      await api.saveUser(
+        user.id, user.auth_user_id,
+        { active: false },
+        [], // clear areas = disconnect
+        [], // clear projects
+        currentUser?.auth_user_id || "",
+      );
+      showFeedback("ok", `Usuário "${user.name}" desconectado.`);
+      api.loadUsers();
+    } catch (err) {
+      showFeedback("error", err instanceof Error ? err.message : "Falha ao desconectar.");
+    }
+  };
+
+  /* ─── Load audit (stable, no flicker) ─── */
+  const getAuditLogRef = useRef(api.getAuditLog);
+  getAuditLogRef.current = api.getAuditLog;
+
   const loadAudit = useCallback(async () => {
     setLoadingAudit(true);
-    const data = await api.getAuditLog();
+    const data = await getAuditLogRef.current();
     setAuditLog(data);
     setLoadingAudit(false);
-  }, [api]);
+  }, []);
 
   useEffect(() => {
-    if (activeTab === "audit") loadAudit();
+    if (activeTab === "audit" && !auditLoadedRef.current) {
+      auditLoadedRef.current = true;
+      loadAudit();
+    }
   }, [activeTab, loadAudit]);
+
+  // Reset audit loaded flag when switching away
+  useEffect(() => {
+    if (activeTab !== "audit") auditLoadedRef.current = false;
+  }, [activeTab]);
 
   /* ─── Filter ─── */
   const filteredUsers = useMemo(() => {
@@ -187,13 +369,12 @@ export default function UsuariosPage() {
     active: api.users.filter(u => u.active !== false).length,
   }), [api.users]);
 
-  /* ─── Helpers ─── */
-  const toggleArea = (area: string, list: string[], setter: (v: string[]) => void) => {
-    setter(list.includes(area) ? list.filter(a => a !== area) : [...list, area]);
-  };
+  /* ─── Dropdown helpers ─── */
+  const areaOptions = ALL_AREAS.map(a => ({ value: a.value, label: a.label }));
+  const projectOptions = api.projects.map(p => ({ value: p.id, label: p.name }));
 
-  const toggleProject = (pid: number, list: number[], setter: (v: number[]) => void) => {
-    setter(list.includes(pid) ? list.filter(p => p !== pid) : [...list, pid]);
+  const toggleInList = <T extends string | number>(val: T, list: T[], setter: (v: T[]) => void) => {
+    setter(list.includes(val) ? list.filter(v => v !== val) : [...list, val]);
   };
 
   const profileColor = (profile: string) => {
@@ -266,10 +447,10 @@ export default function UsuariosPage() {
 
         {/* ═══ TABS ═══ */}
         <div className="flex gap-1 rounded-xl bg-[hsl(var(--task-surface))] p-1 border border-[hsl(var(--task-border))]">
-          {[
+          {([
             { key: "users" as const, label: "Usuários", icon: Users },
             { key: "audit" as const, label: "Auditoria", icon: History },
-          ].map(tab => (
+          ]).map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition ${
                 activeTab === tab.key
@@ -299,7 +480,7 @@ export default function UsuariosPage() {
                     </div>
 
                     {/* Basic info */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Nome *</label>
                         <div className="relative">
@@ -323,45 +504,56 @@ export default function UsuariosPage() {
                           {PERFIS.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                       </div>
-                    </div>
-
-                    {/* Areas */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3" /> Áreas Permitidas
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {ALL_AREAS.map(area => (
-                          <button key={area.value} onClick={() => toggleArea(area.value, createAreas, setCreateAreas)}
-                            className={`rounded-lg px-3 py-1.5 text-[11px] font-medium border transition ${
-                              createAreas.includes(area.value)
-                                ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]"
-                                : "border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-purple)/0.3)]"
-                            }`}>
-                            {area.label}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
+                          <Key className="h-3 w-3" /> Senha *
+                        </label>
+                        <div className="relative flex gap-1">
+                          <div className="relative flex-1">
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              value={createForm.password}
+                              onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))}
+                              placeholder="Gere uma senha"
+                              className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-3 pr-8 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]"
+                            />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]">
+                              {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                            </button>
+                          </div>
+                          <button type="button" onClick={handleGeneratePassword} title="Gerar senha"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-purple)/0.4)] hover:text-[hsl(var(--task-purple))] transition">
+                            <RefreshCw className="h-3.5 w-3.5" />
                           </button>
-                        ))}
+                          {createForm.password && (
+                            <button type="button" onClick={handleCopyPassword} title="Copiar senha"
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-emerald-500/40 hover:text-emerald-400 transition">
+                              {copiedPw ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Projects */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1.5">
-                        <FolderOpen className="h-3 w-3" /> Projetos Acessíveis
-                      </label>
-                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                        {api.projects.length === 0 && <span className="text-[11px] text-[hsl(var(--task-text-muted))]">Nenhum projeto encontrado.</span>}
-                        {api.projects.map(proj => (
-                          <button key={proj.id} onClick={() => toggleProject(proj.id, createProjects, setCreateProjects)}
-                            className={`rounded-lg px-3 py-1.5 text-[11px] font-medium border transition ${
-                              createProjects.includes(proj.id)
-                                ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
-                                : "border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-emerald-500/30"
-                            }`}>
-                            {proj.name}
-                          </button>
-                        ))}
-                      </div>
+                    {/* Areas & Projects dropdowns */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <MultiSelectDropdown
+                        label="Áreas Permitidas"
+                        icon={MapPin}
+                        options={areaOptions}
+                        selected={createAreas}
+                        onToggle={(v) => toggleInList(v as string, createAreas, setCreateAreas)}
+                      />
+                      <MultiSelectDropdown
+                        label="Projetos Acessíveis"
+                        icon={FolderOpen}
+                        options={projectOptions}
+                        selected={createProjects}
+                        onToggle={(v) => toggleInList(v as number, createProjects, setCreateProjects)}
+                        emptyText="Nenhum projeto encontrado."
+                        searchable
+                      />
                     </div>
 
                     <div className="flex justify-end gap-2">
@@ -408,7 +600,7 @@ export default function UsuariosPage() {
             </motion.div>
 
             {/* ═══ MAIN CONTENT ═══ */}
-            <div className={`grid gap-5 ${showEditPanel ? "lg:grid-cols-[1fr_400px]" : "grid-cols-1"}`}>
+            <div className={`grid gap-5 ${showEditPanel ? "lg:grid-cols-[1fr_420px]" : "grid-cols-1"}`}>
               {/* ─── USER LIST ─── */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 className="task-card overflow-hidden"
@@ -437,8 +629,11 @@ export default function UsuariosPage() {
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <Users className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.15)] mb-3" />
                     <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">
-                      {api.users.length === 0 ? "Nenhum usuário encontrado." : "Nenhum resultado para o filtro."}
+                      {api.users.length === 0 ? "Nenhum usuário encontrado no banco." : "Nenhum resultado para o filtro."}
                     </p>
+                    {api.error && (
+                      <p className="text-xs text-rose-400 mt-2">{api.error}</p>
+                    )}
                   </div>
                 )}
 
@@ -481,6 +676,10 @@ export default function UsuariosPage() {
                             <button onClick={() => startEdit(user)}
                               className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-[hsl(var(--task-purple)/0.1)] hover:text-[hsl(var(--task-purple))] transition" title="Editar">
                               <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => handleDeactivate(user)}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] hover:bg-amber-500/10 hover:text-amber-400 transition" title="Desconectar">
+                              <Power className="h-3.5 w-3.5" />
                             </button>
                             {confirmDeleteId === user.id ? (
                               <div className="flex items-center gap-1">
@@ -567,43 +766,28 @@ export default function UsuariosPage() {
                       </div>
                     </div>
 
-                    {/* Areas */}
-                    <div className="space-y-2 pt-2 border-t border-[hsl(var(--task-border))]">
-                      <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3" /> Áreas Permitidas
-                      </label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {ALL_AREAS.map(area => (
-                          <button key={area.value} onClick={() => toggleArea(area.value, editAreas, setEditAreas)}
-                            className={`rounded-lg px-2.5 py-1 text-[10px] font-medium border transition ${
-                              editAreas.includes(area.value)
-                                ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]"
-                                : "border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-purple)/0.3)]"
-                            }`}>
-                            {area.label}
-                          </button>
-                        ))}
-                      </div>
+                    {/* Areas dropdown */}
+                    <div className="pt-2 border-t border-[hsl(var(--task-border))]">
+                      <MultiSelectDropdown
+                        label="Áreas Permitidas"
+                        icon={MapPin}
+                        options={areaOptions}
+                        selected={editAreas}
+                        onToggle={(v) => toggleInList(v as string, editAreas, setEditAreas)}
+                      />
                     </div>
 
-                    {/* Projects */}
-                    <div className="space-y-2 pt-2 border-t border-[hsl(var(--task-border))]">
-                      <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1.5">
-                        <FolderOpen className="h-3 w-3" /> Projetos Acessíveis
-                        <span className="text-[hsl(var(--task-text-muted)/0.5)]">({editProjects.length}/{api.projects.length})</span>
-                      </label>
-                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
-                        {api.projects.map(proj => (
-                          <button key={proj.id} onClick={() => toggleProject(proj.id, editProjects, setEditProjects)}
-                            className={`rounded-lg px-2.5 py-1 text-[10px] font-medium border transition ${
-                              editProjects.includes(proj.id)
-                                ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
-                                : "border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-emerald-500/30"
-                            }`}>
-                            {proj.name}
-                          </button>
-                        ))}
-                      </div>
+                    {/* Projects dropdown */}
+                    <div className="pt-2 border-t border-[hsl(var(--task-border))]">
+                      <MultiSelectDropdown
+                        label="Projetos Acessíveis"
+                        icon={FolderOpen}
+                        options={projectOptions}
+                        selected={editProjects}
+                        onToggle={(v) => toggleInList(v as number, editProjects, setEditProjects)}
+                        emptyText="Nenhum projeto encontrado."
+                        searchable
+                      />
                     </div>
 
                     {/* Actions */}
@@ -651,21 +835,26 @@ export default function UsuariosPage() {
               </div>
             )}
 
-            {auditLog.length > 0 && (
+            {!loadingAudit && auditLog.length > 0 && (
               <div className="divide-y divide-[hsl(var(--task-border)/0.4)]">
                 {auditLog.map((log) => {
                   const actionLabel = log.action === "update_user" ? "Atualizou usuário" :
-                    log.action === "delete_user" ? "Removeu usuário" : log.action;
-                  const actionColor = log.action === "delete_user" ? "text-rose-400" : "text-[hsl(var(--task-purple))]";
+                    log.action === "delete_user" ? "Removeu usuário" :
+                    log.action === "create_user" ? "Criou usuário" : log.action;
+                  const actionColor = log.action === "delete_user" ? "text-rose-400" :
+                    log.action === "create_user" ? "text-emerald-400" : "text-[hsl(var(--task-purple))]";
                   const details = log.details as Record<string, unknown> | null;
                   const changes = details?.changes as Record<string, unknown> | undefined;
 
                   return (
                     <div key={log.id} className="px-4 py-3 flex items-start gap-3">
                       <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                        log.action === "delete_user" ? "bg-rose-500/10" : "bg-[hsl(var(--task-purple)/0.1)]"
+                        log.action === "delete_user" ? "bg-rose-500/10" :
+                        log.action === "create_user" ? "bg-emerald-500/10" : "bg-[hsl(var(--task-purple)/0.1)]"
                       }`}>
-                        {log.action === "delete_user" ? <Trash2 className="h-3.5 w-3.5 text-rose-400" /> : <Pencil className="h-3.5 w-3.5 text-[hsl(var(--task-purple))]" />}
+                        {log.action === "delete_user" ? <Trash2 className="h-3.5 w-3.5 text-rose-400" /> :
+                         log.action === "create_user" ? <UserPlus className="h-3.5 w-3.5 text-emerald-400" /> :
+                         <Pencil className="h-3.5 w-3.5 text-[hsl(var(--task-purple))]" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs">
