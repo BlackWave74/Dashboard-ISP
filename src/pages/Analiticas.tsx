@@ -179,7 +179,7 @@ export default function AnaliticasPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
+    <div className="page-gradient w-full">
       <div className="mx-auto w-full max-w-[1900px] space-y-5 p-5 md:p-8">
         {/* Header */}
         <motion.div

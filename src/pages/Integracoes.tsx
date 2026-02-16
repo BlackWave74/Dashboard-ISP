@@ -41,12 +41,7 @@ export default function IntegracoesPage() {
   const comingSoonCount = filteredIntegrations.filter((i) => i.status === "EM_BREVE").length;
 
   return (
-    <div
-      className="min-h-[calc(100vh-3.5rem)] w-full"
-      style={{
-        background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))",
-      }}
-    >
+    <div className="page-gradient w-full">
       <div className="mx-auto w-full max-w-[1400px] space-y-6 p-5 md:p-8">
         {/* ── Hero Header ── */}
         <motion.div

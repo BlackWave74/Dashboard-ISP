@@ -261,7 +261,7 @@ export default function UsuariosPage() {
     }
   };
 
-  /* ─── Create user ─── */
+  /* ─── Create user via Edge Function ─── */
   const handleCreate = async () => {
     if (!token || !session) return;
     const { name, email, user_profile, password, cliente_id } = createForm;
@@ -275,12 +275,34 @@ export default function UsuariosPage() {
     }
     setCreating(true);
     try {
-      const { supabaseRest } = await import("@/modules/users/api/supabaseRest");
-      await supabaseRest("users", token, {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/manage-user`, {
         method: "POST",
-        body: JSON.stringify({ email: email.trim(), name: name.trim(), user_profile, active: true, cliente_id: cliente_id || null }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: supabaseKey,
+        },
+        body: JSON.stringify({
+          action: "create",
+          email: email.trim(),
+          password: password.trim(),
+          name: name.trim(),
+          user_profile,
+          cliente_id: cliente_id || null,
+          areas: createAreas,
+          projects: createProjects,
+        }),
       });
-      showFeedback("ok", `Usuário "${name.trim()}" criado com sucesso.`);
+
+      const data = await res.json();
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error || `Erro ${res.status}`);
+      }
+
+      showFeedback("ok", `Usuário "${name.trim()}" criado com sucesso! Login habilitado.`);
       setCreateForm({ name: "", email: "", user_profile: "Consultor", password: "", cliente_id: null });
       setCreateAreas(["home"]);
       setCreateProjects([]);
@@ -294,13 +316,32 @@ export default function UsuariosPage() {
     }
   };
 
-  /* ─── Delete ─── */
+  /* ─── Delete via Edge Function ─── */
   const handleDelete = async (user: UserRow) => {
-    if (!session) return;
+    if (!session || !token) return;
     setDeletingId(user.id);
     try {
-      const currentUser = api.users.find(u => u.email === session.email);
-      await api.deleteUser(user.id, user.auth_user_id, currentUser?.auth_user_id || "");
+      if (user.auth_user_id) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/manage-user`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            apikey: supabaseKey,
+          },
+          body: JSON.stringify({ action: "delete", authUserId: user.auth_user_id }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || `Erro ${res.status}`);
+        }
+      } else {
+        // Fallback for users without auth_user_id
+        const currentUser = api.users.find(u => u.email === session.email);
+        await api.deleteUser(user.id, user.auth_user_id, currentUser?.auth_user_id || "");
+      }
       showFeedback("ok", "Usuário removido com sucesso.");
       setConfirmDeleteId(null);
       api.loadUsers();
@@ -413,7 +454,7 @@ export default function UsuariosPage() {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] w-full" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
+    <div className="page-gradient w-full">
       <div className="mx-auto w-full max-w-[1400px] space-y-5 p-5 md:p-8">
 
         {/* ═══ HEADER ═══ */}
