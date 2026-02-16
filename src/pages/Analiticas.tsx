@@ -242,6 +242,7 @@ export default function AnaliticasPage() {
           consultants={consultants}
           isAdmin={isAdmin}
           myProjectIds={myProjectIds}
+          hideFilters={!isAdmin}
         />
 
         {/* KPI Cards */}

@@ -28,6 +28,7 @@ type TaskFiltersProps = {
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
   myProjectNames?: Set<string>;
+  hideFilters?: boolean;
 };
 
 const statusChips = [
@@ -203,6 +204,7 @@ export function TaskFilters({
   hasActiveFilters = false,
   onClearFilters,
   myProjectNames,
+  hideFilters = false,
 }: TaskFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -237,25 +239,27 @@ export function TaskFilters({
           )}
         </div>
 
-        {/* Filter toggle */}
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
-            expanded
-              ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-[hsl(var(--task-purple))]"
-              : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
-          }`}
-        >
-          <Filter className="h-3.5 w-3.5" />
-          Filtros
-          {activeCount > 0 && (
-            <span className="rounded-full bg-[hsl(var(--task-purple))] px-1.5 py-0.5 text-[10px] font-bold text-white">
-              {activeCount}
-            </span>
-          )}
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-        </button>
+        {/* Filter toggle — hidden for non-admin users */}
+        {!hideFilters && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 py-[9px] text-[13px] font-semibold transition ${
+              expanded
+                ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-[hsl(var(--task-purple))]"
+                : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:text-white/70"
+            }`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Filtros
+            {activeCount > 0 && (
+              <span className="rounded-full bg-[hsl(var(--task-purple))] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {activeCount}
+              </span>
+            )}
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+        )}
       </div>
 
       {/* Expanded filters panel */}
