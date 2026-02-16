@@ -25,7 +25,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseExt = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 import { AnimatePresence, motion } from "framer-motion";
 
 function UserAvatar({ name, email, collapsed, avatarUrl, onChangePhoto }: { name?: string; email?: string; collapsed?: boolean; avatarUrl?: string | null; onChangePhoto?: () => void }) {
@@ -174,10 +177,10 @@ export function AppSidebar() {
     if (!session?.accessToken) return;
     const loadAvatar = async () => {
       try {
-        const { data: userData } = await supabase
+        const { data: userData } = await supabaseExt
           .from("users")
           .select("avatar_url")
-          .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
+          .eq("auth_user_id", (await supabaseExt.auth.getUser()).data.user?.id ?? "")
           .maybeSingle();
         if (userData?.avatar_url) setAvatarUrl(userData.avatar_url);
       } catch { /* ignore */ }
@@ -187,20 +190,20 @@ export function AppSidebar() {
 
   const handleAvatarUpload = useCallback(async (file: File) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseExt.auth.getUser();
       if (!user) return;
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/avatar.${ext}`;
       
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabaseExt.storage
         .from("avatars")
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const { data: urlData } = supabaseExt.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-      await supabase.from("users").update({ avatar_url: publicUrl }).eq("auth_user_id", user.id);
+      await supabaseExt.from("users").update({ avatar_url: publicUrl } as any).eq("auth_user_id", user.id);
       setAvatarUrl(publicUrl);
     } catch (err) {
       console.error("Avatar upload failed:", err);
