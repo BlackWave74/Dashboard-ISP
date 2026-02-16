@@ -111,41 +111,35 @@ export function useUsersApi(token: string | undefined) {
     // 2. Sync role
     if (payload.user_profile && authUserId) {
       const appRole = PERFIL_TO_ROLE[payload.user_profile as Perfil] ?? "consultor";
-      try {
-        await supabaseRest(`user_roles?user_id=eq.${authUserId}`, token, { method: "DELETE" });
-        await supabaseRest("user_roles", token, {
-          method: "POST",
-          body: JSON.stringify({ user_id: authUserId, role: appRole }),
-        });
-      } catch { /* non-critical */ }
+      await supabaseRest(`user_roles?user_id=eq.${authUserId}`, token, { method: "DELETE" });
+      await supabaseRest("user_roles", token, {
+        method: "POST",
+        body: JSON.stringify({ user_id: authUserId, role: appRole }),
+      });
     }
 
     // 3. Sync allowed areas
     if (authUserId) {
-      try {
-        await supabaseRest(`user_allowed_areas?user_id=eq.${authUserId}`, token, { method: "DELETE" });
-        if (selectedAreas.length > 0) {
-          const areaRows = selectedAreas.map(a => ({ user_id: authUserId, area_name: a }));
-          await supabaseRest("user_allowed_areas", token, {
-            method: "POST",
-            body: JSON.stringify(areaRows),
-          });
-        }
-      } catch { /* non-critical */ }
+      await supabaseRest(`user_allowed_areas?user_id=eq.${authUserId}`, token, { method: "DELETE" });
+      if (selectedAreas.length > 0) {
+        const areaRows = selectedAreas.map(a => ({ user_id: authUserId, area_name: a }));
+        await supabaseRest("user_allowed_areas", token, {
+          method: "POST",
+          body: JSON.stringify(areaRows),
+        });
+      }
     }
 
     // 4. Sync project access
     if (authUserId) {
-      try {
-        await supabaseRest(`user_project_access?user_id=eq.${authUserId}`, token, { method: "DELETE" });
-        if (selectedProjects.length > 0) {
-          const projRows = selectedProjects.map(pid => ({ user_id: authUserId, project_id: pid }));
-          await supabaseRest("user_project_access", token, {
-            method: "POST",
-            body: JSON.stringify(projRows),
-          });
-        }
-      } catch { /* non-critical */ }
+      await supabaseRest(`user_project_access?user_id=eq.${authUserId}`, token, { method: "DELETE" });
+      if (selectedProjects.length > 0) {
+        const projRows = selectedProjects.map(pid => ({ user_id: authUserId, project_id: pid }));
+        await supabaseRest("user_project_access", token, {
+          method: "POST",
+          body: JSON.stringify(projRows),
+        });
+      }
     }
 
     // 5. Audit log

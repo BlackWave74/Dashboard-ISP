@@ -99,7 +99,7 @@ function MultiSelectDropdown({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
-              className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] shadow-xl shadow-black/30"
+              className="absolute z-[100] mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] shadow-xl shadow-black/30"
             >
               {searchable && (
                 <div className="sticky top-0 border-b border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2">

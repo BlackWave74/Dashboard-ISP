@@ -228,13 +228,16 @@ export function AppSidebar() {
       toast.loading("Enviando foto...", { id: "avatar-upload" });
 
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `${user.id}/avatar_${Date.now()}.${ext}`;
 
       // Upload to Lovable Cloud storage (has the avatars bucket)
       const { error: uploadError } = await cloudSupabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true });
-      if (uploadError) throw uploadError;
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        throw new Error(`Upload falhou: ${uploadError.message}`);
+      }
 
       const { data: urlData } = cloudSupabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
@@ -244,7 +247,10 @@ export function AppSidebar() {
         .from("users")
         .update({ avatar_url: publicUrl } as any)
         .eq("auth_user_id", user.id);
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("DB update error:", dbError);
+        throw new Error(`Erro ao salvar URL: ${dbError.message}`);
+      }
 
       setAvatarUrl(publicUrl);
       toast.success("Foto atualizada!", { id: "avatar-upload" });
