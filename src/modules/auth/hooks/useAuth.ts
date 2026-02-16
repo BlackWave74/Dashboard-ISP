@@ -126,6 +126,8 @@ export function useAuth() {
   const loginAttemptRef = useRef(0);
   const loginSpamCountRef = useRef(0);
   const loginBlockedUntilRef = useRef(0);
+  const failedAttemptsRef = useRef(0);
+  const failedBlockedUntilRef = useRef(0);
 
   const persistSession = useCallback((data: AuthSession | null) => {
     if (data) storage.set(SESSION_KEY, data);
@@ -207,18 +209,29 @@ export function useAuth() {
   const login = useCallback(
     async ({ email, password }: AuthPayload): Promise<AuthResult> => {
       const now = Date.now();
+
+      // Check if blocked due to failed password attempts (3 failures = 60s block)
+      if (now < failedBlockedUntilRef.current) {
+        const seconds = Math.ceil((failedBlockedUntilRef.current - now) / 1000);
+        return {
+          success: false,
+          message: `Conta bloqueada temporariamente após 3 tentativas incorretas. Aguarde ${seconds}s ou entre em contato com seu consultor para recuperar a senha.`,
+        };
+      }
+
+      // Anti-spam: rapid clicking
       if (now < loginBlockedUntilRef.current) {
         const seconds = Math.ceil((loginBlockedUntilRef.current - now) / 1000);
-        return { success: false, message: `Opa, calma ai. Aguarde ${seconds}s.` };
+        return { success: false, message: `Aguarde ${seconds}s antes de tentar novamente.` };
       }
       if (now - loginAttemptRef.current < 1500) {
         loginSpamCountRef.current += 1;
         if (loginSpamCountRef.current >= 3) {
           loginBlockedUntilRef.current = now + 15000;
           loginSpamCountRef.current = 0;
-          return { success: false, message: "Opa, calma ai. Você está clicando demais." };
+          return { success: false, message: "Você está clicando rápido demais. Aguarde um instante." };
         }
-        return { success: false, message: "Opa, calma ai. Aguarde um instante." };
+        return { success: false, message: "Aguarde um instante entre tentativas." };
       }
       loginAttemptRef.current = now;
 
@@ -242,8 +255,19 @@ export function useAuth() {
         });
         const data = await response.json();
         if (!response.ok) {
+          // Track failed password attempts
+          failedAttemptsRef.current += 1;
+          if (failedAttemptsRef.current >= 3) {
+            failedBlockedUntilRef.current = Date.now() + 60_000; // block 60s
+            failedAttemptsRef.current = 0;
+            return {
+              success: false,
+              message: "Conta bloqueada por 60 segundos após 3 tentativas incorretas. Entre em contato com seu consultor para recuperar a senha.",
+            };
+          }
+          const remaining = 3 - failedAttemptsRef.current;
           const msg = data?.msg || data?.error_description || data?.error || "Credenciais inválidas.";
-          return { success: false, message: msg };
+          return { success: false, message: `${msg} (${remaining} tentativa${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""})` };
         }
 
         const user = data?.user;
@@ -273,6 +297,8 @@ export function useAuth() {
         persistSession(authSession);
         loginSpamCountRef.current = 0;
         loginBlockedUntilRef.current = 0;
+        failedAttemptsRef.current = 0;
+        failedBlockedUntilRef.current = 0;
         return { success: true };
       } catch (error) {
         const msg = error instanceof Error ? error.message : "Falha ao autenticar.";

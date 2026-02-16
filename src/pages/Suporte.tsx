@@ -1,15 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
   Search, HelpCircle, Loader2, Headphones, BookOpen, ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
 
 /* ─── FAQ Data ─── */
-const FAQ_ITEMS = [
+type FaqItem = { q: string; a: string };
+type FaqCategory = { category: string; questions: FaqItem[]; requiredArea?: string };
+
+const FAQ_ITEMS: FaqCategory[] = [
   {
     category: "Tarefas",
+    requiredArea: "tarefas",
     questions: [
       { q: "Como acompanho o andamento das minhas tarefas?", a: "Acesse a página 'Tarefas' no menu lateral. Lá você verá todas as tarefas do seu projeto, com status, prazo e responsável. Use os filtros para localizar tarefas específicas." },
       { q: "O que significa tarefa 'Atrasada'?", a: "Uma tarefa é marcada como atrasada quando o prazo de entrega já passou e ela ainda não foi concluída. Tarefas atrasadas são destacadas em vermelho para facilitar a visualização." },
@@ -17,21 +22,25 @@ const FAQ_ITEMS = [
     ],
   },
   {
-    category: "Projetos",
+    category: "Conta & Acesso",
     questions: [
-      { q: "Por que não vejo todos os projetos?", a: "Você só tem acesso aos projetos que foram vinculados ao seu perfil pelo administrador. Se acredita que deveria ter acesso a mais projetos, entre em contato com seu consultor." },
-      { q: "Como funciona o filtro de projetos?", a: "Na página de tarefas e analíticas, use o dropdown 'Projeto' para filtrar as informações por projeto específico. Os projetos listados são aqueles aos quais você tem permissão de acesso." },
+      { q: "Como altero minha senha?", a: "A alteração de senha deve ser solicitada ao seu consultor ou administrador responsável. Entre em contato informando que deseja redefinir sua senha e ele providenciará a alteração de forma segura." },
+      { q: "Esqueci minha senha, o que faço?", a: "Entre em contato diretamente com seu consultor ou administrador. Informe o e-mail cadastrado e ele irá gerar uma nova senha segura para você. Não temos sistema automático de recuperação de senha no momento." },
+      { q: "Não consigo acessar certas páginas", a: "O acesso às páginas é controlado pelo seu perfil de usuário. Consultores e clientes possuem acesso limitado de acordo com as permissões configuradas pelo administrador." },
+      { q: "Minha conta foi bloqueada após tentativas de login", a: "Após 3 tentativas de login com senha incorreta, sua conta é temporariamente bloqueada por segurança. Aguarde 60 segundos e tente novamente, ou entre em contato com seu consultor para verificar suas credenciais." },
     ],
   },
   {
-    category: "Conta",
+    category: "Comodato",
+    requiredArea: "comodato",
     questions: [
-      { q: "Como altero minha senha?", a: "Entre em contato com seu consultor ou administrador para solicitar a alteração de senha. Por segurança, apenas administradores podem redefinir senhas." },
-      { q: "Não consigo acessar certas páginas", a: "O acesso às páginas é controlado pelo seu perfil de usuário. Consultores e clientes possuem acesso limitado de acordo com as permissões configuradas pelo administrador." },
+      { q: "Como consulto um equipamento em comodato?", a: "Acesse a página 'Comodato' no menu lateral e use a aba 'Consultar'. Informe o login PPPoE ou número de série do equipamento para verificar o status do comodato." },
+      { q: "Como lanço um novo comodato?", a: "Na página 'Comodato', use a aba 'Lançar'. Preencha os dados do contrato, equipamento e confirme o lançamento. O sistema registrará automaticamente no IXC." },
     ],
   },
   {
     category: "Analíticas",
+    requiredArea: "analiticas",
     questions: [
       { q: "O que são os gráficos de analíticas?", a: "Os gráficos mostram indicadores de desempenho dos seus projetos, como tarefas concluídas, velocidade de entrega e distribuição por status. Eles ajudam a acompanhar o progresso geral." },
       { q: "Os dados são atualizados em tempo real?", a: "Os dados são sincronizados periodicamente com o sistema de gestão. Use o botão 'Atualizar' para forçar uma atualização dos dados." },
@@ -41,7 +50,7 @@ const FAQ_ITEMS = [
 
 export default function SuportePage() {
   const navigate = useNavigate();
-  const { session, loadingSession } = useAuth();
+  const { session, loadingSession, canAccess } = useAuth();
   const [faqSearch, setFaqSearch] = useState("");
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
 
@@ -49,16 +58,27 @@ export default function SuportePage() {
     if (!loadingSession && !session) navigate("/login");
   }, [loadingSession, session, navigate]);
 
-  const filteredFaq = faqSearch.trim()
-    ? FAQ_ITEMS.map((cat) => ({
+  // Filter FAQ based on user's allowed areas
+  const visibleFaq = useMemo(() => {
+    return FAQ_ITEMS.filter(cat => {
+      if (!cat.requiredArea) return true; // always show categories without area requirement
+      return canAccess(cat.requiredArea as any);
+    });
+  }, [canAccess]);
+
+  const filteredFaq = useMemo(() => {
+    if (!faqSearch.trim()) return visibleFaq;
+    return visibleFaq
+      .map((cat) => ({
         ...cat,
         questions: cat.questions.filter(
           (q) =>
             q.q.toLowerCase().includes(faqSearch.toLowerCase()) ||
             q.a.toLowerCase().includes(faqSearch.toLowerCase())
         ),
-      })).filter((cat) => cat.questions.length > 0)
-    : FAQ_ITEMS;
+      }))
+      .filter((cat) => cat.questions.length > 0);
+  }, [faqSearch, visibleFaq]);
 
   if (loadingSession) {
     return (
@@ -82,10 +102,19 @@ export default function SuportePage() {
           </div>
         </motion.div>
 
+        {/* Info banner */}
+        <div className="flex items-start gap-3 rounded-xl bg-[hsl(var(--task-purple)/0.08)] border border-[hsl(var(--task-purple)/0.15)] p-4">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[hsl(var(--task-yellow))]" />
+          <p className="text-xs leading-relaxed text-[hsl(var(--task-text-muted))]">
+            Para <strong className="text-[hsl(var(--task-text))]">alteração de senha</strong> ou qualquer problema de acesso, entre em contato diretamente com seu <strong className="text-[hsl(var(--task-text))]">consultor responsável</strong>.
+          </p>
+        </div>
+
         {/* Title bar */}
         <div className="flex items-center gap-2 rounded-xl bg-[hsl(var(--task-surface))] p-3 border border-[hsl(var(--task-border))]">
           <BookOpen className="h-4 w-4 text-[hsl(var(--task-purple))]" />
           <span className="text-xs font-semibold text-[hsl(var(--task-text))]">Perguntas Frequentes</span>
+          <span className="text-[10px] text-[hsl(var(--task-text-muted))]">({visibleFaq.reduce((acc, cat) => acc + cat.questions.length, 0)} perguntas)</span>
         </div>
 
         {/* FAQ */}
