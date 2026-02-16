@@ -107,16 +107,19 @@ serve(async (req: Request) => {
 
       const authUserId = authData.user.id;
 
-      // 2. Insert into users table
+      // 2. Upsert into users table (external DB may auto-insert via trigger)
       const { error: userInsertError } = await adminClient
         .from("users")
-        .insert({
-          auth_user_id: authUserId,
-          email,
-          name: name || "",
-          user_profile: user_profile || "Consultor",
-          active: true,
-        });
+        .upsert(
+          {
+            auth_user_id: authUserId,
+            email,
+            name: name || "",
+            user_profile: user_profile || "Consultor",
+            active: true,
+          },
+          { onConflict: "auth_user_id" }
+        );
 
       if (userInsertError) {
         await adminClient.auth.admin.deleteUser(authUserId);
