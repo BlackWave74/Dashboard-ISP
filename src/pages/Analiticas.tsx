@@ -81,15 +81,26 @@ export default function AnaliticasPage() {
   const accessibleProjectIds = session?.accessibleProjectIds;
 
   // Filter tasks by project access for non-admin users
+  const companyName = session?.company?.trim()?.toLowerCase();
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return allTasks;
-    if (!accessibleProjectIds || accessibleProjectIds.length === 0) return allTasks;
-    const allowedIds = new Set(accessibleProjectIds);
-    return allTasks.filter((t) => {
-      const pid = Number(t.project_id);
-      return pid && allowedIds.has(pid);
-    });
-  }, [allTasks, isAdmin, accessibleProjectIds]);
+    // Explicit project access first
+    if (accessibleProjectIds && accessibleProjectIds.length > 0) {
+      const allowedIds = new Set(accessibleProjectIds);
+      return allTasks.filter((t) => {
+        const pid = Number(t.project_id);
+        return pid && allowedIds.has(pid);
+      });
+    }
+    // Fallback: filter by company name prefix
+    if (companyName) {
+      return allTasks.filter((t) => {
+        const name = String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? "").toLowerCase();
+        return name.includes(companyName);
+      });
+    }
+    return allTasks;
+  }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
 
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)

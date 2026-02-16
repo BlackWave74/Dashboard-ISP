@@ -36,7 +36,7 @@ export function useUsersApi(token: string | undefined) {
             user_profile: String(u.user_profile ?? "Consultor"),
             active: u.active !== false,
             role: u.role ? String(u.role) : undefined,
-            cliente_id: null,
+            cliente_id: u.cliente_id != null ? Number(u.cliente_id) : null,
           };
         }));
         setUserAreasMap(areasMap);

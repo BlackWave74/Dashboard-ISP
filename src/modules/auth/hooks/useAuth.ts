@@ -10,6 +10,7 @@ export type AuthSession = {
   email: string;
   role: UserRole;
   company?: string | null;
+  clienteId?: number | null;
   allowedAreas?: AccessArea[] | null;
   accessibleProjectIds?: number[] | null;
   accessToken?: string;
@@ -148,6 +149,45 @@ const fetchAccessibleProjects = async (
   return null;
 };
 
+/** Fetch cliente_id and client name from users + clientes tables */
+const fetchClienteInfo = async (
+  accessToken: string,
+  authUserId: string
+): Promise<{ clienteId: number | null; clienteName: string | null }> => {
+  const base = SUPABASE_URL.replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${base}/rest/v1/users?auth_user_id=eq.${authUserId}&select=cliente_id&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res.ok) return { clienteId: null, clienteName: null };
+    const rows = await res.json();
+    const clienteId = rows?.[0]?.cliente_id ?? null;
+    if (!clienteId) return { clienteId: null, clienteName: null };
+
+    // Fetch client name
+    const res2 = await fetch(
+      `${base}/rest/v1/clientes?cliente_id=eq.${clienteId}&select=nome&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res2.ok) return { clienteId, clienteName: null };
+    const rows2 = await res2.json();
+    return { clienteId, clienteName: rows2?.[0]?.nome ?? null };
+  } catch {
+    return { clienteId: null, clienteName: null };
+  }
+};
+
 export function useAuth() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -187,17 +227,19 @@ export function useAuth() {
 
         // Fetch role and allowed areas from DB tables
         const refreshMeta = metadata as Record<string, unknown>;
-        const [role, allowedAreas, accessibleProjectIds] = await Promise.all([
+        const [role, allowedAreas, accessibleProjectIds, clienteInfo] = await Promise.all([
           fetchUserRole(data?.access_token, user?.id, refreshMeta),
           fetchAllowedAreas(data?.access_token, user?.id),
           fetchAccessibleProjects(data?.access_token, user?.id),
+          fetchClienteInfo(data?.access_token, user?.id),
         ]);
 
         const refreshed: AuthSession = {
           name: metadata.name || user?.email || stored.name,
           email: user?.email ?? stored.email,
           role,
-          company: clientName ?? stored.company ?? null,
+          company: clienteInfo.clienteName ?? clientName ?? stored.company ?? null,
+          clienteId: clienteInfo.clienteId ?? stored.clienteId ?? null,
           allowedAreas,
           accessibleProjectIds,
           accessToken: data?.access_token,
@@ -307,18 +349,20 @@ export function useAuth() {
         const expiresIn = Number(data?.expires_in ?? 0);
         const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-        // Fetch role, allowed areas, and accessible projects from DB tables
-        const [role, allowedAreas, accessibleProjectIds] = await Promise.all([
+        // Fetch role, allowed areas, accessible projects, and client info from DB tables
+        const [role, allowedAreas, accessibleProjectIds, clienteInfo] = await Promise.all([
           fetchUserRole(data?.access_token, user?.id, metaObj),
           fetchAllowedAreas(data?.access_token, user?.id),
           fetchAccessibleProjects(data?.access_token, user?.id),
+          fetchClienteInfo(data?.access_token, user?.id),
         ]);
 
         const authSession: AuthSession = {
           name: metadata.name || user?.email || "Usuário",
           email: user?.email ?? email,
           role,
-          company: clientName ?? null,
+          company: clienteInfo.clienteName ?? clientName ?? null,
+          clienteId: clienteInfo.clienteId ?? null,
           allowedAreas,
           accessibleProjectIds,
           accessToken: data?.access_token,

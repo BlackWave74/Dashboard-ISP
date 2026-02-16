@@ -253,7 +253,10 @@ export default function UsuariosPage() {
         action: "update",
         userId: editingUser.id,
         authUserId: editingUser.auth_user_id,
-        payload: editForm,
+        payload: {
+          ...editForm,
+          cliente_id: editForm.cliente_id ?? null,
+        },
         areas: editAreas,
         projects: editProjects,
       });

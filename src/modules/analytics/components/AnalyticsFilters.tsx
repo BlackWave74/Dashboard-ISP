@@ -196,7 +196,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar projeto ou cliente..."
-            className="h-[38px] w-[210px] rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-[13px] font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(262_83%_58%/0.4)] focus:bg-[hsl(262_83%_58%/0.1)] focus:text-[hsl(262_83%_58%)]"
+            className="h-[38px] w-[320px] rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-[13px] font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(262_83%_58%/0.4)] focus:bg-[hsl(262_83%_58%/0.1)] focus:text-[hsl(262_83%_58%)]"
           />
           {searchQuery && (
             <button

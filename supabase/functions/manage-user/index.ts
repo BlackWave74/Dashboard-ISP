@@ -113,7 +113,7 @@ serve(async (req: Request) => {
       // Fetch all users via service_role (bypasses RLS)
       const { data: allUsers, error: listErr } = await adminClient
         .from("users")
-        .select("id,auth_user_id,email,name,user_profile,active")
+        .select("id,auth_user_id,email,name,user_profile,active,cliente_id")
         .order("name", { ascending: true })
         .limit(500);
 
@@ -183,6 +183,7 @@ serve(async (req: Request) => {
           user_profile: dbRole ? (ROLE_TO_PERFIL[dbRole] ?? String(u.user_profile ?? "Consultor")) : String(u.user_profile ?? "Consultor"),
           active: u.active !== false,
           role: dbRole ?? null,
+          cliente_id: u.cliente_id ?? null,
           areas: areaMap.get(authUid) ?? [],
           projects: projectMap.get(authUid) ?? [],
         };
@@ -256,6 +257,7 @@ serve(async (req: Request) => {
       }
 
       // 2. Upsert into users table
+      const { cliente_id } = body;
       const { error: userInsertError } = await adminClient
         .from("users")
         .upsert(
@@ -265,6 +267,7 @@ serve(async (req: Request) => {
             name: name || "",
             user_profile: user_profile || "Consultor",
             active: true,
+            ...(cliente_id !== undefined && cliente_id !== null ? { cliente_id: Number(cliente_id) } : {}),
           },
           { onConflict: "auth_user_id" }
         );
@@ -329,6 +332,7 @@ serve(async (req: Request) => {
       if (payload?.email !== undefined) userPayload.email = payload.email;
       if (payload?.user_profile !== undefined) userPayload.user_profile = payload.user_profile;
       if (payload?.active !== undefined) userPayload.active = payload.active;
+      if (payload?.cliente_id !== undefined) userPayload.cliente_id = payload.cliente_id;
 
       if (Object.keys(userPayload).length > 0) {
         const { error: updateError } = await adminClient
