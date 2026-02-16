@@ -201,7 +201,8 @@ serve(async (req: Request) => {
         return errRes("E-mail e senha são obrigatórios.");
       }
 
-      // 1. Create auth user
+      // 1. Try to create auth user
+      let authUserId: string;
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
         password,
@@ -210,12 +211,51 @@ serve(async (req: Request) => {
       });
 
       if (authError) {
-        return errRes(translateError(authError.message));
+        // Check if this is an "already registered" error — try to recover orphan
+        const isAlreadyRegistered =
+          authError.message.toLowerCase().includes("already been registered") ||
+          authError.message.toLowerCase().includes("already registered") ||
+          authError.message.toLowerCase().includes("user already");
+
+        if (isAlreadyRegistered) {
+          // List auth users to find the existing one by email
+          const { data: listData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+          const existingAuthUser = listData?.users?.find(
+            (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+          );
+
+          if (!existingAuthUser) {
+            return errRes("E-mail já registrado no Auth, mas não foi possível localizar o usuário.");
+          }
+
+          // Check if they already exist in the users table
+          const { data: existingRows } = await adminClient
+            .from("users")
+            .select("id")
+            .eq("auth_user_id", existingAuthUser.id)
+            .limit(1);
+
+          if (existingRows && existingRows.length > 0) {
+            return errRes("Já existe um usuário ativo com este e-mail. Edite-o na lista ao invés de criar um novo.");
+          }
+
+          // Orphan auth user — update password and re-link
+          await adminClient.auth.admin.updateUserById(existingAuthUser.id, {
+            password,
+            email_confirm: true,
+            user_metadata: { name: name || "", user_profile: user_profile || "Consultor" },
+          });
+
+          authUserId = existingAuthUser.id;
+          console.log(`[manage-user] Re-linked orphan auth user ${email} (${authUserId})`);
+        } else {
+          return errRes(translateError(authError.message));
+        }
+      } else {
+        authUserId = authData.user.id;
       }
 
-      const authUserId = authData.user.id;
-
-      // 2. Upsert into users table (external DB may auto-insert via trigger)
+      // 2. Upsert into users table
       const { error: userInsertError } = await adminClient
         .from("users")
         .upsert(
@@ -230,11 +270,10 @@ serve(async (req: Request) => {
         );
 
       if (userInsertError) {
-        await adminClient.auth.admin.deleteUser(authUserId);
         return errRes(`Falha ao criar registro: ${translateError(userInsertError.message)}`);
       }
 
-      // 3. Insert role
+      // 3. Sync role (delete old + insert new)
       const profileToRole: Record<string, string> = {
         Administrador: "admin",
         Consultor: "consultor",
@@ -243,15 +282,18 @@ serve(async (req: Request) => {
         Cliente: "cliente",
       };
       const role = profileToRole[user_profile] ?? "consultor";
+      await adminClient.from("user_roles").delete().eq("user_id", authUserId);
       await adminClient.from("user_roles").insert({ user_id: authUserId, role });
 
-      // 4. Insert allowed areas
+      // 4. Sync allowed areas
+      await adminClient.from("user_allowed_areas").delete().eq("user_id", authUserId);
       if (Array.isArray(areas) && areas.length > 0) {
         const areaRows = areas.map((a: string) => ({ user_id: authUserId, area_name: a }));
         await adminClient.from("user_allowed_areas").insert(areaRows);
       }
 
-      // 5. Insert project access
+      // 5. Sync project access
+      await adminClient.from("user_project_access").delete().eq("user_id", authUserId);
       if (Array.isArray(projects) && projects.length > 0) {
         const projRows = projects.map((pid: number) => ({ user_id: authUserId, project_id: pid }));
         await adminClient.from("user_project_access").insert(projRows);
@@ -262,7 +304,7 @@ serve(async (req: Request) => {
         performed_by: userData.user.id,
         target_user_id: authUserId,
         action: "create_user",
-        details: { email, name, user_profile, areas, projects },
+        details: { email, name, user_profile, areas, projects, recovered_orphan: !authData },
       });
 
       return jsonRes({
@@ -400,7 +442,48 @@ serve(async (req: Request) => {
       return jsonRes({ ok: true });
     }
 
-    return errRes("Ação inválida. Use 'list', 'create', 'update', 'delete' ou 'deactivate'.");
+    /* ═══════════════════════════════════════════ */
+    /* ─── CLEANUP ORPHANS ─── */
+    /* ═══════════════════════════════════════════ */
+    if (action === "cleanup_orphans") {
+      // List all auth users
+      const { data: listData, error: listErr } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+      if (listErr) return errRes(`Falha ao listar auth: ${listErr.message}`);
+
+      // Get all auth_user_ids from users table
+      const { data: dbUsers } = await adminClient
+        .from("users")
+        .select("auth_user_id")
+        .limit(5000);
+
+      const dbSet = new Set((dbUsers ?? []).map((u: { auth_user_id: string }) => u.auth_user_id));
+
+      const orphans: string[] = [];
+      for (const authUser of (listData?.users ?? [])) {
+        if (!dbSet.has(authUser.id)) {
+          // Clean up related records
+          await adminClient.from("user_project_access").delete().eq("user_id", authUser.id);
+          await adminClient.from("user_allowed_areas").delete().eq("user_id", authUser.id);
+          await adminClient.from("user_roles").delete().eq("user_id", authUser.id);
+          // Delete auth user
+          await adminClient.auth.admin.deleteUser(authUser.id);
+          orphans.push(authUser.email ?? authUser.id);
+        }
+      }
+
+      console.log(`[manage-user] Cleaned up ${orphans.length} orphan auth users`);
+
+      await adminClient.from("audit_log").insert({
+        performed_by: userData.user.id,
+        target_user_id: null,
+        action: "cleanup_orphans",
+        details: { removed: orphans },
+      });
+
+      return jsonRes({ ok: true, data: { removed: orphans, count: orphans.length } });
+    }
+
+    return errRes("Ação inválida. Use 'list', 'create', 'update', 'delete', 'deactivate' ou 'cleanup_orphans'.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno do servidor";
     return errRes(translateError(message), 500);
