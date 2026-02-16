@@ -322,7 +322,11 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
           controller.signal.aborted ||
           (err instanceof DOMException && err.name === "AbortError") ||
           message.toLowerCase().includes("aborted");
-        if (abortLike) return;
+        if (abortLike) {
+          // Safety: ensure loading is cleared even on abort
+          setLoading(false);
+          return;
+        }
         const messageSafe = message || "Nao foi possivel carregar as tarefas.";
         console.error("[tasks] fetch error", { endpoint, message });
         setError(messageSafe);
