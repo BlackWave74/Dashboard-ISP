@@ -8,7 +8,7 @@ import {
   Users, Search, RefreshCw, Pencil, Trash2, Save, X, Shield,
   Loader2, AlertCircle, CheckCircle2, UserPlus, Mail, User,
   Eye, EyeOff, FolderOpen, Clock, ChevronDown,
-  History, MapPin, Key, Copy, Power, Check,
+  History, MapPin, Key, Copy, Power, Check, Building2,
 } from "lucide-react";
 
 /* ─── Password generator ─── */
@@ -164,6 +164,7 @@ export default function UsuariosPage() {
   }, [loadingSession, session, isAdmin, navigate]);
 
   const [filter, setFilter] = useState("");
+  const [clienteFilter, setClienteFilter] = useState<number | "all">("all");
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"users" | "audit">("users");
 
@@ -177,7 +178,7 @@ export default function UsuariosPage() {
 
   // Create state
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: "", email: "", user_profile: "Consultor" as Perfil, password: "" });
+  const [createForm, setCreateForm] = useState({ name: "", email: "", user_profile: "Consultor" as Perfil, password: "", cliente_id: null as number | null });
   const [createAreas, setCreateAreas] = useState<string[]>(["home"]);
   const [createProjects, setCreateProjects] = useState<number[]>([]);
   const [creating, setCreating] = useState(false);
@@ -216,7 +217,7 @@ export default function UsuariosPage() {
   /* ─── Start edit ─── */
   const startEdit = useCallback(async (user: UserRow) => {
     setEditingUser(user);
-    setEditForm({ name: user.name, email: user.email, user_profile: user.user_profile, active: user.active });
+    setEditForm({ name: user.name, email: user.email, user_profile: user.user_profile, active: user.active, cliente_id: user.cliente_id ?? null });
     setShowEditPanel(true);
     setShowCreate(false);
 
@@ -262,7 +263,7 @@ export default function UsuariosPage() {
   /* ─── Create user ─── */
   const handleCreate = async () => {
     if (!token || !session) return;
-    const { name, email, user_profile, password } = createForm;
+    const { name, email, user_profile, password, cliente_id } = createForm;
     if (!name.trim() || !email.trim()) {
       showFeedback("error", "Nome e e-mail são obrigatórios.");
       return;
@@ -276,10 +277,10 @@ export default function UsuariosPage() {
       const { supabaseRest } = await import("@/modules/users/api/supabaseRest");
       await supabaseRest("users", token, {
         method: "POST",
-        body: JSON.stringify({ email: email.trim(), name: name.trim(), user_profile, active: true }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim(), user_profile, active: true, cliente_id: cliente_id || null }),
       });
       showFeedback("ok", `Usuário "${name.trim()}" criado com sucesso.`);
-      setCreateForm({ name: "", email: "", user_profile: "Consultor", password: "" });
+      setCreateForm({ name: "", email: "", user_profile: "Consultor", password: "", cliente_id: null });
       setCreateAreas(["home"]);
       setCreateProjects([]);
       setShowCreate(false);
@@ -353,14 +354,26 @@ export default function UsuariosPage() {
 
   /* ─── Filter ─── */
   const filteredUsers = useMemo(() => {
+    let list = api.users;
+    if (clienteFilter !== "all") {
+      list = list.filter(u => u.cliente_id === clienteFilter);
+    }
     const term = filter.trim().toLowerCase();
-    if (!term) return api.users;
-    return api.users.filter(u =>
-      u.email.toLowerCase().includes(term) ||
-      u.name.toLowerCase().includes(term) ||
-      u.user_profile.toLowerCase().includes(term)
-    );
-  }, [filter, api.users]);
+    if (term) {
+      list = list.filter(u =>
+        u.email.toLowerCase().includes(term) ||
+        u.name.toLowerCase().includes(term) ||
+        u.user_profile.toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }, [filter, clienteFilter, api.users]);
+
+  const clienteMap = useMemo(() => {
+    const m = new Map<number, string>();
+    api.clientes.forEach(c => m.set(c.cliente_id, c.nome));
+    return m;
+  }, [api.clientes]);
 
   const stats = useMemo(() => ({
     total: api.users.length,
@@ -372,6 +385,7 @@ export default function UsuariosPage() {
   /* ─── Dropdown helpers ─── */
   const areaOptions = ALL_AREAS.map(a => ({ value: a.value, label: a.label }));
   const projectOptions = api.projects.map(p => ({ value: p.id, label: p.name }));
+  const clienteOptions = api.clientes.filter(c => c.Ativo).map(c => ({ value: c.cliente_id, label: c.nome }));
 
   const toggleInList = <T extends string | number>(val: T, list: T[], setter: (v: T[]) => void) => {
     setter(list.includes(val) ? list.filter(v => v !== val) : [...list, val]);
@@ -540,7 +554,22 @@ export default function UsuariosPage() {
                       </div>
                     </div>
 
-                    {/* Row 3: Areas & Projects dropdowns */}
+                    {/* Row 3: Cliente dropdown */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
+                          <Building2 className="h-3 w-3" /> Cliente
+                        </label>
+                        <select value={createForm.cliente_id ?? ""} onChange={e => setCreateForm(p => ({ ...p, cliente_id: e.target.value ? Number(e.target.value) : null }))}
+                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)]">
+                          <option value="">Nenhum cliente</option>
+                          {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                        </select>
+                      </div>
+                      <div /> {/* spacer */}
+                    </div>
+
+                    {/* Row 4: Areas & Projects dropdowns */}
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <MultiSelectDropdown
                         label="Áreas Permitidas"
@@ -615,10 +644,17 @@ export default function UsuariosPage() {
                     Usuários Cadastrados
                     <span className="text-xs font-normal text-[hsl(var(--task-text-muted))]">({filteredUsers.length})</span>
                   </h2>
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
-                    <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Buscar por nome, e-mail..."
-                      className="h-8 w-56 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+                      <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Buscar por nome, e-mail..."
+                        className="h-8 w-48 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                    </div>
+                    <select value={clienteFilter === "all" ? "" : clienteFilter} onChange={e => setClienteFilter(e.target.value ? Number(e.target.value) : "all")}
+                      className="h-8 w-44 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-2 text-xs text-[hsl(var(--task-text))] outline-none transition focus:border-[hsl(var(--task-purple)/0.5)]">
+                      <option value="">Todos os clientes</option>
+                      {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
                   </div>
                 </div>
 
@@ -674,6 +710,9 @@ export default function UsuariosPage() {
                             </div>
                             <div className="flex items-center gap-3 mt-0.5 text-[11px] text-[hsl(var(--task-text-muted))]">
                               <span className="flex items-center gap-1 truncate"><Mail className="h-3 w-3 shrink-0" />{user.email}</span>
+                              {user.cliente_id && clienteMap.get(user.cliente_id) && (
+                                <span className="flex items-center gap-1 truncate"><Building2 className="h-3 w-3 shrink-0" />{clienteMap.get(user.cliente_id)}</span>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
@@ -767,6 +806,20 @@ export default function UsuariosPage() {
                             {editForm.active ? "Ativo" : "Inativo"}
                           </button>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Cliente dropdown */}
+                    <div className="pt-2 border-t border-[hsl(var(--task-border))]">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
+                          <Building2 className="h-3 w-3" /> Cliente
+                        </label>
+                        <select value={editForm.cliente_id ?? ""} onChange={e => setEditForm(p => ({ ...p, cliente_id: e.target.value ? Number(e.target.value) : null }))}
+                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)]">
+                          <option value="">Nenhum cliente</option>
+                          {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                        </select>
                       </div>
                     </div>
 
