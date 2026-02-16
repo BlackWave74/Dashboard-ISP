@@ -95,65 +95,36 @@ export function useUsersApi(token: string | undefined) {
   ) => {
     if (!token) throw new Error("Sem token");
 
-    // 1. Update users table
-    const userPayload: Record<string, unknown> = {};
-    if (payload.name !== undefined) userPayload.name = payload.name;
-    if (payload.email !== undefined) userPayload.email = payload.email;
-    if (payload.user_profile !== undefined) userPayload.user_profile = payload.user_profile;
-    if (payload.active !== undefined) userPayload.active = payload.active;
-    if (payload.cliente_id !== undefined) userPayload.cliente_id = payload.cliente_id;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-    await supabaseRest(`users?id=eq.${userId}`, token, {
-      method: "PATCH",
-      body: JSON.stringify(userPayload),
+    const res = await fetch(`${supabaseUrl}/functions/v1/manage-user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        apikey: supabaseKey,
+      },
+      body: JSON.stringify({
+        action: "update",
+        userId,
+        authUserId: authUserId,
+        payload: {
+          name: payload.name,
+          email: payload.email,
+          user_profile: payload.user_profile,
+          active: payload.active,
+          cliente_id: payload.cliente_id,
+        },
+        areas: selectedAreas,
+        projects: selectedProjects,
+      }),
     });
 
-    // 2. Sync role
-    if (payload.user_profile && authUserId) {
-      const appRole = PERFIL_TO_ROLE[payload.user_profile as Perfil] ?? "consultor";
-      await supabaseRest(`user_roles?user_id=eq.${authUserId}`, token, { method: "DELETE" });
-      await supabaseRest("user_roles", token, {
-        method: "POST",
-        body: JSON.stringify({ user_id: authUserId, role: appRole }),
-      });
+    const data = await res.json();
+    if (!res.ok || data.ok === false) {
+      throw new Error(data.error || `Erro ${res.status}`);
     }
-
-    // 3. Sync allowed areas
-    if (authUserId) {
-      await supabaseRest(`user_allowed_areas?user_id=eq.${authUserId}`, token, { method: "DELETE" });
-      if (selectedAreas.length > 0) {
-        const areaRows = selectedAreas.map(a => ({ user_id: authUserId, area_name: a }));
-        await supabaseRest("user_allowed_areas", token, {
-          method: "POST",
-          body: JSON.stringify(areaRows),
-        });
-      }
-    }
-
-    // 4. Sync project access
-    if (authUserId) {
-      await supabaseRest(`user_project_access?user_id=eq.${authUserId}`, token, { method: "DELETE" });
-      if (selectedProjects.length > 0) {
-        const projRows = selectedProjects.map(pid => ({ user_id: authUserId, project_id: pid }));
-        await supabaseRest("user_project_access", token, {
-          method: "POST",
-          body: JSON.stringify(projRows),
-        });
-      }
-    }
-
-    // 5. Audit log
-    try {
-      await supabaseRest("audit_log", token, {
-        method: "POST",
-        body: JSON.stringify({
-          performed_by: performedBy,
-          target_user_id: authUserId || null,
-          action: "update_user",
-          details: { user_id: userId, changes: userPayload, areas: selectedAreas, projects: selectedProjects },
-        }),
-      });
-    } catch { /* non-critical */ }
   }, [token]);
 
   const deleteUser = useCallback(async (userId: string, authUserId: string, performedBy: string) => {
