@@ -447,6 +447,23 @@ export default function UsuariosPage() {
               <UserPlus className="h-3.5 w-3.5" />
               Novo Usuário
             </button>
+            <button onClick={async () => {
+              if (!token) return;
+              if (!confirm("Remover todos os usuários órfãos do Auth (sem registro na tabela)?")) return;
+              try {
+                const result = await callManageUser(token, { action: "cleanup_orphans" });
+                const count = (result.data as { count?: number })?.count ?? 0;
+                showFeedback("ok", `${count} usuário(s) órfão(s) removido(s).`);
+                api.loadUsers();
+              } catch (err) {
+                showFeedback("error", err instanceof Error ? err.message : "Falha na limpeza.");
+              }
+            }}
+              className="flex items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-400 transition hover:border-amber-500/40 hover:bg-amber-500/20"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Limpar Órfãos
+            </button>
             <button onClick={() => api.loadUsers()} disabled={api.loading}
               className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-purple)/0.4)] hover:text-[hsl(var(--task-purple))] disabled:opacity-40"
             >
