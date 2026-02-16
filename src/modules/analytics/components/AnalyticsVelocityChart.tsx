@@ -181,36 +181,52 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
             média {avgVelocity.toFixed(1)}/sem
           </text>
 
-          {/* Data points */}
-          {points.map((p, i) => (
-            <motion.g key={i}>
-              <motion.circle
-                cx={p.x}
-                cy={p.y}
-                r={3}
-                fill="hsl(262 83% 58%)"
-                stroke="hsl(270 50% 12%)"
-                strokeWidth={2}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.8 + i * 0.06 }}
-              />
-              {/* Pulse on last point */}
-              {i === points.length - 1 && (
+          {/* Data points — all weeks visible */}
+          {points.map((p, i) => {
+            const w = weekData[i];
+            const isLast = i === points.length - 1;
+            return (
+              <motion.g key={i} className="cursor-pointer">
+                {/* Hover target */}
+                <rect x={p.x - 14} y={padY - 5} width={28} height={chartH + 5} fill="transparent">
+                  <title>{`${w.label}\n${w.count} tarefa${w.count !== 1 ? "s" : ""} concluída${w.count !== 1 ? "s" : ""}`}</title>
+                </rect>
+                {/* Dot */}
                 <motion.circle
                   cx={p.x}
                   cy={p.y}
-                  r={3}
-                  fill="none"
-                  stroke="hsl(262 83% 58%)"
-                  strokeWidth={1}
-                  initial={{ r: 3, opacity: 0.8 }}
-                  animate={{ r: 12, opacity: 0 }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
+                  r={isLast ? 4.5 : 3.5}
+                  fill="hsl(262 83% 58%)"
+                  stroke="hsl(270 50% 12%)"
+                  strokeWidth={2}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.8 + i * 0.05 }}
+                  className="hover:brightness-150 transition-all"
                 />
-              )}
-            </motion.g>
-          ))}
+                {/* Pulse on last point */}
+                {isLast && (
+                  <motion.circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={3}
+                    fill="none"
+                    stroke="hsl(262 83% 58%)"
+                    strokeWidth={1}
+                    initial={{ r: 3, opacity: 0.8 }}
+                    animate={{ r: 14, opacity: 0 }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
+                  />
+                )}
+                {/* Value label on hover-like via count > 0 and recent */}
+                {w.count > 0 && i >= WEEKS - 3 && (
+                  <text x={p.x} y={p.y - 10} textAnchor="middle" className="text-[9px] fill-white/50 font-bold">
+                    {w.count}
+                  </text>
+                )}
+              </motion.g>
+            );
+          })}
 
           {/* Week labels — show every other, more visible */}
           {weekData.map((w, i) => (
@@ -225,15 +241,6 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
                 {w.label}
               </text>
             )
-          ))}
-
-          {/* Hover targets for data points */}
-          {weekData.map((w, i) => (
-            <g key={`tip-${i}`}>
-              <rect x={points[i].x - 12} y={padY} width={24} height={chartH} fill="transparent" className="cursor-pointer">
-                <title>{`${w.label}: ${w.count} tarefa${w.count !== 1 ? "s" : ""} concluída${w.count !== 1 ? "s" : ""}`}</title>
-              </rect>
-            </g>
           ))}
 
           <defs>
