@@ -18,7 +18,7 @@ export default function AnalyticsStatusDonut({ done, pending, overdue }: Props) 
   const total = done + pending + overdue;
 
   const data = useMemo(() => {
-    if (total === 0) return [{ name: "Sem dados", value: 1 }];
+    if (total === 0) return [{ name: "Aguardando dados", value: 1 }];
     return [
       { name: "Concluídas", value: done },
       { name: "Em andamento", value: pending },
