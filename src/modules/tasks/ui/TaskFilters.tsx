@@ -110,7 +110,7 @@ function CustomSelect({
           >
             <button
               onClick={() => { onChange("all"); setOpen(false); }}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                 value === "all" || !value ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
               }`}
             >
@@ -127,7 +127,7 @@ function CustomSelect({
                   <button
                     key={o.value}
                     onClick={() => { onChange(o.value); setOpen(false); }}
-                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                       value === o.value
                         ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
                         : "text-white/50 hover:bg-white/[0.05] hover:text-white/70"
@@ -144,7 +144,7 @@ function CustomSelect({
                   <button
                     key={o.value}
                     onClick={() => { onChange(o.value); setOpen(false); }}
-                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                       value === o.value
                         ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
                         : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
@@ -161,7 +161,7 @@ function CustomSelect({
               <button
                 key={o.value}
                 onClick={() => { onChange(o.value); setOpen(false); }}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                   value === o.value
                     ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
                     : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
@@ -273,13 +273,13 @@ export function TaskFilters({
               {/* Status */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
-                <div className="flex gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
                   {statusChips.map((chip) => (
                     <button
                       key={chip.value}
                       type="button"
                       onClick={() => setStatus(chip.value)}
-                      className={`rounded-md px-3 py-1.5 text-[12px] font-semibold transition-all ${
+                      className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
                         status === chip.value
                           ? "bg-[hsl(var(--task-purple))] text-white shadow"
                           : "text-white/30 hover:text-white/50"
@@ -294,13 +294,13 @@ export function TaskFilters({
               {/* Period */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
-                <div className="flex gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
                   {periodChips.map((chip) => (
                     <button
                       key={chip.value}
                       type="button"
                       onClick={() => setPeriod(chip.value)}
-                      className={`rounded-md px-3 py-1.5 text-[12px] font-semibold transition-all ${
+                      className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
                         period === chip.value
                           ? "bg-[hsl(var(--task-purple))] text-white shadow"
                           : "text-white/30 hover:text-white/50"
