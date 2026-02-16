@@ -222,13 +222,14 @@ export function AppSidebar() {
   const handleAvatarUpload = useCallback(async (file: File) => {
     // Validate file size
     if (file.size > MAX_AVATAR_SIZE) {
-      toast.error("Arquivo muito grande", { description: "O tamanho máximo é 2 MB. Escolha uma imagem menor." });
+      toast.error("Arquivo muito grande", { description: `O tamanho máximo é 2 MB. Sua imagem tem ${(file.size / 1024 / 1024).toFixed(1)} MB. Reduza a resolução ou use outra imagem.` });
       return;
     }
 
     // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Formato inválido", { description: "Selecione um arquivo de imagem (JPG, PNG, etc.)." });
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Formato inválido", { description: "Selecione um arquivo JPG, PNG, WebP ou GIF." });
       return;
     }
 
@@ -246,7 +247,7 @@ export function AppSidebar() {
       const path = `${user.id}/avatar_${Date.now()}.${ext}`;
 
       if (!cloudSupabase) {
-        throw new Error("Serviço de armazenamento não disponível. Tente recarregar a página.");
+        throw new Error("Serviço de armazenamento não configurado. Recarregue a página e tente novamente.");
       }
 
       // Upload to Lovable Cloud storage (has the avatars bucket)
@@ -255,7 +256,14 @@ export function AppSidebar() {
         .upload(path, file, { upsert: true, contentType: file.type });
       if (uploadError) {
         console.error("Storage upload error:", uploadError);
-        throw new Error(`Upload falhou: ${uploadError.message}`);
+        // Provide user-friendly error based on the error type
+        if (uploadError.message?.includes("Payload too large") || uploadError.statusCode === 413) {
+          throw new Error("Imagem muito grande. Reduza a resolução (recomendado: 500×500 px) e tente novamente.");
+        }
+        if (uploadError.message?.includes("security") || uploadError.statusCode === 403) {
+          throw new Error("Permissão negada. O serviço de armazenamento pode estar indisponível. Tente novamente em alguns instantes.");
+        }
+        throw new Error(`Falha no upload: ${uploadError.message}`);
       }
 
       const { data: urlData } = cloudSupabase.storage.from("avatars").getPublicUrl(path);
@@ -277,7 +285,7 @@ export function AppSidebar() {
       console.error("Avatar upload failed:", err);
       toast.error("Falha ao enviar foto", {
         id: "avatar-upload",
-        description: err instanceof Error ? err.message : "Tente novamente mais tarde.",
+        description: err instanceof Error ? err.message : "Serviço temporariamente indisponível. Tente novamente.",
       });
     }
   }, [session?.accessToken, session?.refreshToken]);
