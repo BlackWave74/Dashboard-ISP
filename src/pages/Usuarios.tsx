@@ -460,13 +460,13 @@ export default function UsuariosPage() {
         </AnimatePresence>
 
         {/* ═══ TABS ═══ */}
-        <div className="flex gap-1 rounded-xl bg-[hsl(var(--task-surface))] p-1 border border-[hsl(var(--task-border))]">
+        <div className="flex gap-1 rounded-2xl bg-[hsl(var(--task-surface))] p-1.5 border border-[hsl(var(--task-border))]">
           {([
             { key: "users" as const, label: "Usuários", icon: Users },
             { key: "audit" as const, label: "Auditoria", icon: History },
           ]).map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition ${
+              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition ${
                 activeTab === tab.key
                   ? "bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]"
                   : "text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]"
