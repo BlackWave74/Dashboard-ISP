@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, Search, Send, AlertCircle, X, Loader2,
@@ -86,6 +86,12 @@ export default function ComodatoImportTab({ auditUser }: { auditUser: string }) 
       setParsed(summary);
       setParsedFiles(files.map((f) => f.name));
       pushLog(`TXT importado: ${summary.items.length} válidos, ${summary.pendentes.length} pendentes, ${summary.totalLinhas} linhas.`);
+
+      // Auto-consult all valid items after import
+      if (summary.items.length > 0) {
+        pushLog("Iniciando consulta automática...");
+        autoConsultRef.current = true;
+      }
     } catch (e) {
       setParseError(e instanceof Error ? e.message : "Falha ao ler TXT.");
     } finally {
@@ -93,6 +99,16 @@ export default function ComodatoImportTab({ auditUser }: { auditUser: string }) 
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  // Auto-consult after parse completes
+  const autoConsultRef = useRef(false);
+  useEffect(() => {
+    if (autoConsultRef.current && parsed && !batchBusy) {
+      autoConsultRef.current = false;
+      handlePrepareAll();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsed]);
 
   /* ── Table data ── */
   const tableRows = useMemo<ParsedComodatoItem[]>(() => {
