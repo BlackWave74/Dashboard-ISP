@@ -151,7 +151,7 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
         <Info className="h-4 w-4" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-md mx-auto animate-scale-in fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl">
+        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-lg mx-auto animate-scale-in fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-3xl p-6">
           <DialogHeader className="text-center items-center">
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
@@ -161,26 +161,26 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
             >
               <Info className="h-5 w-5 text-[hsl(var(--task-yellow))]" />
             </motion.div>
-            <DialogTitle className="text-[hsl(var(--task-text))] text-center text-lg">{title}</DialogTitle>
-            <DialogDescription className="text-[hsl(var(--task-text-muted))] text-sm leading-relaxed mt-2 text-center">
+            <DialogTitle className="text-[hsl(var(--task-text))] text-center text-xl">{title}</DialogTitle>
+            <DialogDescription className="text-[hsl(var(--task-text-muted))] text-[13px] leading-relaxed mt-2 text-center">
               {description}
             </DialogDescription>
           </DialogHeader>
 
           {/* Contextual data */}
           {contextData?.type === "consultants" && (
-            <div className="mt-4 space-y-2 max-h-[250px] overflow-y-auto styled-scrollbar">
+            <div className="mt-4 space-y-2.5 max-h-[320px] overflow-y-auto styled-scrollbar">
               {contextData.items.map(([name, data], i) => (
-                <div key={name} className="flex items-center gap-3 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 py-2.5">
+                <div key={name} className="flex items-center gap-3 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-4 py-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
                     {name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
-                      <span className="text-[9px] text-emerald-400">{data.done} feitas</span>
-                      {data.overdue > 0 && <span className="text-[9px] text-rose-400">{data.overdue} atrasadas</span>}
+                      <span className="text-[11px] text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
+                      <span className="text-[11px] text-emerald-400">{data.done} feitas</span>
+                      {data.overdue > 0 && <span className="text-[11px] text-rose-400">{data.overdue} atrasadas</span>}
                     </div>
                   </div>
                   <span className="text-lg font-extrabold text-[hsl(var(--task-text))]">{data.total}</span>
@@ -190,17 +190,17 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
           )}
 
           {contextData?.type === "projects" && (
-            <div className="mt-4 space-y-2 max-h-[250px] overflow-y-auto styled-scrollbar">
+            <div className="mt-4 space-y-2.5 max-h-[320px] overflow-y-auto styled-scrollbar">
               {contextData.items.map(([name, data], i) => (
-                <div key={name} className="flex items-center gap-3 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 py-2.5">
+                <div key={name} className="flex items-center gap-3 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-4 py-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
                     {name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
-                      <span className="text-[9px] text-emerald-400">{data.hours.toFixed(1)}h</span>
+                      <span className="text-[11px] text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
+                      <span className="text-[11px] text-emerald-400">{data.hours.toFixed(1)}h</span>
                     </div>
                   </div>
                   <span className="text-lg font-extrabold text-[hsl(var(--task-text))]">{data.total}</span>
