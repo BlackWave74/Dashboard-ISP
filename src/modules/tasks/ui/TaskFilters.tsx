@@ -87,7 +87,7 @@ function CustomSelect({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-8 min-w-[170px] items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition-all ${
+        className={`flex h-9 min-w-[170px] items-center gap-2 rounded-lg border px-3 text-[12px] font-semibold transition-all ${
           value && value !== "all"
             ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-white/80"
             : "border-white/[0.08] bg-[hsl(var(--task-surface))] text-white/50"
@@ -279,7 +279,7 @@ export function TaskFilters({
                       key={chip.value}
                       type="button"
                       onClick={() => setStatus(chip.value)}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                      className={`rounded-md px-3 py-1.5 text-[12px] font-semibold transition-all ${
                         status === chip.value
                           ? "bg-[hsl(var(--task-purple))] text-white shadow"
                           : "text-white/30 hover:text-white/50"
@@ -300,7 +300,7 @@ export function TaskFilters({
                       key={chip.value}
                       type="button"
                       onClick={() => setPeriod(chip.value)}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                      className={`rounded-md px-3 py-1.5 text-[12px] font-semibold transition-all ${
                         period === chip.value
                           ? "bg-[hsl(var(--task-purple))] text-white shadow"
                           : "text-white/30 hover:text-white/50"
@@ -382,7 +382,7 @@ export function TaskFilters({
                   <button
                     type="button"
                     onClick={onClearFilters}
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[11px] font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.15] transition"
+                    className="flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-[12px] font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.15] transition"
                   >
                     <X className="h-3 w-3" />
                     Limpar
