@@ -236,13 +236,13 @@ export function AppSidebar() {
 
   const showAdminSection = canAccess("usuarios");
 
-  return (
+   return (
     <Sidebar
       collapsible="icon"
-      className="!border-r-0 ml-0 overflow-hidden shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)]"
+      className="!border-r-0 ml-0 shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)]"
       style={{
         zIndex: 20,
-        borderRadius: "0 1rem 1rem 0",
+        borderRadius: 0,
         background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
       }}
     >

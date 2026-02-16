@@ -159,14 +159,7 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Info button */}
-          <button
-            onClick={() => setShowInfo(true)}
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all"
-          >
-            <Info className="h-3.5 w-3.5" />
-          </button>
+        <div className="flex items-center gap-3">
           {/* BPM Display */}
           <div className="flex items-baseline gap-1">
             <motion.span
@@ -181,6 +174,14 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
           </div>
         </div>
       </div>
+
+      {/* Info button — top right corner of card */}
+      <button
+        onClick={() => setShowInfo(true)}
+        className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-white/25 hover:text-white/60 hover:bg-white/[0.08] transition-all"
+      >
+        <Info className="h-4 w-4" />
+      </button>
 
       {/* Info Modal */}
       <AnimatePresence>
@@ -231,9 +232,11 @@ export default function AnalyticsProductivityPulse({ tasks, classifyTask }: Prop
               style={{
                 background: "hsl(260 30% 12% / 0.95)",
                 backdropFilter: "blur(8px)",
-                left: `${Math.min(Math.max((hoveredIdx / (WEEKS - 1)) * 100, 10), 85)}%`,
+                left: hoveredIdx > WEEKS * 0.7
+                  ? `${Math.max((hoveredIdx / (WEEKS - 1)) * 100 - 2, 5)}%`
+                  : `${Math.min((hoveredIdx / (WEEKS - 1)) * 100 + 2, 95)}%`,
                 top: -8,
-                transform: "translateX(-50%)",
+                transform: hoveredIdx > WEEKS * 0.7 ? "translateX(-100%)" : "translateX(0%)",
               }}
             >
               <p className="text-[11px] font-bold text-white/80 mb-1">{hoveredData.label}</p>
