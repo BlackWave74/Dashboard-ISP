@@ -703,7 +703,18 @@ export default function TarefasPage() {
                 const maxTotal = Math.max(1, ...performers.map(([, d]) => d.total));
 
                 if (!performers.length) {
-                  return <EmptyState variant="users" />;
+                  return loading ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-3">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        className="h-6 w-6 rounded-full border-2 border-white/10 border-t-[hsl(var(--task-purple))]"
+                      />
+                      <p className="text-xs text-[hsl(var(--task-text-muted))]">Sincronizando dados…</p>
+                    </div>
+                  ) : (
+                    <EmptyState variant="users" />
+                  );
                 }
 
                 return performers.map(([name, data], idx) => {
@@ -894,6 +905,7 @@ export default function TarefasPage() {
                 <TaskCharts
                   tasks={filteredTasks}
                   barProjectsOverride={projectHoursData}
+                  loading={loading}
                   onPickConsultant={(name) => setConsultant(name)}
                   onPickProject={(name) => setProject(name)}
                 />

@@ -97,7 +97,7 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.35 }}
-      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] relative"
+      className="rounded-2xl border border-white/[0.06] p-6 transition-all hover:border-white/[0.10] relative overflow-hidden"
       style={{ background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))" }}
     >
       <div className="flex items-center justify-between mb-4">
