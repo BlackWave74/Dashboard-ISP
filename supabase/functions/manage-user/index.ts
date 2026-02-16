@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// External Supabase (ISP Consulte) — public keys are safe
+const EXT_URL = "https://stubkeeuttixteqckshd.supabase.co";
+const EXT_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0dWJrZWV1dHRpeHRlcWNrc2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NjQ0OTIsImV4cCI6MjA3MzA0MDQ5Mn0.YcpSKrTSb1P1REC8lgkdduDITX52h_z7ArPD6XIkrlU";
+
 function jsonRes(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -24,28 +28,28 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Verify caller is admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return errRes("Não autorizado.", 401);
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const extServiceRoleKey = Deno.env.get("EXT_SUPABASE_SERVICE_ROLE_KEY");
+    if (!extServiceRoleKey) {
+      return errRes("Configuração do servidor incompleta.", 500);
+    }
 
-    // Verify caller with their token
-    const callerClient = createClient(supabaseUrl, anonKey, {
+    // Verify caller against EXTERNAL Supabase
+    const callerClient = createClient(EXT_URL, EXT_ANON, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await callerClient.auth.getUser(token);
-    if (claimsError || !claimsData?.user) {
+    const { data: userData, error: userError } = await callerClient.auth.getUser(token);
+    if (userError || !userData?.user) {
       return errRes("Token inválido.", 401);
     }
 
-    // Check if caller is admin using the is_admin function
+    // Check admin via is_admin() on external DB
     const { data: isAdmin } = await callerClient.rpc("is_admin");
     if (!isAdmin) {
       return errRes("Apenas administradores podem gerenciar usuários.", 403);
@@ -54,8 +58,8 @@ serve(async (req: Request) => {
     const body = await req.json();
     const { action } = body;
 
-    // Admin client with service role for user management
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    // Admin client with SERVICE ROLE on EXTERNAL DB — bypasses RLS
+    const adminClient = createClient(EXT_URL, extServiceRoleKey);
 
     if (action === "create") {
       const { email, password, name, user_profile, cliente_id, areas, projects } = body;
@@ -79,7 +83,7 @@ serve(async (req: Request) => {
       const authUserId = authData.user.id;
 
       // 2. Insert into users table
-      const { error: userError } = await adminClient
+      const { error: userInsertError } = await adminClient
         .from("users")
         .insert({
           auth_user_id: authUserId,
@@ -89,9 +93,9 @@ serve(async (req: Request) => {
           active: true,
         });
 
-      if (userError) {
+      if (userInsertError) {
         await adminClient.auth.admin.deleteUser(authUserId);
-        return errRes(`Falha ao criar registro: ${userError.message}`);
+        return errRes(`Falha ao criar registro: ${userInsertError.message}`);
       }
 
       // 3. Insert role
@@ -119,7 +123,7 @@ serve(async (req: Request) => {
 
       // 6. Audit log
       await adminClient.from("audit_log").insert({
-        performed_by: claimsData.user.id,
+        performed_by: userData.user.id,
         target_user_id: authUserId,
         action: "create_user",
         details: { email, name, user_profile, areas, projects },
@@ -199,7 +203,7 @@ serve(async (req: Request) => {
 
       // 5. Audit log
       await adminClient.from("audit_log").insert({
-        performed_by: claimsData.user.id,
+        performed_by: userData.user.id,
         target_user_id: targetAuthUserId,
         action: "update_user",
         details: { userId, changes: userPayload, areas, projects },
@@ -223,7 +227,7 @@ serve(async (req: Request) => {
       await adminClient.from("user_project_access").delete().eq("user_id", authUserId);
 
       await adminClient.from("audit_log").insert({
-        performed_by: claimsData.user.id,
+        performed_by: userData.user.id,
         target_user_id: authUserId,
         action: "delete_user",
         details: { authUserId },
@@ -232,7 +236,26 @@ serve(async (req: Request) => {
       return jsonRes({ ok: true });
     }
 
-    return errRes("Ação inválida. Use 'create', 'update' ou 'delete'.");
+    if (action === "deactivate") {
+      const { userId, authUserId: targetAuthUserId } = body;
+      if (!userId || !targetAuthUserId) return errRes("userId e authUserId são obrigatórios.");
+
+      // Set user inactive and clear areas/projects
+      await adminClient.from("users").update({ active: false }).eq("id", userId);
+      await adminClient.from("user_allowed_areas").delete().eq("user_id", targetAuthUserId);
+      await adminClient.from("user_project_access").delete().eq("user_id", targetAuthUserId);
+
+      await adminClient.from("audit_log").insert({
+        performed_by: userData.user.id,
+        target_user_id: targetAuthUserId,
+        action: "deactivate_user",
+        details: { userId },
+      });
+
+      return jsonRes({ ok: true });
+    }
+
+    return errRes("Ação inválida. Use 'create', 'update', 'delete' ou 'deactivate'.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno";
     return errRes(message, 500);

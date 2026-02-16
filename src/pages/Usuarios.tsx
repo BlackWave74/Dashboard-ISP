@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useUsersApi } from "@/modules/users/api/useUsersApi";
+import { callManageUser } from "@/modules/users/api/manageUserApi";
 import { PERFIS, ALL_AREAS, PERFIL_TO_ROLE, type Perfil, type UserRow, type AuditRow } from "@/modules/users/types";
 import {
   Users, Search, RefreshCw, Pencil, Trash2, Save, X, Shield,
@@ -247,12 +246,17 @@ export default function UsuariosPage() {
 
   /* ─── Save edit ─── */
   const saveEdit = async () => {
-    if (!editingUser || !session) return;
+    if (!editingUser || !session || !token) return;
     setLoadingEdit(true);
     try {
-      const currentUser = api.users.find(u => u.email === session.email);
-      const performedBy = currentUser?.auth_user_id || "";
-      await api.saveUser(editingUser.id, editingUser.auth_user_id, editForm, editAreas, editProjects, performedBy);
+      await callManageUser(token, {
+        action: "update",
+        userId: editingUser.id,
+        authUserId: editingUser.auth_user_id,
+        payload: editForm,
+        areas: editAreas,
+        projects: editProjects,
+      });
       showFeedback("ok", "Usuário atualizado com sucesso.");
       cancelEdit();
       api.loadUsers();
@@ -266,7 +270,7 @@ export default function UsuariosPage() {
   /* ─── Create user ─── */
   const handleCreate = async () => {
     if (!token || !session) return;
-    const { name, email, user_profile, password } = createForm;
+    const { name, email, user_profile, password, cliente_id } = createForm;
     if (!name.trim() || !email.trim()) {
       showFeedback("error", "Nome e e-mail são obrigatórios.");
       return;
@@ -277,72 +281,16 @@ export default function UsuariosPage() {
     }
     setCreating(true);
     try {
-      // Create auth user via signUp on external Supabase
-      const extClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      const { data: signUpData, error: signUpError } = await extClient.auth.signUp({
+      await callManageUser(token, {
+        action: "create",
         email: email.trim(),
         password: password.trim(),
-        options: {
-          data: { name: name.trim(), user_profile: user_profile || "Consultor" },
-        },
+        name: name.trim(),
+        user_profile: user_profile || "Consultor",
+        cliente_id: cliente_id ?? null,
+        areas: createAreas,
+        projects: createProjects,
       });
-
-      if (signUpError) throw new Error(signUpError.message);
-      if (!signUpData.user) throw new Error("Falha ao criar usuário de autenticação.");
-
-      const authUserId = signUpData.user.id;
-
-      // Insert into users table
-      const { supabaseRest, safeJson } = await import("@/modules/users/api/supabaseRest");
-      await supabaseRest("users", token, {
-        method: "POST",
-        body: JSON.stringify({
-          auth_user_id: authUserId,
-          email: email.trim(),
-          name: name.trim(),
-          user_profile: user_profile || "Consultor",
-          active: true,
-        }),
-      });
-
-      // Insert role
-      const role = PERFIL_TO_ROLE[user_profile as Perfil] ?? "consultor";
-      await supabaseRest("user_roles", token, {
-        method: "POST",
-        body: JSON.stringify({ user_id: authUserId, role }),
-      });
-
-      // Insert areas
-      if (createAreas.length > 0) {
-        const areaRows = createAreas.map(a => ({ user_id: authUserId, area_name: a }));
-        await supabaseRest("user_allowed_areas", token, {
-          method: "POST",
-          body: JSON.stringify(areaRows),
-        });
-      }
-
-      // Insert projects
-      if (createProjects.length > 0) {
-        const projRows = createProjects.map(pid => ({ user_id: authUserId, project_id: pid }));
-        await supabaseRest("user_project_access", token, {
-          method: "POST",
-          body: JSON.stringify(projRows),
-        });
-      }
-
-      // Audit log
-      try {
-        const currentUser = api.users.find(u => u.email === session.email);
-        await supabaseRest("audit_log", token, {
-          method: "POST",
-          body: JSON.stringify({
-            performed_by: currentUser?.auth_user_id || "",
-            target_user_id: authUserId,
-            action: "create_user",
-            details: { email: email.trim(), name: name.trim(), user_profile, areas: createAreas, projects: createProjects },
-          }),
-        });
-      } catch { /* non-critical */ }
 
       showFeedback("ok", `Usuário "${name.trim()}" criado com sucesso!`);
       setCreateForm({ name: "", email: "", user_profile: "Consultor", password: "", cliente_id: null });
@@ -363,27 +311,10 @@ export default function UsuariosPage() {
     if (!session || !token) return;
     setDeletingId(user.id);
     try {
-      const { supabaseRest } = await import("@/modules/users/api/supabaseRest");
-      // Delete database records
-      await supabaseRest(`users?id=eq.${user.id}`, token, { method: "DELETE" });
-      if (user.auth_user_id) {
-        try { await supabaseRest(`user_roles?user_id=eq.${user.auth_user_id}`, token, { method: "DELETE" }); } catch { /* ok */ }
-        try { await supabaseRest(`user_allowed_areas?user_id=eq.${user.auth_user_id}`, token, { method: "DELETE" }); } catch { /* ok */ }
-        try { await supabaseRest(`user_project_access?user_id=eq.${user.auth_user_id}`, token, { method: "DELETE" }); } catch { /* ok */ }
-      }
-      // Audit
-      try {
-        const currentUser = api.users.find(u => u.email === session.email);
-        await supabaseRest("audit_log", token, {
-          method: "POST",
-          body: JSON.stringify({
-            performed_by: currentUser?.auth_user_id || "",
-            target_user_id: user.auth_user_id || null,
-            action: "delete_user",
-            details: { user_id: user.id },
-          }),
-        });
-      } catch { /* non-critical */ }
+      await callManageUser(token, {
+        action: "delete",
+        authUserId: user.auth_user_id,
+      });
       showFeedback("ok", "Usuário removido com sucesso.");
       setConfirmDeleteId(null);
       api.loadUsers();
@@ -396,16 +327,13 @@ export default function UsuariosPage() {
 
   /* ─── Deactivate / Disconnect ─── */
   const handleDeactivate = async (user: UserRow) => {
-    if (!session) return;
+    if (!session || !token) return;
     try {
-      const currentUser = api.users.find(u => u.email === session.email);
-      await api.saveUser(
-        user.id, user.auth_user_id,
-        { active: false },
-        [], // clear areas = disconnect
-        [], // clear projects
-        currentUser?.auth_user_id || "",
-      );
+      await callManageUser(token, {
+        action: "deactivate",
+        userId: user.id,
+        authUserId: user.auth_user_id,
+      });
       showFeedback("ok", `Usuário "${user.name}" desconectado.`);
       api.loadUsers();
     } catch (err) {
