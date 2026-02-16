@@ -28,18 +28,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
-// Safely import cloud client — may fail if env vars are missing
-let cloudSupabase: any = null;
-try {
-  // Dynamic require-like pattern: the import is static but wrapped in try
-  const cloudUrl = import.meta.env.VITE_SUPABASE_URL;
-  const cloudKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (cloudUrl && cloudKey) {
-    cloudSupabase = createClient(cloudUrl, cloudKey);
-  }
-} catch {
-  // Cloud client unavailable
-}
+import { supabase as cloudSupabase } from "@/integrations/supabase/client";
 
 const supabaseExt = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -246,10 +235,6 @@ export function AppSidebar() {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${user.id}/avatar_${Date.now()}.${ext}`;
 
-      if (!cloudSupabase) {
-        throw new Error("Serviço de armazenamento não configurado. Recarregue a página e tente novamente.");
-      }
-
       // Upload to Lovable Cloud storage (has the avatars bucket)
       const { error: uploadError } = await cloudSupabase.storage
         .from("avatars")
@@ -257,10 +242,10 @@ export function AppSidebar() {
       if (uploadError) {
         console.error("Storage upload error:", uploadError);
         // Provide user-friendly error based on the error type
-        if (uploadError.message?.includes("Payload too large") || uploadError.statusCode === 413) {
+        if (uploadError.message?.includes("Payload too large") || (uploadError as any).statusCode === 413) {
           throw new Error("Imagem muito grande. Reduza a resolução (recomendado: 500×500 px) e tente novamente.");
         }
-        if (uploadError.message?.includes("security") || uploadError.statusCode === 403) {
+        if (uploadError.message?.includes("security") || (uploadError as any).statusCode === 403) {
           throw new Error("Permissão negada. O serviço de armazenamento pode estar indisponível. Tente novamente em alguns instantes.");
         }
         throw new Error(`Falha no upload: ${uploadError.message}`);
