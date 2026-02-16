@@ -720,7 +720,7 @@ export default function UsuariosPage() {
             </motion.div>
 
             {/* ═══ MAIN CONTENT ═══ */}
-            <div className={`grid gap-5 ${showEditPanel ? "lg:grid-cols-[1fr_420px]" : "grid-cols-1"}`}>
+            <div className={`grid gap-5 ${showEditPanel ? "grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]" : "grid-cols-1"}`}>
               {/* ─── USER LIST ─── */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 className="task-card overflow-visible"
@@ -894,7 +894,7 @@ export default function UsuariosPage() {
                 {showEditPanel && editingUser && (
                   <motion.div
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                    className="task-card p-5 space-y-4 h-fit sticky top-20 overflow-visible"
+                    className="task-card p-5 space-y-4 h-fit lg:sticky lg:top-20 overflow-visible max-h-[80vh] lg:max-h-none overflow-y-auto styled-scrollbar"
                   >
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-[hsl(var(--task-text))] flex items-center gap-2">
