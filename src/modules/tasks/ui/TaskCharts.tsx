@@ -34,6 +34,7 @@ type TimelineRange = 7 | 30;
 type Props = {
   tasks: TaskView[];
   barProjectsOverride?: BarProject[];
+  loading?: boolean;
   onPickConsultant?: (name: string) => void;
   onPickProject?: (name: string) => void;
   onPickDeadlineIso?: (iso: string) => void;
@@ -235,9 +236,24 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
   );
 }
 
+/** Inline loading spinner for chart areas */
+function ChartLoadingPlaceholder() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-2 py-6">
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        className="h-5 w-5 rounded-full border-2 border-white/10 border-t-[hsl(var(--task-purple))]"
+      />
+      <p className="text-[10px] text-white/25">Carregando dados…</p>
+    </div>
+  );
+}
+
 export function TaskCharts({
   tasks,
   barProjectsOverride,
+  loading: isLoading,
   onPickConsultant,
   onPickProject,
   onPickDeadlineIso,
@@ -252,9 +268,13 @@ export function TaskCharts({
   }, [tasks, barProjectsOverride]);
   const lineByDeadline = useMemo(() => groupByDeadline(tasks, deadlineRange), [tasks, deadlineRange]);
   const todayIso = useMemo(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  }, []);
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+    // Re-compute if date might change (midnight crossing)
+  }, [tasks]);
 
   const formatBarTooltip: TooltipProps<number, string>["formatter"] = (value, _name, data) => {
     const num = typeof value === "number" ? value : Number(value ?? 0);
@@ -361,6 +381,8 @@ export function TaskCharts({
                   ))}
                 </div>
               </div>
+            ) : isLoading ? (
+              <ChartLoadingPlaceholder />
             ) : (
               <EmptyState variant="chart" compact className="h-full" />
             )}
@@ -432,6 +454,8 @@ export function TaskCharts({
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+            ) : isLoading ? (
+              <ChartLoadingPlaceholder />
             ) : (
               <EmptyState variant="chart" compact className="h-full" />
             )}
@@ -491,6 +515,8 @@ export function TaskCharts({
                   <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} />
                 </LineChart>
               </ResponsiveContainer>
+            ) : isLoading ? (
+              <ChartLoadingPlaceholder />
             ) : (
               <EmptyState variant="timeline" compact className="h-full" />
             )}
