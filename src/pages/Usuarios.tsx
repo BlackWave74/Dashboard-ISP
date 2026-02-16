@@ -615,7 +615,7 @@ export default function UsuariosPage() {
                 { label: "Consultores", value: stats.consultors, icon: User, color: "blue" },
                 { label: "Ativos", value: stats.active, icon: CheckCircle2, color: "green" },
               ].map(s => (
-                <div key={s.label} className="task-card flex items-center gap-3 p-3 sm:p-4">
+                <div key={s.label} className="task-card flex items-center gap-3 p-3 sm:p-4 min-w-0 overflow-hidden">
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                     s.color === "purple" ? "bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]" :
                     s.color === "yellow" ? "bg-[hsl(var(--task-yellow)/0.15)] text-[hsl(var(--task-yellow))]" :
@@ -624,8 +624,8 @@ export default function UsuariosPage() {
                   }`}>
                     <s.icon className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))]">{s.label}</p>
+                  <div className="min-w-0">
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] truncate">{s.label}</p>
                     <p className="text-xl font-extrabold text-[hsl(var(--task-text))]">{s.value}</p>
                   </div>
                 </div>
