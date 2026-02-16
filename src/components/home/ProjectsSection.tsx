@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import EmptyState from "@/components/ui/EmptyState";
 import { ListTodo, BarChart3, Loader2, AlertCircle, Clock, CheckCircle2, AlertTriangle, HelpCircle } from "lucide-react";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
@@ -303,7 +304,7 @@ function AnalyticsTab({
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">Sem dados de horas disponíveis.</p>
+            <EmptyState variant="chart" message="Nenhum dado de horas disponível." />
           )}
         </div>
 
@@ -353,7 +354,7 @@ function AnalyticsTab({
               </div>
             </div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">Sem dados disponíveis.</p>
+            <EmptyState variant="chart" message="Nenhum dado de status disponível." />
           )}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import EmptyState from "@/components/ui/EmptyState";
 import type { TooltipProps } from "recharts";
 import {
   ResponsiveContainer,
@@ -361,9 +362,7 @@ export function TaskCharts({
                 </div>
               </div>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
-                Sem dados.
-              </div>
+              <EmptyState variant="chart" compact className="h-full" />
             )}
           </div>
         </motion.div>
@@ -434,7 +433,7 @@ export function TaskCharts({
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">Sem dados.</div>
+              <EmptyState variant="chart" compact className="h-full" />
             )}
           </div>
         </motion.div>
@@ -493,9 +492,7 @@ export function TaskCharts({
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-[hsl(var(--task-text-muted))]">
-                Sem dados de prazos.
-              </div>
+              <EmptyState variant="timeline" compact className="h-full" />
             )}
           </div>
         </motion.div>

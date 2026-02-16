@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import DataErrorCard from "@/components/ui/DataErrorCard";
+import EmptyState from "@/components/ui/EmptyState";
 
 import { ProjectPerformanceGauge } from "@/modules/tasks/ui/TaskCharts";
 import { TaskFilters } from "@/modules/tasks/ui/TaskFilters";
@@ -702,12 +703,7 @@ export default function TarefasPage() {
                 const maxTotal = Math.max(1, ...performers.map(([, d]) => d.total));
 
                 if (!performers.length) {
-                  return (
-                    <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <Users className="h-8 w-8 text-[hsl(var(--task-text-muted)/0.15)] mb-2" />
-                      <p className="text-xs text-[hsl(var(--task-text-muted))]">Sem dados</p>
-                    </div>
-                  );
+                  return <EmptyState variant="users" />;
                 }
 
                 return performers.map(([name, data], idx) => {

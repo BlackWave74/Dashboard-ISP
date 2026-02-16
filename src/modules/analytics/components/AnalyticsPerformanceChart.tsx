@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import EmptyState from "@/components/ui/EmptyState";
 import {
   AreaChart,
   Area,
@@ -198,9 +199,7 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
           </ResponsiveContainer>
         </motion.div>
       ) : (
-        <div className="flex h-[280px] items-center justify-center">
-          <p className="text-sm text-white/25">Sem dados para o período selecionado.</p>
-        </div>
+        <EmptyState variant="chart" message="Nenhum dado para o período selecionado." hint="Tente selecionar um período diferente." className="h-[280px]" />
       )}
     </motion.div>
   );
