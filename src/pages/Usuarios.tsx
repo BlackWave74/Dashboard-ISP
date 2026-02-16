@@ -186,6 +186,7 @@ export default function UsuariosPage() {
   const [creating, setCreating] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [copiedPw, setCopiedPw] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Delete
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -214,6 +215,26 @@ export default function UsuariosPage() {
       setCopiedPw(true);
       setTimeout(() => setCopiedPw(false), 2000);
     }
+  };
+
+  const handleCopyField = async (field: string, value: string) => {
+    if (value) {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  const handleCopyAll = async () => {
+    const lines = [
+      `Nome: ${createForm.name}`,
+      `E-mail: ${createForm.email}`,
+      `Perfil: ${createForm.user_profile}`,
+      `Senha: ${createForm.password}`,
+    ].filter(l => !l.endsWith(": "));
+    await navigator.clipboard.writeText(lines.join("\n"));
+    setCopiedField("all");
+    setTimeout(() => setCopiedField(null), 2000);
   };
 
   /* ─── Start edit ─── */
@@ -532,18 +553,34 @@ export default function UsuariosPage() {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Nome *</label>
-                        <div className="relative">
-                          <User className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
-                          <input value={createForm.name} onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo"
-                            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                        <div className="flex gap-1">
+                          <div className="relative flex-1 min-w-0">
+                            <User className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+                            <input value={createForm.name} onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo"
+                              className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                          </div>
+                          {createForm.name && (
+                            <button type="button" onClick={() => handleCopyField("name", createForm.name)} title="Copiar nome"
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-emerald-500/40 hover:text-emerald-400 transition">
+                              {copiedField === "name" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">E-mail *</label>
-                        <div className="relative">
-                          <Mail className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
-                          <input value={createForm.email} onChange={e => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="usuario@email.com" type="email"
-                            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                        <div className="flex gap-1">
+                          <div className="relative flex-1 min-w-0">
+                            <Mail className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+                            <input value={createForm.email} onChange={e => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="usuario@email.com" type="email"
+                              className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-8 pr-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
+                          </div>
+                          {createForm.email && (
+                            <button type="button" onClick={() => handleCopyField("email", createForm.email)} title="Copiar e-mail"
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-emerald-500/40 hover:text-emerald-400 transition">
+                              {copiedField === "email" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -553,7 +590,7 @@ export default function UsuariosPage() {
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Perfil</label>
                         <select value={createForm.user_profile} onChange={e => setCreateForm(p => ({ ...p, user_profile: e.target.value as Perfil }))}
-                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)]">
+                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] [&>option]:bg-[hsl(260_35%_8%)] [&>option]:text-[hsl(var(--task-text))]">
                           {PERFIS.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                       </div>
@@ -596,7 +633,7 @@ export default function UsuariosPage() {
                           <Building2 className="h-3 w-3" /> Cliente
                         </label>
                         <select value={createForm.cliente_id ?? ""} onChange={e => setCreateForm(p => ({ ...p, cliente_id: e.target.value ? Number(e.target.value) : null }))}
-                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)]">
+                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] [&>option]:bg-[hsl(260_35%_8%)] [&>option]:text-[hsl(var(--task-text))]">
                           <option value="">Nenhum cliente</option>
                           {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                         </select>
@@ -624,16 +661,25 @@ export default function UsuariosPage() {
                       />
                     </div>
 
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => setShowCreate(false)}
-                        className="rounded-lg border border-[hsl(var(--task-border))] px-4 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))] transition">
-                        Cancelar
-                      </button>
-                      <button onClick={handleCreate} disabled={creating}
-                        className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] px-4 py-2 text-xs font-semibold text-white transition hover:shadow-lg disabled:opacity-50">
-                        {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                        Criar Usuário
-                      </button>
+                    <div className="flex justify-between gap-2">
+                      {(createForm.name || createForm.email || createForm.password) && (
+                        <button type="button" onClick={handleCopyAll}
+                          className="flex items-center gap-1.5 rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] hover:border-emerald-500/40 hover:text-emerald-400 transition">
+                          {copiedField === "all" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                          {copiedField === "all" ? "Copiado!" : "Copiar Tudo"}
+                        </button>
+                      )}
+                      <div className="flex gap-2 ml-auto">
+                        <button onClick={() => setShowCreate(false)}
+                          className="rounded-lg border border-[hsl(var(--task-border))] px-4 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))] transition">
+                          Cancelar
+                        </button>
+                        <button onClick={handleCreate} disabled={creating}
+                          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] px-4 py-2 text-xs font-semibold text-white transition hover:shadow-lg disabled:opacity-50">
+                          {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          Criar Usuário
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -694,8 +740,8 @@ export default function UsuariosPage() {
                       <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Buscar por nome, e-mail..."
                         className="h-10 w-full rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg)/0.6)] pl-10 pr-3 text-xs text-[hsl(var(--task-text))] outline-none transition-all focus:border-[hsl(var(--task-purple)/0.5)] focus:bg-[hsl(var(--task-bg))] focus:shadow-[0_0_0_3px_hsl(var(--task-purple)/0.08)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]" />
                     </div>
-                    <select value={clienteFilter === "all" ? "" : clienteFilter} onChange={e => setClienteFilter(e.target.value ? Number(e.target.value) : "all")}
-                      className="h-10 w-full sm:w-48 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg)/0.6)] px-3 text-xs text-[hsl(var(--task-text))] outline-none transition-all focus:border-[hsl(var(--task-purple)/0.5)] focus:shadow-[0_0_0_3px_hsl(var(--task-purple)/0.08)]">
+                     <select value={clienteFilter === "all" ? "" : clienteFilter} onChange={e => setClienteFilter(e.target.value ? Number(e.target.value) : "all")}
+                      className="h-10 w-full sm:w-48 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg)/0.6)] px-3 text-xs text-[hsl(var(--task-text))] outline-none transition-all focus:border-[hsl(var(--task-purple)/0.5)] focus:shadow-[0_0_0_3px_hsl(var(--task-purple)/0.08)] [&>option]:bg-[hsl(260_35%_8%)] [&>option]:text-[hsl(var(--task-text))]">
                       <option value="">Todos os clientes</option>
                       {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
@@ -879,7 +925,7 @@ export default function UsuariosPage() {
                         <div className="space-y-1.5">
                           <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Perfil</label>
                           <select value={editForm.user_profile ?? "Consultor"} onChange={e => setEditForm(p => ({ ...p, user_profile: e.target.value }))}
-                            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)]">
+                            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] [&>option]:bg-[hsl(260_35%_8%)] [&>option]:text-[hsl(var(--task-text))]">
                             {PERFIS.map(p => <option key={p} value={p}>{p}</option>)}
                           </select>
                         </div>
@@ -904,8 +950,8 @@ export default function UsuariosPage() {
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
                           <Building2 className="h-3 w-3" /> Cliente
                         </label>
-                        <select value={editForm.cliente_id ?? ""} onChange={e => setEditForm(p => ({ ...p, cliente_id: e.target.value ? Number(e.target.value) : null }))}
-                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)]">
+                         <select value={editForm.cliente_id ?? ""} onChange={e => setEditForm(p => ({ ...p, cliente_id: e.target.value ? Number(e.target.value) : null }))}
+                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] [&>option]:bg-[hsl(260_35%_8%)] [&>option]:text-[hsl(var(--task-text))]">
                           <option value="">Nenhum cliente</option>
                           {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                         </select>
