@@ -500,7 +500,7 @@ export default function UsuariosPage() {
                     </div>
 
                     {/* Row 2: Profile + Password (aligned) */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 items-end">
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Perfil</label>
                         <select value={createForm.user_profile} onChange={e => setCreateForm(p => ({ ...p, user_profile: e.target.value as Perfil }))}
@@ -512,8 +512,8 @@ export default function UsuariosPage() {
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
                           <Key className="h-3 w-3" /> Senha *
                         </label>
-                        <div className="relative flex gap-1">
-                          <div className="relative flex-1">
+                        <div className="flex gap-1 h-9">
+                          <div className="relative flex-1 min-w-0">
                             <input
                               type={showPassword ? "text" : "password"}
                               value={createForm.password}
