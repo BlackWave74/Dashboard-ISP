@@ -266,10 +266,16 @@ export default function TarefasPage() {
   const projectFilteredTasks = useMemo(() => {
     // Admins, gerentes, coordenadores see everything
     if (isAdmin) return normalizedTasks;
-    // If no project access configured, fall back to company-based scoping
-    if (!accessibleProjectIds || accessibleProjectIds.length === 0) {
-      // Company-based scoping for clients
-      if (!companyName || session?.role !== "cliente") return normalizedTasks;
+    // If explicit project access is configured, use it
+    if (accessibleProjectIds && accessibleProjectIds.length > 0) {
+      const allowedIds = new Set(accessibleProjectIds);
+      return normalizedTasks.filter((task) => {
+        const pid = Number(task.raw["project_id"] ?? task.raw["projectId"]);
+        return pid && allowedIds.has(pid);
+      });
+    }
+    // Fallback: filter by company name prefix (client-based scoping)
+    if (companyName) {
       const needle = companyName.toLowerCase();
       return normalizedTasks.filter((task) => {
         const projectName = (task.project || "").toLowerCase();
@@ -280,13 +286,8 @@ export default function TarefasPage() {
         return projectName.includes(needle) || joinedProject.includes(needle);
       });
     }
-    // Filter by explicit project access
-    const allowedIds = new Set(accessibleProjectIds);
-    return normalizedTasks.filter((task) => {
-      const pid = Number(task.raw["project_id"] ?? task.raw["projectId"]);
-      return pid && allowedIds.has(pid);
-    });
-  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName, session?.role]);
+    return normalizedTasks;
+  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
   const scopedTasks = projectFilteredTasks;
