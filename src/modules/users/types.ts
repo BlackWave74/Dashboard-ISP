@@ -34,12 +34,19 @@ export type UserRow = {
   user_profile: string;
   active: boolean;
   role?: string;
+  cliente_id?: number | null;
 };
 
 export type ProjectRow = {
   id: number;
   name: string;
   active: boolean;
+};
+
+export type ClienteRow = {
+  cliente_id: number;
+  nome: string;
+  Ativo: boolean;
 };
 
 export type AuditRow = {

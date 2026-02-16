@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabaseRest } from "./supabaseRest";
-import type { UserRow, ProjectRow, AuditRow } from "../types";
+import type { UserRow, ProjectRow, AuditRow, ClienteRow } from "../types";
 import { PERFIL_TO_ROLE, ROLE_TO_PERFIL, type Perfil } from "../types";
 
 export function useUsersApi(token: string | undefined) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [clientes, setClientes] = useState<ClienteRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +16,7 @@ export function useUsersApi(token: string | undefined) {
     setError(null);
     try {
       const res = await supabaseRest(
-        "users?select=id,auth_user_id,email,name,user_profile,active&order=name.asc&limit=200",
+        "users?select=id,auth_user_id,email,name,user_profile,active,cliente_id&order=name.asc&limit=200",
         token,
       );
       const data = await res.json();
@@ -39,6 +40,7 @@ export function useUsersApi(token: string | undefined) {
             user_profile: dbRole ? (ROLE_TO_PERFIL[dbRole] ?? String(u.user_profile ?? "Consultor")) : String(u.user_profile ?? "Consultor"),
             active: u.active !== false,
             role: dbRole,
+            cliente_id: u.cliente_id != null ? Number(u.cliente_id) : null,
           };
         }));
       }
@@ -66,6 +68,23 @@ export function useUsersApi(token: string | undefined) {
     }
   }, [token]);
 
+  const loadClientes = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await supabaseRest('clientes?select=cliente_id,nome,"Ativo"&order=nome.asc&limit=500', token);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setClientes(data.map((c: Record<string, unknown>) => ({
+          cliente_id: Number(c.cliente_id),
+          nome: String(c.nome ?? ""),
+          Ativo: c.Ativo !== false,
+        })));
+      }
+    } catch {
+      // non-critical
+    }
+  }, [token]);
+
   const saveUser = useCallback(async (
     userId: string,
     authUserId: string,
@@ -82,6 +101,7 @@ export function useUsersApi(token: string | undefined) {
     if (payload.email !== undefined) userPayload.email = payload.email;
     if (payload.user_profile !== undefined) userPayload.user_profile = payload.user_profile;
     if (payload.active !== undefined) userPayload.active = payload.active;
+    if (payload.cliente_id !== undefined) userPayload.cliente_id = payload.cliente_id;
 
     await supabaseRest(`users?id=eq.${userId}`, token, {
       method: "PATCH",
@@ -198,12 +218,13 @@ export function useUsersApi(token: string | undefined) {
     if (token) {
       loadUsers();
       loadProjects();
+      loadClientes();
     }
-  }, [token, loadUsers, loadProjects]);
+  }, [token, loadUsers, loadProjects, loadClientes]);
 
   return {
-    users, projects, loading, error,
-    loadUsers, loadProjects,
+    users, projects, clientes, loading, error,
+    loadUsers, loadProjects, loadClientes,
     saveUser, deleteUser,
     getUserAreas, getUserProjects, getAuditLog,
   };
