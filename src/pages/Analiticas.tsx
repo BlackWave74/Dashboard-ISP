@@ -298,10 +298,10 @@ export default function AnaliticasPage() {
         />
       </div>
 
-      {/* Project drill-down drawer */}
+      {/* Project drill-down drawer — scoped to accessible tasks only */}
       <AnalyticsProjectDrawer
         project={drawerProject}
-        tasks={allTasks}
+        tasks={accessFilteredTasks}
         classifyTask={classifyTask}
         onClose={() => setDrawerProject(null)}
       />

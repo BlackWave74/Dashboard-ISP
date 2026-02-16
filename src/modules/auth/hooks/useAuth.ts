@@ -203,7 +203,7 @@ export function useAuth() {
   }, []);
 
   const refreshSession = useCallback(
-    async (stored: AuthSession): Promise<AuthSession | null> => {
+    async (stored: AuthSession, attempt = 0): Promise<AuthSession | null> => {
       const supabaseUrl = SUPABASE_URL;
       const anon = SUPABASE_ANON_KEY;
       if (!supabaseUrl || !anon || !stored.refreshToken) return null;
@@ -249,7 +249,13 @@ export function useAuth() {
         setSession(refreshed);
         persistSession(refreshed);
         return refreshed;
-      } catch {
+      } catch (err) {
+        // Retry once on network failure
+        if (attempt < 1) {
+          await new Promise((r) => setTimeout(r, 2000));
+          return refreshSession(stored, attempt + 1);
+        }
+        console.warn("[auth] Token refresh failed after retry", err);
         return null;
       }
     },

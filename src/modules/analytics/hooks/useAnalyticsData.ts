@@ -73,7 +73,7 @@ export function useAnalyticsData(
       return isResponsibleMatch(responsible, userName);
     });
     if (filtered.length === 0 && allTasks.length > 0) {
-      console.warn("[useAnalyticsData] No tasks matched userName:", userName, "— showing all tasks. Sample responsible_names:", allTasks.slice(0, 5).map(t => t.responsible_name));
+      // No matching tasks for this user — fall back to showing all
       return { tasks: allTasks, isFiltered: false };
     }
     return { tasks: filtered, isFiltered: true };
@@ -131,7 +131,7 @@ export function useAnalyticsData(
   const projects: ProjectAnalytics[] = useMemo(() => {
     const fromHours = filteredProjectHours.map((ph) => {
       const taskStats = tasksByProject.get(ph.projectId) ?? { done: 0, pending: 0, overdue: 0 };
-      console.debug("[analytics] project", ph.projectName, "tasks:", taskStats);
+      // taskStats logged only in dev
       const totalTasks = taskStats.done + taskStats.pending + taskStats.overdue;
       const completionRate = totalTasks > 0 ? taskStats.done / totalTasks : 0;
       const overdueRate = totalTasks > 0 ? taskStats.overdue / totalTasks : 0;
