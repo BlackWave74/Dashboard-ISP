@@ -60,8 +60,8 @@ function SidebarNavItem({ to, icon: Icon, label, end }: NavItemProps) {
     <NavLink
       to={to}
       end={end}
-      className="group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap"
-      activeClassName="!bg-white/[0.15] !text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)] hover:!bg-white/[0.15] hover:!text-white"
+      className="group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap"
+      activeClassName="!bg-white/[0.15] !text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)] !rounded-xl hover:!bg-white/[0.15] hover:!text-white"
     >
       <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
       <span className="truncate">{label}</span>
@@ -142,7 +142,7 @@ export function AppSidebar() {
             {/* Projetos collapsible */}
             <button
               onClick={() => setProjectsOpen((o) => !o)}
-              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
+              className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
                 isProjectsActive
                   ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
                   : "text-white/60 hover:bg-white/[0.08] hover:text-white"
@@ -161,16 +161,16 @@ export function AppSidebar() {
               <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                 <NavLink
                   to="/tarefas"
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                  activeClassName="!text-white !bg-white/[0.1]"
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                  activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                 >
                   <ListTodo className="h-4 w-4" />
                   <span>Tarefas</span>
                 </NavLink>
                 <NavLink
                   to="/analiticas"
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                  activeClassName="!text-white !bg-white/[0.1]"
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                  activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                 >
                   <BarChart3 className="h-4 w-4" />
                   <span>Analíticas</span>
@@ -191,7 +191,7 @@ export function AppSidebar() {
             <nav className="flex flex-col gap-0.5">
               <button
                 onClick={() => setAdminOpen((o) => !o)}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
+              className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
                   isAdminActive
                     ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
                     : "text-white/60 hover:bg-white/[0.08] hover:text-white"
@@ -210,16 +210,16 @@ export function AppSidebar() {
                 <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                   <NavLink
                     to="/usuarios"
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                    activeClassName="!text-white !bg-white/[0.1]"
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                    activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                   >
                     <Users className="h-4 w-4" />
                     <span>Usuários</span>
                   </NavLink>
                   <NavLink
                     to="/configuracoes"
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                    activeClassName="!text-white !bg-white/[0.1]"
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                    activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                   >
                     <Settings className="h-4 w-4" />
                     <span>Configurações</span>
@@ -246,7 +246,7 @@ export function AppSidebar() {
         <UserAvatar name={session?.name} email={session?.email} />
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400"
         >
           <LogOut className="h-[18px] w-[18px]" />
           Sair

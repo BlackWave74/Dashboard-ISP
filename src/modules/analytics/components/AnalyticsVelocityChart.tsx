@@ -107,9 +107,26 @@ export default function AnalyticsVelocityChart({ tasks, classifyTask }: Props) {
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "hsl(160 84% 39% / 0.15)" }}>
-            <Zap className="h-4 w-4" style={{ color: "hsl(160 84% 39%)" }} />
-          </div>
+          <motion.div
+            className="flex h-8 w-8 items-center justify-center rounded-lg"
+            style={{ background: "hsl(160 84% 39% / 0.15)" }}
+            animate={{
+              scale: [1, 1.15, 1],
+              boxShadow: [
+                "0 0 0px hsl(160 84% 39% / 0)",
+                "0 0 12px hsl(160 84% 39% / 0.4)",
+                "0 0 0px hsl(160 84% 39% / 0)",
+              ],
+            }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <motion.div
+              animate={{ x: [0, 2, 0, -2, 0] }}
+              transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Zap className="h-4 w-4" style={{ color: "hsl(160 84% 39%)" }} />
+            </motion.div>
+          </motion.div>
           <div>
             <h3 className="text-sm font-bold text-white/90">Velocidade de Entrega</h3>
             <p className="text-[10px] text-white/30">Tarefas concluídas por semana</p>
