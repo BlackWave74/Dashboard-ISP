@@ -137,6 +137,7 @@ export type Database = {
         Row: {
           active: boolean
           auth_user_id: string
+          avatar_url: string | null
           created_at: string
           email: string
           id: string
@@ -147,6 +148,7 @@ export type Database = {
         Insert: {
           active?: boolean
           auth_user_id: string
+          avatar_url?: string | null
           created_at?: string
           email: string
           id?: string
@@ -157,6 +159,7 @@ export type Database = {
         Update: {
           active?: boolean
           auth_user_id?: string
+          avatar_url?: string | null
           created_at?: string
           email?: string
           id?: string

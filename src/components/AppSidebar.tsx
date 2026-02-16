@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Home,
   FolderKanban,
@@ -13,6 +13,7 @@ import {
   MoreVertical,
   PanelLeft,
   Shield,
+  Camera,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -24,8 +25,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import { AnimatePresence, motion } from "framer-motion";
 
-function UserAvatar({ name, email, collapsed }: { name?: string; email?: string; collapsed?: boolean }) {
+function UserAvatar({ name, email, collapsed, avatarUrl, onChangePhoto }: { name?: string; email?: string; collapsed?: boolean; avatarUrl?: string | null; onChangePhoto?: () => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const initials = (name || email || "U")
     .split(" ")
     .map((w) => w[0])
@@ -33,13 +38,27 @@ function UserAvatar({ name, email, collapsed }: { name?: string; email?: string;
     .join("")
     .toUpperCase();
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const avatar = avatarUrl ? (
+    <img src={avatarUrl} alt="Avatar" className="h-full w-full rounded-full object-cover" />
+  ) : (
+    <span className="text-xs font-bold text-white">{initials}</span>
+  );
+
   if (collapsed) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex items-center justify-center py-1 cursor-pointer">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(234_89%_64%)] to-[hsl(280_70%_55%)] text-[10px] font-bold text-white shadow-lg shadow-[hsl(234_89%_50%/0.4)]">
-              {initials}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(234_89%_64%)] to-[hsl(280_70%_55%)] text-[10px] font-bold text-white shadow-lg shadow-[hsl(234_89%_50%/0.4)] overflow-hidden">
+              {avatar}
             </div>
           </div>
         </TooltipTrigger>
@@ -49,17 +68,47 @@ function UserAvatar({ name, email, collapsed }: { name?: string; email?: string;
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] border border-white/[0.08] px-3 py-3 transition-all hover:bg-white/[0.1] cursor-pointer group">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(234_89%_64%)] to-[hsl(280_70%_55%)] text-xs font-bold text-white shadow-lg shadow-[hsl(234_89%_50%/0.4)]">
-        {initials}
+    <div ref={menuRef} className="relative">
+      <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] border border-white/[0.08] px-3 py-3 transition-all hover:bg-white/[0.1] cursor-pointer group">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(234_89%_64%)] to-[hsl(280_70%_55%)] text-xs font-bold text-white shadow-lg shadow-[hsl(234_89%_50%/0.4)] overflow-hidden">
+          {avatar}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold text-white">
+            {name || "Usuário"}
+          </p>
+          <p className="truncate text-[11px] text-white/50">{email || ""}</p>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+          className="text-white/30 group-hover:text-white/60 transition-colors shrink-0"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold text-white">
-          {name || "Usuário"}
-        </p>
-        <p className="truncate text-[11px] text-white/50">{email || ""}</p>
-      </div>
-      <MoreVertical className="h-4 w-4 text-white/30 group-hover:text-white/60 transition-colors shrink-0" />
+
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-full left-0 mb-1 w-full rounded-xl border border-white/[0.08] p-1 shadow-xl z-50"
+            style={{ background: "hsl(260 30% 12%)" }}
+          >
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onChangePhoto?.(); }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[12px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white transition"
+            >
+              <Camera className="h-3.5 w-3.5" />
+              Alterar foto de perfil
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -79,7 +128,7 @@ function SidebarNavItem({ to, icon: Icon, label, end }: NavItemProps) {
     <NavLink
       to={to}
       end={end}
-      className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap ${collapsed ? "justify-center !px-0" : ""}`}
+      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap ${collapsed ? "justify-center !px-0" : ""}`}
       activeClassName="!bg-white/[0.15] !text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)] !rounded-xl hover:!bg-white/[0.15] hover:!text-white"
     >
       <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
@@ -117,6 +166,46 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Load avatar on mount
+  useEffect(() => {
+    if (!session?.accessToken) return;
+    const loadAvatar = async () => {
+      try {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("avatar_url")
+          .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
+          .maybeSingle();
+        if (userData?.avatar_url) setAvatarUrl(userData.avatar_url);
+      } catch { /* ignore */ }
+    };
+    loadAvatar();
+  }, [session?.accessToken]);
+
+  const handleAvatarUpload = useCallback(async (file: File) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      await supabase.from("users").update({ avatar_url: publicUrl }).eq("auth_user_id", user.id);
+      setAvatarUrl(publicUrl);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+    }
+  }, []);
 
   const [projectsOpen, setProjectsOpen] = useState(() => {
     return ["/tarefas", "/analiticas"].some((p) =>
@@ -147,7 +236,7 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="!border-r-0 ml-0 rounded-2xl shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)]"
+      className="!border-r-0 ml-0 !rounded-l-none rounded-r-2xl shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)]"
       style={{
         zIndex: 20,
         background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
@@ -186,7 +275,7 @@ export function AppSidebar() {
               <>
                 <button
                   onClick={() => setProjectsOpen((o) => !o)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 ${
                     isProjectsActive
                       ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
                       : "text-white/60 hover:bg-white/[0.08] hover:text-white"
@@ -205,7 +294,7 @@ export function AppSidebar() {
                   <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                     <NavLink
                       to="/tarefas"
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
                       activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                     >
                       <ListTodo className="h-4 w-4" />
@@ -213,7 +302,7 @@ export function AppSidebar() {
                     </NavLink>
                     <NavLink
                       to="/analiticas"
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
                       activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                     >
                       <BarChart3 className="h-4 w-4" />
@@ -246,7 +335,7 @@ export function AppSidebar() {
                 <>
                   <button
                     onClick={() => setAdminOpen((o) => !o)}
-                    className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 ${
                       isAdminActive
                         ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
                         : "text-white/60 hover:bg-white/[0.08] hover:text-white"
@@ -265,7 +354,7 @@ export function AppSidebar() {
                     <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                       <NavLink
                         to="/usuarios"
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
                         activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                       >
                         <Users className="h-4 w-4" />
@@ -273,7 +362,7 @@ export function AppSidebar() {
                       </NavLink>
                       <NavLink
                         to="/integracoes"
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
                         activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
                       >
                         <Plug className="h-4 w-4" />
@@ -302,7 +391,24 @@ export function AppSidebar() {
 
       <SidebarFooter className={`!border-t-0 ${collapsed ? "px-1" : "px-3"} pb-4 pt-2 space-y-2`}>
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <UserAvatar name={session?.name} email={session?.email} collapsed={collapsed} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleAvatarUpload(file);
+            e.target.value = "";
+          }}
+        />
+        <UserAvatar
+          name={session?.name}
+          email={session?.email}
+          collapsed={collapsed}
+          avatarUrl={avatarUrl}
+          onChangePhoto={() => fileInputRef.current?.click()}
+        />
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -318,7 +424,7 @@ export function AppSidebar() {
         ) : (
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400"
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400"
           >
             <LogOut className="h-[18px] w-[18px]" />
             Sair
