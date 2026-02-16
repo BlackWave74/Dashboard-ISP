@@ -172,19 +172,30 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
 
   return (
     <div className="space-y-2 flex flex-col items-center">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-white/[0.12] hover:text-white/70"
-      >
-        <Filter className="h-3.5 w-3.5" />
-        Filtros
+      <div className="flex items-center gap-3 flex-wrap justify-center">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-white/[0.12] hover:text-white/70"
+        >
+          <Filter className="h-3.5 w-3.5" />
+          Filtros
+          {activeCount > 0 && (
+            <span className="rounded-full bg-[hsl(262_83%_58%)] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {activeCount}
+            </span>
+          )}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+
         {activeCount > 0 && (
-          <span className="rounded-full bg-[hsl(262_83%_58%)] px-1.5 py-0.5 text-[10px] font-bold text-white">
-            {activeCount}
-          </span>
+          <button
+            onClick={() => onChange({ period: "180d", status: "all", projectId: null, consultant: "" })}
+            className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
+          >
+            Limpar filtros
+          </button>
         )}
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-      </button>
+      </div>
 
       <AnimatePresence>
         {expanded && (
@@ -193,9 +204,9 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-visible"
+            className="overflow-visible w-full"
           >
-            <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
+            <div className="flex flex-wrap items-end justify-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
               {/* Period */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
@@ -263,16 +274,6 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
                     mineIds={myProjectIds ? new Set([...myProjectIds].map(String)) : undefined}
                   />
                 </div>
-              )}
-
-              {/* Reset */}
-              {activeCount > 0 && (
-                <button
-                  onClick={() => onChange({ period: "180d", status: "all", projectId: null, consultant: "" })}
-                  className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
-                >
-                  Limpar filtros
-                </button>
               )}
             </div>
           </motion.div>

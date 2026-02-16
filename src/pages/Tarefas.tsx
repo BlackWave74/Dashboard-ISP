@@ -204,6 +204,12 @@ export default function TarefasPage() {
     dateTo,
   });
 
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => { reload(); reloadTimes(); }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [reload, reloadTimes]);
+
   const scrollToFilters = useCallback(() => {
     filtersBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
@@ -266,6 +272,22 @@ export default function TarefasPage() {
       return projectName.includes(needle) || joinedProject.includes(needle);
     });
   }, [normalizedTasks, companyName, session?.role]);
+
+  // Compute user's project names for "mine first" sorting in filter dropdown
+  const myProjectNames = useMemo(() => {
+    const userName = session?.name;
+    if (!userName) return new Set<string>();
+    const names = new Set<string>();
+    normalizedTasks.forEach((t) => {
+      const responsible = (t.consultant || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const me = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      if (responsible && me && (responsible.includes(me) || me.includes(responsible))) {
+        const name = (t.project || "").trim();
+        if (name && name.toLowerCase() !== "projeto indefinido") names.add(name);
+      }
+    });
+    return names;
+  }, [normalizedTasks, session?.name]);
 
   const searchTerm = debouncedSearch.trim().toLowerCase();
 
@@ -513,7 +535,7 @@ export default function TarefasPage() {
       <div className="relative z-10 w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
-        <motion.div {...fadeUp} className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <motion.div {...fadeUp} className="mb-5 flex flex-col items-center text-center gap-2">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
               Acompanhamento de Tarefas
@@ -523,7 +545,7 @@ export default function TarefasPage() {
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
+            <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
               <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
               {formatLastUpdated(combinedLastUpdated)}
             </div>
@@ -563,6 +585,7 @@ export default function TarefasPage() {
             projectDisabled={Boolean(lockedProject)}
             hasActiveFilters={hasActiveFilters}
             onClearFilters={resetFilters}
+            myProjectNames={myProjectNames}
           />
         </motion.div>
 

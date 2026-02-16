@@ -73,18 +73,18 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
               style={{ background: k.accent }}
             />
 
-            <div className="flex items-center gap-2.5 mb-3">
+            <div className="flex items-center justify-center gap-2.5 mb-3">
               <div
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110"
                 style={{ background: `${k.accent.replace(")", " / 0.15)")}` }}
               >
                 <Icon className="h-4.5 w-4.5" style={{ color: k.accent }} />
               </div>
-              <p className="text-[11px] font-semibold text-white/40 leading-tight">{k.label}</p>
             </div>
 
-            <p className="text-2xl font-bold text-white/90">{k.value}</p>
-            <p className="text-[10px] text-white/25 mt-0.5">{k.sub}</p>
+            <p className="text-[11px] font-semibold text-white/40 leading-tight text-center mb-1">{k.label}</p>
+            <p className="text-2xl font-bold text-white/90 text-center">{k.value}</p>
+            <p className="text-[10px] text-white/25 mt-0.5 text-center">{k.sub}</p>
           </motion.div>
         );
       })}

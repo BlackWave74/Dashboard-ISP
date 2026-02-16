@@ -1,11 +1,11 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
-import { Loader2, AlertCircle, BarChart3 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import AnalyticsKpiCards from "@/modules/analytics/components/AnalyticsKpiCards";
 import AnalyticsActivityHeatmap from "@/modules/analytics/components/AnalyticsActivityHeatmap";
@@ -41,8 +41,14 @@ export default function AnaliticasPage() {
 
   const periodDays = PERIOD_DAYS[filters.period];
 
-  const { tasks: allTasks, loading: loadingTasks, error: errorTasks } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
-  const { times, loading: loadingTimes } = useElapsedTimes({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
+  const { tasks: allTasks, loading: loadingTasks, error: errorTasks, reload: reloadTasks } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
+  const { times, loading: loadingTimes, reload: reloadTimes } = useElapsedTimes({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => { reloadTasks(); reloadTimes(); }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [reloadTasks, reloadTimes]);
 
   const { startIso, endIso } = useMemo(() => {
     const end = new Date();
@@ -186,19 +192,14 @@ export default function AnaliticasPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-wrap items-end justify-between gap-4"
+          className="flex flex-col items-center text-center gap-3"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] shadow-lg shadow-[hsl(262_83%_58%/0.25)]">
-              <BarChart3 className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
-              <p className="text-sm text-white/35">
-                {effectiveUser ? `Projetos de ${effectiveUser}` : "Visão geral de desempenho dos projetos."}
-                {filters.period !== "180d" && ` · Últimos ${periodDays} dias`}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
+            <p className="text-sm text-white/35">
+              {effectiveUser ? `Projetos de ${effectiveUser}` : "Visão geral de desempenho dos projetos."}
+              {filters.period !== "180d" && ` · Últimos ${periodDays} dias`}
+            </p>
           </div>
           <AnalyticsSearch
             projects={projects}

@@ -27,6 +27,7 @@ type TaskFiltersProps = {
   projectDisabled?: boolean;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
+  myProjectNames?: Set<string>;
 };
 
 const statusChips = [
@@ -51,12 +52,14 @@ function CustomSelect({
   options,
   placeholder,
   icon: Icon,
+  mineSet,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   placeholder: string;
   icon?: React.ComponentType<{ className?: string }>;
+  mineSet?: Set<string>;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -70,6 +73,15 @@ function CustomSelect({
   }, []);
 
   const selected = options.find((o) => o.value === value);
+
+  // Sort: mine first if provided
+  const sortedOptions = mineSet
+    ? [...options].sort((a, b) => {
+        const aM = mineSet.has(a.value) ? 0 : 1;
+        const bM = mineSet.has(b.value) ? 0 : 1;
+        return aM - bM || a.label.localeCompare(b.label);
+      })
+    : options;
 
   return (
     <div ref={ref} className="relative">
@@ -104,7 +116,48 @@ function CustomSelect({
             >
               {placeholder}
             </button>
-            {options.map((o) => (
+
+            {/* Mine first if provided */}
+            {mineSet && sortedOptions.length > 0 && (
+              <>
+                {sortedOptions.some(o => mineSet.has(o.value)) && (
+                  <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(var(--task-purple)/0.6)]">Projetos que faço parte</div>
+                )}
+                {sortedOptions.filter(o => mineSet.has(o.value)).map((o) => (
+                  <button
+                    key={o.value}
+                    onClick={() => { onChange(o.value); setOpen(false); }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                      value === o.value
+                        ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
+                        : "text-white/50 hover:bg-white/[0.05] hover:text-white/70"
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--task-purple))]" />
+                    <span className="truncate">{o.label}</span>
+                  </button>
+                ))}
+                {sortedOptions.some(o => !mineSet.has(o.value)) && (
+                  <div className="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-white/20">Outros</div>
+                )}
+                {sortedOptions.filter(o => !mineSet.has(o.value)).map((o) => (
+                  <button
+                    key={o.value}
+                    onClick={() => { onChange(o.value); setOpen(false); }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                      value === o.value
+                        ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
+                        : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                    }`}
+                  >
+                    <span className="truncate">{o.label}</span>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* Normal list when no mineSet */}
+            {!mineSet && options.map((o) => (
               <button
                 key={o.value}
                 onClick={() => { onChange(o.value); setOpen(false); }}
@@ -149,6 +202,7 @@ export function TaskFilters({
   projectDisabled = false,
   hasActiveFilters = false,
   onClearFilters,
+  myProjectNames,
 }: TaskFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -160,8 +214,8 @@ export function TaskFilters({
     (deadline !== "all" ? 1 : 0);
 
   return (
-    <div className="space-y-2">
-      {/* Collapsed: filter toggle button */}
+    <div className="space-y-2 flex flex-col items-center">
+      {/* Search + Filter toggle */}
       <div className="flex items-center justify-center gap-3 flex-wrap">
         {/* Search */}
         <div className="relative flex items-center w-full sm:w-auto sm:min-w-[200px] sm:max-w-[260px]">
@@ -183,26 +237,6 @@ export function TaskFilters({
             </button>
           )}
         </div>
-
-        {/* Project dropdown */}
-        <CustomSelect
-          value={project}
-          onChange={setProject}
-          options={projectOptions.map(o => ({ value: o, label: o }))}
-          placeholder="Todos projetos"
-          icon={FolderKanban}
-        />
-
-        {/* Consultant dropdown */}
-        {consultantOptions.length > 0 && (
-          <CustomSelect
-            value={consultant}
-            onChange={setConsultant}
-            options={consultantOptions.map(o => ({ value: o, label: o }))}
-            placeholder="Todos consultores"
-            icon={User}
-          />
-        )}
 
         {/* Filter toggle */}
         <button
@@ -244,9 +278,9 @@ export function TaskFilters({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-visible"
+            className="overflow-visible w-full"
           >
-            <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
+            <div className="flex flex-wrap items-end justify-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
               {/* Status */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
@@ -287,6 +321,33 @@ export function TaskFilters({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Consultant dropdown */}
+              {consultantOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Consultor</label>
+                  <CustomSelect
+                    value={consultant}
+                    onChange={setConsultant}
+                    options={consultantOptions.map(o => ({ value: o, label: o }))}
+                    placeholder="Todos consultores"
+                    icon={User}
+                  />
+                </div>
+              )}
+
+              {/* Project dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
+                <CustomSelect
+                  value={project}
+                  onChange={setProject}
+                  options={projectOptions.map(o => ({ value: o, label: o }))}
+                  placeholder="Todos projetos"
+                  icon={FolderKanban}
+                  mineSet={myProjectNames}
+                />
               </div>
 
               {/* Deadline filter */}
