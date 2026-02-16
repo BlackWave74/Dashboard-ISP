@@ -394,10 +394,26 @@ export function useAuth() {
     return { success: false, message: "Cadastro desabilitado. Peça a um admin." };
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Revoke token server-side before clearing local state
+    if (session?.accessToken) {
+      try {
+        const base = SUPABASE_URL.replace(/\/$/, "");
+        await fetch(`${base}/auth/v1/logout`, {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${session.accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+      } catch {
+        // Best-effort: continue with local logout even if server revocation fails
+      }
+    }
     setSession(null);
     persistSession(null);
-  }, [persistSession]);
+  }, [session?.accessToken, persistSession]);
 
   const canAccess = useCallback(
     (area: AccessArea, roleOverride?: UserRole) => {

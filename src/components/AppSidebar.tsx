@@ -199,20 +199,24 @@ export function AppSidebar() {
   // Load avatar on mount
   useEffect(() => {
     if (!session?.accessToken) return;
+    let cancelled = false;
     const loadAvatar = async () => {
       try {
         await ensureSession(session.accessToken, session.refreshToken);
         const { data: { user } } = await supabaseExt.auth.getUser();
-        if (!user) return;
-        const { data: userData } = await supabaseExt
+        if (!user || cancelled) return;
+        const { data: userData, error } = await supabaseExt
           .from("users")
           .select("avatar_url")
           .eq("auth_user_id", user.id)
           .maybeSingle();
-        if (userData?.avatar_url) setAvatarUrl(userData.avatar_url);
-      } catch { /* ignore */ }
+        if (!cancelled && !error && userData?.avatar_url) {
+          setAvatarUrl(userData.avatar_url);
+        }
+      } catch { /* ignore - non-critical */ }
     };
     loadAvatar();
+    return () => { cancelled = true; };
   }, [session?.accessToken, session?.refreshToken]);
 
   const handleAvatarUpload = useCallback(async (file: File) => {
