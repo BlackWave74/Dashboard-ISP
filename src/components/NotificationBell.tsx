@@ -177,7 +177,7 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
                         notif.read
                           ? "opacity-50 hover:opacity-70"
                           : "hover:bg-white/[0.04]"
-                      }`}
+                      } ${notif.isOwnTask ? "border-l-2 border-l-primary/40" : ""}`}
                     >
                       <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${config.bg} border ${config.border}`}>
                         <Icon className={`h-3.5 w-3.5 ${config.color}`} />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { storage } from "@/modules/shared/storage";
 
 export type AppNotification = {
@@ -13,6 +13,8 @@ export type AppNotification = {
   daysRemaining?: number;
   /** Formatted deadline date string */
   deadlineDateStr?: string;
+  /** Whether this task is assigned to the current user */
+  isOwnTask?: boolean;
 };
 
 const STORAGE_KEY = "app_notifications_read";
@@ -29,7 +31,16 @@ type TaskLike = {
   consultant?: string;
 };
 
-export function useNotifications(tasks: TaskLike[], userName?: string) {
+/**
+ * Notification hook with role-based filtering:
+ * - Admin/gerente/coordenador: see ALL tasks, with own tasks highlighted
+ * - Consultor/cliente: see ONLY own tasks
+ */
+export function useNotifications(
+  tasks: TaskLike[],
+  userName?: string,
+  userRole?: string
+) {
   const [readIds, setReadIds] = useState<Set<string>>(() => {
     const saved = storage.get<string[]>(STORAGE_KEY, []);
     return new Set(saved);
@@ -42,19 +53,24 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
   const notifications = useMemo<AppNotification[]>(() => {
     const now = Date.now();
     const items: AppNotification[] = [];
+    const isPrivileged = ["admin", "gerente", "coordenador"].includes(userRole ?? "");
 
-    // Filter tasks relevant to the current user
-    const userTasks = userName
-      ? tasks.filter((task) => {
-          const consultant = (task.consultant || "").trim().toLowerCase();
-          const user = userName.trim().toLowerCase();
-          return !consultant || consultant === user || consultant.includes(user) || user.includes(consultant);
-        })
-      : tasks;
+    const isOwnTask = (task: TaskLike): boolean => {
+      if (!userName) return false;
+      const consultant = (task.consultant || "").trim().toLowerCase();
+      const user = userName.trim().toLowerCase();
+      return !consultant || consultant === user || consultant.includes(user) || user.includes(consultant);
+    };
 
-    userTasks.forEach((task) => {
+    // Non-privileged users only see their own tasks
+    const visibleTasks = isPrivileged
+      ? tasks
+      : tasks.filter((t) => isOwnTask(t));
+
+    visibleTasks.forEach((task) => {
       const title = task.title || "Tarefa";
       const project = task.project || "";
+      const own = isOwnTask(task);
 
       const formatDate = (d: Date | null | undefined) => {
         if (!d) return "";
@@ -63,8 +79,7 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
 
       const getDaysRemaining = (d: Date | null | undefined): number | undefined => {
         if (!d) return undefined;
-        const diffMs = d.getTime() - Date.now();
-        return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        return Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
       };
 
       // Overdue tasks
@@ -75,17 +90,18 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
         items.push({
           id,
           type: "overdue",
-          title: "Tarefa atrasada",
-          message: `"${title}" tinha prazo para ${dateStr || "data não definida"}.`,
+          title: own ? "⚠️ Sua tarefa está atrasada" : "Tarefa atrasada",
+          message: `"${title}" tinha prazo para ${dateStr || "data não definida"}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
           timestamp: task.deadlineDate?.getTime() ?? now,
           read: readIds.has(id),
           projectName: project,
           daysRemaining,
           deadlineDateStr: dateStr,
+          isOwnTask: own,
         });
       }
 
-      // Deadline approaching (within 3 days)
+      // Deadline approaching
       if (task.deadlineIsSoon && task.statusKey !== "done" && task.statusKey !== "overdue") {
         const id = makeId("soon", title);
         const dateStr = formatDate(task.deadlineDate);
@@ -93,25 +109,27 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
         items.push({
           id,
           type: "deadline_soon",
-          title: "Prazo se aproximando",
-          message: `Tarefa "${title}" deve ser concluída até o dia ${dateStr}.`,
+          title: own ? "📅 Prazo se aproximando" : "Prazo se aproximando",
+          message: `Tarefa "${title}" deve ser concluída até o dia ${dateStr}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
           timestamp: task.deadlineDate?.getTime() ?? now,
           read: readIds.has(id),
           projectName: project,
           daysRemaining,
           deadlineDateStr: dateStr,
+          isOwnTask: own,
         });
       }
     });
 
-    // Sort: unread first, then by timestamp desc
+    // Sort: own tasks first, then unread, then by timestamp desc
     items.sort((a, b) => {
+      if (a.isOwnTask !== b.isOwnTask) return a.isOwnTask ? -1 : 1;
       if (a.read !== b.read) return a.read ? 1 : -1;
       return b.timestamp - a.timestamp;
     });
 
     return items.slice(0, 50);
-  }, [tasks, readIds, userName]);
+  }, [tasks, readIds, userName, userRole]);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
