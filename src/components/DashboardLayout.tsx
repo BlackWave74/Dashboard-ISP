@@ -6,6 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTasks } from "@/modules/tasks/api/useTasks";
+import SyncIndicator from "@/components/SyncIndicator";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/NotificationBell";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -56,7 +57,7 @@ function DashboardInner() {
   const { session, isAuthenticated, loadingSession, canAccess } = useAuth();
   const location = useLocation();
 
-  const { tasks } = useTasks({
+  const { tasks, loading } = useTasks({
     accessToken: session?.accessToken,
     period: "30d",
   });
@@ -85,6 +86,7 @@ function DashboardInner() {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
+      <SyncIndicator syncing={loading} />
       <AppSidebar
         notificationBell={
           <NotificationBell

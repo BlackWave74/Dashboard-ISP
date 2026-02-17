@@ -12,6 +12,9 @@ import {
   HelpCircle,
   PanelLeft,
   Shield,
+  MapPin,
+  CalendarDays,
+  Trophy,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -277,6 +280,9 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             )}
 
             {canAccess("comodato") && <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />}
+            <SidebarNavItem to="/mapa" icon={MapPin} label="Mapa de Clientes" />
+            <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" />
+            <SidebarNavItem to="/gamificacao" icon={Trophy} label="Ranking" />
           </nav>
         </div>
 
