@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Trophy,
   Globe,
+  Bot,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -86,9 +87,10 @@ interface NavItemProps {
   icon: React.ElementType;
   label: string;
   end?: boolean;
+  iconColor?: string;
 }
 
-function SidebarNavItem({ to, icon: Icon, label, end }: NavItemProps) {
+function SidebarNavItem({ to, icon: Icon, label, end, iconColor }: NavItemProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -99,7 +101,7 @@ function SidebarNavItem({ to, icon: Icon, label, end }: NavItemProps) {
       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap ${collapsed ? "justify-center !px-0" : ""}`}
       activeClassName="!bg-white/[0.15] !text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)] !rounded-xl hover:!bg-white/[0.15] hover:!text-white"
     >
-      <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+      <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={iconColor ? { color: iconColor } : undefined} />
       {!collapsed && <span className="truncate">{label}</span>}
     </NavLink>
   );
@@ -165,6 +167,9 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   const [projectsOpen, setProjectsOpen] = useState(() => {
     return ["/tarefas", "/analiticas", "/calendario"].some((p) => location.pathname.startsWith(p));
   });
+  const [toolsOpen, setToolsOpen] = useState(() => {
+    return ["/mapa", "/gamificacao", "/comodato"].some((p) => location.pathname.startsWith(p));
+  });
   const [adminOpen, setAdminOpen] = useState(() => {
     return ["/usuarios", "/integracoes"].some((p) => location.pathname.startsWith(p));
   });
@@ -175,6 +180,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   };
 
   const isProjectsActive = ["/tarefas", "/analiticas", "/calendario"].some((p) => location.pathname.startsWith(p));
+  const isToolsActive = ["/mapa", "/gamificacao", "/comodato"].some((p) => location.pathname.startsWith(p));
   const isAdminActive = ["/usuarios", "/integracoes"].some((p) => location.pathname.startsWith(p));
   const showAdminSection = canAccess("usuarios");
 
@@ -212,7 +218,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             </p>
           )}
           <nav className="flex flex-col gap-0.5">
-            <SidebarNavItem to="/" icon={Home} label="Página Inicial" end />
+            <SidebarNavItem to="/" icon={Home} label="Página Inicial" end iconColor="hsl(234 89% 74%)" />
           </nav>
         </div>
 
@@ -227,9 +233,9 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             <nav className="flex flex-col gap-0.5">
               {collapsed ? (
                 <>
-                  {canAccess("tarefas") && <SidebarNavItem to="/tarefas" icon={ListTodo} label="Tarefas" />}
-                  {canAccess("analiticas") && <SidebarNavItem to="/analiticas" icon={BarChart3} label="Analíticas" />}
-                  <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" />
+                  {canAccess("tarefas") && <SidebarNavItem to="/tarefas" icon={ListTodo} label="Tarefas" iconColor="hsl(38 92% 50%)" />}
+                  {canAccess("analiticas") && <SidebarNavItem to="/analiticas" icon={BarChart3} label="Analíticas" iconColor="hsl(280 70% 55%)" />}
+                  <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" iconColor="hsl(160 84% 39%)" />
                 </>
               ) : (
                 <>
@@ -241,7 +247,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                         : "text-white/60 hover:bg-white/[0.08] hover:text-white"
                     }`}
                   >
-                    <FolderKanban className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                    <FolderKanban className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ color: "hsl(234 89% 74%)" }} />
                     <span className="flex-1 text-left">Projetos</span>
                     <ChevronDown
                       className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${projectsOpen ? "rotate-0" : "-rotate-90"}`}
@@ -252,16 +258,16 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                     <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                       {canAccess("tarefas") && (
                         <NavLink to="/tarefas" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                          <ListTodo className="h-4 w-4" /><span>Tarefas</span>
+                          <ListTodo className="h-4 w-4" style={{ color: "hsl(38 92% 50%)" }} /><span>Tarefas</span>
                         </NavLink>
                       )}
                       {canAccess("analiticas") && (
                         <NavLink to="/analiticas" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                          <BarChart3 className="h-4 w-4" /><span>Analíticas</span>
+                          <BarChart3 className="h-4 w-4" style={{ color: "hsl(280 70% 55%)" }} /><span>Analíticas</span>
                         </NavLink>
                       )}
                       <NavLink to="/calendario" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                        <CalendarDays className="h-4 w-4" /><span>Calendário</span>
+                        <CalendarDays className="h-4 w-4" style={{ color: "hsl(160 84% 39%)" }} /><span>Calendário</span>
                       </NavLink>
                     </div>
                   )}
@@ -279,9 +285,43 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             </p>
           )}
           <nav className="flex flex-col gap-0.5">
-            {canAccess("comodato") && <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />}
-            <SidebarNavItem to="/mapa" icon={Globe} label="Mapa de Clientes" />
-            <SidebarNavItem to="/gamificacao" icon={Trophy} label="Ranking" />
+            {collapsed ? (
+              <>
+                <SidebarNavItem to="/mapa" icon={Globe} label="Mapa de Clientes" iconColor="hsl(160 84% 39%)" />
+                <SidebarNavItem to="/gamificacao" icon={Trophy} label="Ranking" iconColor="hsl(45 90% 55%)" />
+                {canAccess("comodato") && <SidebarNavItem to="/comodato" icon={Package} label="Comodato" iconColor="hsl(38 92% 50%)" />}
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setToolsOpen((o) => !o)}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 ${
+                    isToolsActive
+                      ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
+                      : "text-white/60 hover:bg-white/[0.08] hover:text-white"
+                  }`}
+                >
+                  <Bot className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ color: "hsl(160 84% 39%)" }} />
+                  <span className="flex-1 text-left">Ferramentas</span>
+                  <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${toolsOpen ? "rotate-0" : "-rotate-90"}`} />
+                </button>
+                {(toolsOpen || isToolsActive) && (
+                  <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
+                    <NavLink to="/mapa" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                      <Globe className="h-4 w-4" style={{ color: "hsl(160 84% 39%)" }} /><span>Mapa de Clientes</span>
+                    </NavLink>
+                    <NavLink to="/gamificacao" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                      <Trophy className="h-4 w-4" style={{ color: "hsl(45 90% 55%)" }} /><span>Ranking</span>
+                    </NavLink>
+                    {canAccess("comodato") && (
+                      <NavLink to="/comodato" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                        <Package className="h-4 w-4" style={{ color: "hsl(38 92% 50%)" }} /><span>Comodato</span>
+                      </NavLink>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </nav>
         </div>
 
@@ -296,8 +336,8 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             <nav className="flex flex-col gap-0.5">
               {collapsed ? (
                 <>
-                  <SidebarNavItem to="/usuarios" icon={Users} label="Usuários" />
-                  <SidebarNavItem to="/integracoes" icon={Plug} label="Integrações" />
+                  <SidebarNavItem to="/usuarios" icon={Users} label="Usuários" iconColor="hsl(280 70% 65%)" />
+                  <SidebarNavItem to="/integracoes" icon={Plug} label="Integrações" iconColor="hsl(38 92% 50%)" />
                 </>
               ) : (
                 <>
@@ -309,17 +349,17 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                         : "text-white/60 hover:bg-white/[0.08] hover:text-white"
                     }`}
                   >
-                    <Shield className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                    <Shield className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ color: "hsl(0 84% 60%)" }} />
                     <span className="flex-1 text-left">Painel Admin</span>
                     <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${adminOpen ? "rotate-0" : "-rotate-90"}`} />
                   </button>
                   {(adminOpen || isAdminActive) && (
                     <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                       <NavLink to="/usuarios" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                        <Users className="h-4 w-4" /><span>Usuários</span>
+                        <Users className="h-4 w-4" style={{ color: "hsl(280 70% 65%)" }} /><span>Usuários</span>
                       </NavLink>
                       <NavLink to="/integracoes" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                        <Plug className="h-4 w-4" /><span>Integrações</span>
+                        <Plug className="h-4 w-4" style={{ color: "hsl(38 92% 50%)" }} /><span>Integrações</span>
                       </NavLink>
                     </div>
                   )}
@@ -337,7 +377,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             </p>
           )}
           <nav className="flex flex-col gap-0.5">
-            <SidebarNavItem to="/suporte" icon={HelpCircle} label="Ajuda" />
+            <SidebarNavItem to="/suporte" icon={HelpCircle} label="Ajuda" iconColor="hsl(200 50% 70%)" />
           </nav>
         </div>
       </SidebarContent>

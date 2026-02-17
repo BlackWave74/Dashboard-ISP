@@ -7,52 +7,28 @@ import { usePageSEO } from "@/hooks/usePageSEO";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 
-// Simplified Brazil state boundaries for a more realistic map
-const BRAZIL_STATES: { id: string; path: string }[] = [
-  // Norte
-  { id: "AM", path: "M120,80 L180,60 L220,70 L240,90 L230,130 L200,150 L160,140 L130,120 Z" },
-  { id: "PA", path: "M220,70 L290,55 L330,75 L340,110 L310,140 L270,145 L240,130 L230,130 L240,90 Z" },
-  { id: "RR", path: "M160,30 L200,25 L220,50 L200,60 L180,60 L160,50 Z" },
-  { id: "AP", path: "M290,30 L320,25 L335,45 L330,65 L310,60 L290,55 Z" },
-  { id: "TO", path: "M270,145 L300,140 L310,140 L310,200 L290,220 L270,210 L265,180 Z" },
-  { id: "RO", path: "M160,140 L200,150 L210,170 L200,195 L170,195 L150,175 Z" },
-  { id: "AC", path: "M100,140 L130,120 L160,140 L150,175 L120,175 L100,160 Z" },
-  // Nordeste
-  { id: "MA", path: "M310,100 L340,110 L360,100 L370,120 L350,150 L320,155 L310,140 Z" },
-  { id: "PI", path: "M320,155 L350,150 L360,160 L355,200 L330,210 L315,195 Z" },
-  { id: "CE", path: "M360,100 L390,95 L400,115 L390,140 L370,145 L360,130 L360,120 Z" },
-  { id: "RN", path: "M390,95 L415,100 L410,115 L400,115 Z" },
-  { id: "PB", path: "M390,120 L415,118 L410,135 L395,135 Z" },
-  { id: "PE", path: "M370,145 L415,140 L410,158 L380,160 L360,160 Z" },
-  { id: "AL", path: "M395,160 L415,158 L412,172 L398,170 Z" },
-  { id: "SE", path: "M390,172 L410,172 L408,185 L392,182 Z" },
-  { id: "BA", path: "M315,195 L355,200 L380,190 L395,200 L400,230 L380,270 L350,290 L320,280 L300,250 L290,220 Z" },
-  // Centro-Oeste
-  { id: "MT", path: "M170,195 L200,195 L230,180 L265,180 L270,210 L260,250 L230,265 L195,260 L175,235 Z" },
-  { id: "MS", path: "M195,260 L230,265 L240,290 L230,320 L205,325 L185,305 L180,280 Z" },
-  { id: "GO", path: "M260,250 L290,220 L300,250 L310,270 L300,295 L275,305 L255,295 L240,290 L245,270 Z" },
-  { id: "DF", path: "M290,260 L300,258 L302,268 L292,268 Z" },
-  // Sudeste
-  { id: "MG", path: "M300,250 L320,280 L350,290 L375,300 L370,330 L340,340 L310,330 L290,320 L275,305 L300,295 Z" },
-  { id: "ES", path: "M375,300 L395,305 L390,330 L370,330 Z" },
-  { id: "RJ", path: "M340,340 L370,330 L385,340 L375,355 L350,355 Z" },
-  { id: "SP", path: "M240,290 L275,305 L310,330 L340,340 L330,360 L295,370 L265,355 L240,335 L230,320 Z" },
-  // Sul
-  { id: "PR", path: "M230,320 L265,355 L275,375 L250,390 L225,385 L210,365 L205,340 Z" },
-  { id: "SC", path: "M250,390 L275,375 L285,395 L265,410 L245,405 Z" },
-  { id: "RS", path: "M225,385 L250,390 L265,410 L260,440 L235,455 L210,445 L200,420 L210,400 Z" },
+// More realistic Brazil outline path
+const BRAZIL_OUTLINE = "M290,25 L310,20 L330,25 L340,45 L350,60 L370,70 L395,65 L420,70 L430,85 L420,100 L430,120 L420,140 L430,155 L420,170 L415,185 L400,200 L395,220 L400,240 L390,260 L380,280 L375,300 L385,320 L380,340 L370,350 L350,360 L330,370 L300,380 L275,385 L260,420 L250,445 L235,460 L215,455 L200,435 L205,410 L215,395 L210,380 L200,360 L195,340 L190,315 L175,290 L160,265 L155,240 L140,215 L135,195 L120,180 L100,170 L85,155 L90,135 L110,120 L140,100 L155,75 L170,55 L185,40 L210,30 L240,25 L260,22 Z";
+
+// Brazilian state approximate centers for labels
+const BRAZIL_REGIONS = [
+  { id: "N", path: "M140,50 L200,35 L250,30 L290,25 L340,45 L345,60 L340,85 L310,100 L280,110 L250,105 L220,95 L195,100 L170,110 L145,100 L120,120 L100,130 L90,110 L110,80 L140,60 Z", label: "Norte" },
+  { id: "NE", path: "M310,100 L340,85 L370,70 L395,65 L420,70 L430,85 L420,100 L430,120 L420,140 L430,155 L420,170 L415,185 L400,200 L395,220 L380,230 L350,240 L320,230 L300,210 L290,180 L280,150 L280,125 Z", label: "Nordeste" },
+  { id: "CO", path: "M195,140 L250,130 L280,140 L300,160 L300,210 L290,230 L270,245 L250,260 L230,270 L210,260 L195,240 L180,220 L170,195 L175,165 Z", label: "Centro-Oeste" },
+  { id: "SE", path: "M250,260 L290,250 L320,260 L350,270 L380,280 L385,310 L380,335 L360,350 L340,360 L310,365 L280,360 L255,345 L240,325 L230,300 L235,280 Z", label: "Sudeste" },
+  { id: "S", path: "M230,350 L260,345 L280,365 L275,390 L265,420 L255,445 L235,460 L215,450 L200,430 L205,405 L210,385 L200,365 L210,355 Z", label: "Sul" },
 ];
 
 const STATUS_CONFIG = {
-  active: { color: "hsl(160 84% 39%)", label: "Ativo", badge: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-  warning: { color: "hsl(38 92% 50%)", label: "Atenção", badge: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-  inactive: { color: "hsl(0 84% 60%)", label: "Inativo", badge: "bg-red-500/20 text-red-400 border-red-500/30" },
+  active: { color: "hsl(160 84% 39%)", label: "Ativo", badge: "bg-emerald-500/15 text-emerald-400" },
+  warning: { color: "hsl(38 92% 50%)", label: "Atenção", badge: "bg-amber-500/15 text-amber-400" },
+  inactive: { color: "hsl(0 84% 60%)", label: "Inativo", badge: "bg-red-500/15 text-red-400" },
 };
 
 function toSvg(lat: number, lng: number) {
   const minLat = -34, maxLat = 6, minLng = -75, maxLng = -33;
-  const x = ((lng - minLng) / (maxLng - minLng)) * 320 + 90;
-  const y = ((maxLat - lat) / (maxLat - minLat)) * 440 + 15;
+  const x = ((lng - minLng) / (maxLng - minLng)) * 350 + 70;
+  const y = ((maxLat - lat) / (maxLat - minLat)) * 450 + 10;
   return { x, y };
 }
 
@@ -119,16 +95,16 @@ function MapDot({ client, index, selected, onSelect }: {
         fill="none"
         stroke={config.color}
         strokeWidth={1}
-        opacity={0.25}
-        animate={{ r: selected ? [18, 25, 18] : [12, 17, 12], opacity: [0.25, 0.05, 0.25] }}
+        opacity={0.3}
+        animate={{ r: selected ? [18, 28, 18] : [12, 18, 12], opacity: [0.3, 0.05, 0.3] }}
         transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
       />
       {/* Inner glow */}
-      <circle cx={x} cy={y} r={selected ? 10 : 7} fill={config.color} fillOpacity={0.08} />
+      <circle cx={x} cy={y} r={selected ? 12 : 8} fill={config.color} fillOpacity={0.06} />
       {/* Main dot */}
       <motion.circle
         cx={x} cy={y}
-        r={selected ? 5 : 3.5}
+        r={selected ? 5.5 : 4}
         fill={config.color}
         stroke="hsl(222 47% 5%)"
         strokeWidth={1.5}
@@ -138,12 +114,12 @@ function MapDot({ client, index, selected, onSelect }: {
       {/* Label on select */}
       {selected && (
         <motion.foreignObject
-          x={x - 70} y={y - 38} width={140} height={30}
-          initial={{ opacity: 0, y: y - 28 }}
-          animate={{ opacity: 1, y: y - 38 }}
+          x={x - 75} y={y - 42} width={150} height={34}
+          initial={{ opacity: 0, y: y - 30 }}
+          animate={{ opacity: 1, y: y - 42 }}
         >
           <div className="flex items-center justify-center">
-            <span className="rounded-lg bg-card/95 border border-border/30 px-2.5 py-1 text-[10px] font-semibold text-foreground backdrop-blur-md text-center truncate max-w-[130px] shadow-lg shadow-black/40">
+            <span className="rounded-lg px-3 py-1.5 text-[10px] font-bold text-foreground backdrop-blur-xl text-center truncate max-w-[140px] shadow-xl" style={{ background: "hsl(222 40% 8% / 0.95)", border: "1px solid hsl(234 89% 64% / 0.15)" }}>
               {client.name} • {client.tasks} tarefas
             </span>
           </div>
@@ -182,26 +158,27 @@ export default function MapaClientes() {
         background: "linear-gradient(180deg, hsl(270 60% 10%) 0%, hsl(250 50% 8%) 25%, hsl(234 45% 7%) 50%, hsl(260 40% 9%) 75%, hsl(234 45% 6%) 100%)",
       }} />
       <div className="pointer-events-none absolute top-[20%] left-[-5%] h-[500px] w-[500px] rounded-full opacity-12 blur-[140px]" style={{ background: "radial-gradient(circle, hsl(160 84% 39%), transparent 70%)" }} />
-      <div className="pointer-events-none absolute bottom-[10%] right-[-5%] h-[400px] w-[400px] rounded-full opacity-8 blur-[120px]" style={{ background: "radial-gradient(circle, hsl(234 89% 50%), transparent 70%)" }} />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-6 px-6 pt-6 md:px-10 pb-16">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <MapPin className="h-6 w-6 text-primary" />
-              Mapa de Clientes
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">Distribuição geográfica dos projetos ativos</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15">
+              <MapPin className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Mapa de Clientes</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Distribuição geográfica dos projetos ativos</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar projeto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-56 bg-card/50 border-border/20" />
+              <Input placeholder="Buscar projeto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-56 bg-card/50 border-primary/10 focus:border-primary/30" />
             </div>
             <div className="flex gap-1.5">
               {(["all", "active", "warning", "inactive"] as const).map((s) => (
-                <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === s ? "bg-primary/20 text-primary border border-primary/30" : "bg-card/30 text-muted-foreground border border-border/15 hover:bg-card/60"}`}>
+                <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${statusFilter === s ? "bg-primary/15 text-primary ring-1 ring-primary/25" : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"}`}>
                   {s === "all" ? "Todos" : STATUS_CONFIG[s].label}
                 </button>
               ))}
@@ -218,8 +195,8 @@ export default function MapaClientes() {
             { icon: Users, label: "Tarefas", value: stats.tasks, color: "hsl(280 70% 55%)" },
           ].map((kpi, i) => (
             <motion.div key={kpi.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <div className="flex items-center gap-3 rounded-2xl bg-card/40 border border-border/15 backdrop-blur-xl p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${kpi.color}12` }}>
+              <div className="flex items-center gap-3 rounded-2xl bg-card/30 backdrop-blur-xl p-4" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${kpi.color}15` }}>
                   <kpi.icon className="h-5 w-5" style={{ color: kpi.color }} />
                 </div>
                 <div>
@@ -235,8 +212,8 @@ export default function MapaClientes() {
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           {/* Map */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
-            <div className="rounded-2xl bg-card/25 border border-border/15 backdrop-blur-xl overflow-hidden p-5">
-              <svg viewBox="0 0 500 480" className="w-full h-auto" style={{ maxHeight: "68vh" }}>
+            <div className="rounded-2xl bg-card/20 backdrop-blur-xl overflow-hidden p-6" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
+              <svg viewBox="0 0 520 500" className="w-full h-auto" style={{ maxHeight: "68vh" }}>
                 <defs>
                   <filter id="mapGlow">
                     <feGaussianBlur stdDeviation="3" result="blur" />
@@ -245,26 +222,42 @@ export default function MapaClientes() {
                       <feMergeNode in="SourceGraphic" />
                     </feMerge>
                   </filter>
-                  <linearGradient id="stateGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="hsl(234 89% 64%)" stopOpacity="0.08" />
-                    <stop offset="100%" stopColor="hsl(280 70% 55%)" stopOpacity="0.03" />
-                  </linearGradient>
+                  <radialGradient id="mapBg" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="hsl(234 89% 64%)" stopOpacity="0.04" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </radialGradient>
                 </defs>
 
-                {/* State boundaries */}
-                {BRAZIL_STATES.map((state, i) => (
+                {/* Background glow */}
+                <circle cx="260" cy="250" r="200" fill="url(#mapBg)" />
+
+                {/* Region fills */}
+                {BRAZIL_REGIONS.map((region, i) => (
                   <motion.path
-                    key={state.id}
-                    d={state.path}
-                    fill="url(#stateGrad)"
+                    key={region.id}
+                    d={region.path}
+                    fill="hsl(234 89% 64%)"
+                    fillOpacity="0.04"
                     stroke="hsl(234 89% 64%)"
-                    strokeWidth="0.6"
-                    strokeOpacity="0.2"
+                    strokeWidth="0.8"
+                    strokeOpacity="0.15"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 + i * 0.03, duration: 0.5 }}
+                    transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }}
                   />
                 ))}
+
+                {/* Main outline */}
+                <motion.path
+                  d={BRAZIL_OUTLINE}
+                  fill="none"
+                  stroke="hsl(234 89% 64%)"
+                  strokeWidth="1.2"
+                  strokeOpacity="0.25"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
+                />
 
                 {/* Connection lines */}
                 {filtered.slice(0, -1).map((c, i) => {
@@ -272,15 +265,15 @@ export default function MapaClientes() {
                   const from = toSvg(c.lat, c.lng);
                   const to = toSvg(next.lat, next.lng);
                   const mx = (from.x + to.x) / 2;
-                  const my = (from.y + to.y) / 2 - 15;
+                  const my = (from.y + to.y) / 2 - 20;
                   return (
                     <motion.path
                       key={`line-${c.id}-${next.id}`}
                       d={`M${from.x},${from.y} Q${mx},${my} ${to.x},${to.y}`}
                       fill="none"
                       stroke="hsl(234 89% 64%)"
-                      strokeOpacity="0.1"
-                      strokeWidth="0.7"
+                      strokeOpacity="0.08"
+                      strokeWidth="0.8"
                       strokeDasharray="4 3"
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
@@ -299,7 +292,7 @@ export default function MapaClientes() {
 
           {/* Client List */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground px-1">Projetos ({filtered.length})</h2>
+            <h2 className="text-sm font-bold text-foreground px-1">Projetos ({filtered.length})</h2>
             <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-1 scrollbar-thin">
               <AnimatePresence>
                 {filtered.length === 0 ? (
@@ -318,11 +311,12 @@ export default function MapaClientes() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => setSelectedId(selectedId === c.id ? null : c.id)}
-                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${selectedId === c.id ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/10" : "bg-card/25 border-border/15 hover:bg-card/50"}`}
+                      className={`cursor-pointer rounded-xl p-3.5 transition-all ${selectedId === c.id ? "bg-primary/10 ring-1 ring-primary/25 shadow-lg shadow-primary/10" : "bg-card/20 hover:bg-card/40"}`}
+                      style={{ border: "1px solid hsl(234 89% 64% / 0.06)" }}
                     >
                       <div className="flex items-start justify-between">
                         <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
-                        <Badge variant="outline" className={`text-[10px] shrink-0 ${config.badge}`}>{config.label}</Badge>
+                        <Badge variant="outline" className={`text-[10px] shrink-0 border-0 ${config.badge}`}>{config.label}</Badge>
                       </div>
                       <div className="flex items-center gap-4 mt-2">
                         <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{c.tasks}</span> tarefas</span>

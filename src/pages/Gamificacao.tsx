@@ -217,16 +217,17 @@ export default function Gamificacao() {
                   <p className="text-xs text-primary font-semibold">{person.points} pts</p>
                   {/* Podium bar */}
                   <motion.div
-                    className={`${heights[podiumIdx]} w-28 mt-3 rounded-t-xl flex flex-col items-center justify-start pt-4 border border-border/15`}
+                    className={`${heights[podiumIdx]} w-28 mt-3 rounded-t-xl flex flex-col items-center justify-start pt-4`}
                     style={{
                       background: isFirst
                         ? "linear-gradient(180deg, hsl(45 90% 55% / 0.12), hsl(45 90% 55% / 0.02))"
                         : "linear-gradient(180deg, hsl(234 89% 64% / 0.1), hsl(234 89% 64% / 0.02))",
+                      border: "1px solid hsl(234 89% 64% / 0.08)",
+                      transformOrigin: "bottom",
                     }}
                     initial={{ scaleY: 0 }}
                     animate={{ scaleY: 1 }}
                     transition={{ delay: 0.8 + podiumIdx * 0.15, duration: 0.6, ease: "backOut" }}
-                    style-origin="bottom"
                   >
                     {medals[podiumIdx]}
                     <span className="text-2xl font-black text-foreground/15 mt-2">#{podiumIdx + 1}</span>
@@ -239,7 +240,7 @@ export default function Gamificacao() {
 
         {/* Badges Legend */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-          <div className="rounded-2xl bg-card/25 border border-border/15 backdrop-blur-xl p-5">
+          <div className="rounded-2xl bg-card/25 backdrop-blur-xl p-5" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <Award className="h-4 w-4 text-primary" />
               Conquistas Disponíveis
@@ -252,7 +253,7 @@ export default function Gamificacao() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.9 + i * 0.08 }}
                   whileHover={{ scale: 1.05 }}
-                  className="flex items-center gap-2 rounded-xl bg-card/25 border border-border/10 p-3 cursor-default"
+                  className="flex items-center gap-2 rounded-xl bg-card/25 p-3 cursor-default" style={{ border: "1px solid hsl(234 89% 64% / 0.06)" }}
                 >
                   <motion.div
                     whileHover={{ rotate: 15 }}
@@ -272,7 +273,7 @@ export default function Gamificacao() {
 
         {/* Full Ranking */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0 }}>
-          <div className="rounded-2xl bg-card/25 border border-border/15 backdrop-blur-xl p-5">
+          <div className="rounded-2xl bg-card/25 backdrop-blur-xl p-5" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
             <h3 className="text-sm font-semibold text-foreground mb-4">Ranking Completo</h3>
             <div className="space-y-2">
               {ranking.map((person, i) => {
@@ -285,7 +286,7 @@ export default function Gamificacao() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 1.1 + i * 0.04 }}
                     whileHover={{ x: 4, backgroundColor: "hsl(222 40% 8% / 0.6)" }}
-                    className="flex items-center gap-4 rounded-xl bg-card/15 border border-border/10 p-3 transition-all cursor-default"
+                    className="flex items-center gap-4 rounded-xl bg-card/15 p-3 transition-all cursor-default" style={{ border: "1px solid hsl(234 89% 64% / 0.06)" }}
                   >
                     <motion.span
                       className={`text-lg font-black w-8 text-center ${i < 3 ? "text-amber-400" : "text-muted-foreground"}`}
