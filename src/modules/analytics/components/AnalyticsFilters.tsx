@@ -121,7 +121,7 @@ function CustomSelect({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Buscar..."
-                    className="h-7 w-full rounded-lg border border-white/[0.08] bg-white/[0.04] pl-7 pr-2 text-[11px] text-white/70 outline-none focus:border-[hsl(262_83%_58%/0.4)] placeholder:text-white/25"
+                    className="h-8 w-full rounded-full border border-white/[0.08] bg-white/[0.04] pl-7 pr-3 text-[11px] text-white/70 outline-none focus:border-[hsl(262_83%_58%/0.4)] placeholder:text-white/25"
                   />
                 </div>
               </div>
