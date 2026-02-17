@@ -125,7 +125,11 @@ function ToggleButton() {
   );
 }
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  notificationBell?: React.ReactNode;
+};
+
+export function AppSidebar({ notificationBell }: AppSidebarProps) {
   const { session, logout, canAccess } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -192,7 +196,7 @@ export function AppSidebar() {
         background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
       }}
     >
-      {/* Logo + toggle */}
+      {/* Logo + notifications + toggle */}
       <div className={`flex items-center ${collapsed ? "justify-center px-1 pt-4 pb-1" : "justify-between px-4 pt-5 pb-1"}`}>
         {!collapsed && (
           <img
@@ -201,7 +205,10 @@ export function AppSidebar() {
             className="h-9 w-auto object-contain transition-all duration-500 hover:brightness-125 hover:drop-shadow-[0_0_8px_hsl(234_89%_64%/0.5)]"
           />
         )}
-        <ToggleButton />
+        <div className="flex items-center gap-1">
+          {notificationBell}
+          <ToggleButton />
+        </div>
       </div>
 
       <SidebarContent className={`${collapsed ? "px-1" : "px-3"} pt-5`}>

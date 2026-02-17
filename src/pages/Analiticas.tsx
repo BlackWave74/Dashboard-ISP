@@ -5,7 +5,7 @@ import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, FileDown } from "lucide-react";
 import { motion } from "framer-motion";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import DataErrorCard from "@/components/ui/DataErrorCard";
@@ -19,6 +19,7 @@ import AnalyticsProjectDrawer from "@/modules/analytics/components/AnalyticsProj
 import type { AnalyticsFilterState } from "@/modules/analytics/components/AnalyticsFilters";
 import type { ProjectAnalytics } from "@/modules/analytics/types";
 import { usePageSEO } from "@/hooks/usePageSEO";
+import { exportAnalyticsPDF } from "@/lib/exportPdf";
 
 const PERIOD_DAYS: Record<AnalyticsFilterState["period"], number> = {
   "30d": 30,
@@ -246,6 +247,36 @@ export default function AnaliticasPage() {
               <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
               {formatLastUpdated(combinedLastUpdated)}
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const projectRows = projects.map((p) => ({
+                  name: p.projectName,
+                  totalTasks: p.tasksDone + p.tasksPending + p.tasksOverdue,
+                  doneTasks: p.tasksDone,
+                  overdueTasks: p.tasksOverdue,
+                  hours: p.hoursUsed,
+                }));
+                exportAnalyticsPDF({
+                  userName: effectiveUser,
+                  period: `Últimos ${periodDays} dias`,
+                  projects: projectRows,
+                  totals: {
+                    projects: projects.length,
+                    tasks: userTaskCount,
+                    done: totalDone,
+                    overdue: totalOverdue,
+                    hours: periodHours > 0 ? periodHours : totalHours,
+                  },
+                });
+              }}
+              disabled={projects.length === 0}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-emerald-500/30 hover:text-emerald-400 disabled:opacity-40"
+              title="Exportar PDF"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              PDF
+            </button>
             <button
               type="button"
               onClick={() => { reloadTasks(); reloadTimes(); }}

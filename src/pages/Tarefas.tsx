@@ -29,6 +29,7 @@ import {
   TrendingUp,
   BarChart3,
   ChevronDown,
+  FileDown,
 } from "lucide-react";
 import {
   deadlineColor,
@@ -39,6 +40,8 @@ import {
   normalizeTaskTitle,
   type TaskStatusKey,
 } from "@/modules/tasks/utils";
+import { STATUS_LABELS } from "@/modules/tasks/types";
+import { exportTasksPDF } from "@/lib/exportPdf";
 
 /* ─── Helpers (business logic preserved) ─── */
 
@@ -591,6 +594,36 @@ export default function TarefasPage() {
                 <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
                 {formatLastUpdated(combinedLastUpdated)}
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const rows = filteredTasks.map((t) => ({
+                    title: t.title,
+                    project: t.project,
+                    consultant: t.consultant,
+                    statusLabel: STATUS_LABELS[t.statusKey]?.label ?? "—",
+                    deadlineLabel: t.deadlineLabel,
+                    durationLabel: t.durationLabel,
+                  }));
+                  exportTasksPDF({
+                    tasks: rows,
+                    stats: {
+                      total: stats.total,
+                      done: stats.done,
+                      overdue: stats.overdue,
+                      pending: stats.pending,
+                      totalHours: `${totalHoursLabel}h`,
+                    },
+                    subtitle: session?.name ? `Gerado por ${session.name}` : undefined,
+                  });
+                }}
+                disabled={filteredTasks.length === 0}
+                className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-40 whitespace-nowrap"
+                title="Exportar PDF"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                PDF
+              </button>
               <button
                 type="button"
                 onClick={() => { reload(); reloadTimes(); }}
