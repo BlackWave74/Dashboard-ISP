@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { dateToLocalIso, formatIsoToPtBr } from "@/modules/tasks/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import {
   AreaChart,
@@ -63,15 +64,14 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
       const d = t.inserted_at ? new Date(String(t.inserted_at)) : null;
       if (!d || Number.isNaN(d.getTime())) return;
       if (cutoff && d < cutoff) return;
-      const key = d.toISOString().slice(0, 10);
+      const key = dateToLocalIso(d);
       daily[key] = (daily[key] ?? 0) + (t.seconds ?? 0) / 3600;
     });
 
     const sorted = Object.entries(daily)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, hours]) => {
-        const d = new Date(date);
-        const label = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const label = formatIsoToPtBr(date);
         return { date: label, hours: Math.round(hours * 10) / 10 };
       });
 

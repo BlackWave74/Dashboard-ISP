@@ -94,7 +94,7 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
               {/* Rows */}
               {visible.map((t, i) => {
                 const deadlineStr = t._deadline
-                  ? new Date(String(t._deadline)).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+                  ? (() => { const raw = String(t._deadline); const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/); if (m) { return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }); } return new Date(raw).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }); })()
                   : "—";
                 return (
                   <motion.div

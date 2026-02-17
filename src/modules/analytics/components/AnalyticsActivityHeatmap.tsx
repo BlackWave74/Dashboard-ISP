@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { dateToLocalIso, todayLocalIso, formatTimestampPtBr } from "@/modules/tasks/utils";
 import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
@@ -39,7 +40,7 @@ export default function AnalyticsActivityHeatmap({ times }: Props) {
       if (!ts) return;
       const d = new Date(String(ts));
       if (Number.isNaN(d.getTime())) return;
-      const key = d.toISOString().slice(0, 10);
+      const key = dateToLocalIso(d);
       dayMap.set(key, (dayMap.get(key) ?? 0) + (t.seconds ?? 0) / 3600);
     });
 
@@ -53,7 +54,7 @@ export default function AnalyticsActivityHeatmap({ times }: Props) {
       for (let d = 0; d < 7; d++) {
         const date = new Date(startDate);
         date.setDate(date.getDate() + w * 7 + d);
-        const key = date.toISOString().slice(0, 10);
+        const key = dateToLocalIso(date);
         const hours = dayMap.get(key) ?? 0;
         if (hours > 0) activeDays++;
         if (hours > maxH) {
@@ -68,7 +69,7 @@ export default function AnalyticsActivityHeatmap({ times }: Props) {
   }, [times]);
 
   const peakLabel = peakDay.date
-    ? new Date(peakDay.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+    ? formatTimestampPtBr(peakDay.date, { day: "2-digit", month: "short" })
     : "—";
 
   return (
@@ -112,7 +113,7 @@ export default function AnalyticsActivityHeatmap({ times }: Props) {
               const cell = grid[w * 7 + d];
               if (!cell) return null;
               const intensity = getIntensity(cell.hours);
-              const today = new Date().toISOString().slice(0, 10);
+              const today = todayLocalIso();
               const isToday = cell.date === today;
 
               return (
@@ -129,7 +130,7 @@ export default function AnalyticsActivityHeatmap({ times }: Props) {
                   />
                   {/* Tooltip */}
                   <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap rounded-md bg-black/90 px-2 py-1 text-[9px] text-white/80 shadow-lg">
-                    {cell.hours > 0 ? `${cell.hours.toFixed(1)}h` : "Sem atividade"} · {new Date(cell.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                    {cell.hours > 0 ? `${cell.hours.toFixed(1)}h` : "Sem atividade"} · {formatTimestampPtBr(cell.date, { day: "2-digit", month: "short" })}
                   </div>
                 </motion.div>
               );
