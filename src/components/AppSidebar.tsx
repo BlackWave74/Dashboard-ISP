@@ -15,6 +15,7 @@ import {
   MapPin,
   CalendarDays,
   Trophy,
+  Globe,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -28,7 +29,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabaseExt } from "@/lib/supabase";
 
-/** Set auth session on the shared client so storage/DB calls work */
 async function ensureSession(accessToken?: string, refreshToken?: string) {
   if (!accessToken || !refreshToken) return;
   const { data } = await supabaseExt.auth.getSession();
@@ -140,7 +140,6 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   const collapsed = state === "collapsed";
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  // Load avatar on mount
   useEffect(() => {
     if (!session?.accessToken) return;
     let cancelled = false;
@@ -157,21 +156,17 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
         if (!cancelled && !error && userData?.avatar_url) {
           setAvatarUrl(userData.avatar_url);
         }
-      } catch { /* ignore - non-critical */ }
+      } catch { /* ignore */ }
     };
     loadAvatar();
     return () => { cancelled = true; };
   }, [session?.accessToken, session?.refreshToken]);
 
   const [projectsOpen, setProjectsOpen] = useState(() => {
-    return ["/tarefas", "/analiticas"].some((p) =>
-      location.pathname.startsWith(p)
-    );
+    return ["/tarefas", "/analiticas", "/calendario"].some((p) => location.pathname.startsWith(p));
   });
   const [adminOpen, setAdminOpen] = useState(() => {
-    return ["/usuarios", "/integracoes"].some((p) =>
-      location.pathname.startsWith(p)
-    );
+    return ["/usuarios", "/integracoes"].some((p) => location.pathname.startsWith(p));
   });
 
   const handleLogout = () => {
@@ -179,17 +174,11 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
     navigate("/login");
   };
 
-  const isProjectsActive = ["/tarefas", "/analiticas"].some((p) =>
-    location.pathname.startsWith(p)
-  );
-
-  const isAdminActive = ["/usuarios", "/integracoes"].some((p) =>
-    location.pathname.startsWith(p)
-  );
-
+  const isProjectsActive = ["/tarefas", "/analiticas", "/calendario"].some((p) => location.pathname.startsWith(p));
+  const isAdminActive = ["/usuarios", "/integracoes"].some((p) => location.pathname.startsWith(p));
   const showAdminSection = canAccess("usuarios");
 
-   return (
+  return (
     <Sidebar
       collapsible="icon"
       className="!border-r-0 ml-0 shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)]"
@@ -215,22 +204,32 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
       </div>
 
       <SidebarContent className={`${collapsed ? "px-1" : "px-3"} pt-5`}>
-        {/* MENU section */}
+        {/* PRINCIPAL */}
         <div className="mb-5">
           {!collapsed && (
             <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
-              Menu
+              Principal
             </p>
           )}
           <nav className="flex flex-col gap-0.5">
             <SidebarNavItem to="/" icon={Home} label="Página Inicial" end />
+          </nav>
+        </div>
 
-            {/* Projetos collapsible — only show if user can access tarefas or analiticas */}
-            {(canAccess("tarefas") || canAccess("analiticas")) && (
-              collapsed ? (
+        {/* PROJETOS & TAREFAS */}
+        {(canAccess("tarefas") || canAccess("analiticas")) && (
+          <div className="mb-5">
+            {!collapsed && (
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
+                Projetos & Tarefas
+              </p>
+            )}
+            <nav className="flex flex-col gap-0.5">
+              {collapsed ? (
                 <>
                   {canAccess("tarefas") && <SidebarNavItem to="/tarefas" icon={ListTodo} label="Tarefas" />}
                   {canAccess("analiticas") && <SidebarNavItem to="/analiticas" icon={BarChart3} label="Analíticas" />}
+                  <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" />
                 </>
               ) : (
                 <>
@@ -245,48 +244,48 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                     <FolderKanban className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
                     <span className="flex-1 text-left">Projetos</span>
                     <ChevronDown
-                      className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${
-                        projectsOpen ? "rotate-0" : "-rotate-90"
-                      }`}
+                      className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${projectsOpen ? "rotate-0" : "-rotate-90"}`}
                     />
                   </button>
 
                   {(projectsOpen || isProjectsActive) && (
                     <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                       {canAccess("tarefas") && (
-                        <NavLink
-                          to="/tarefas"
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                          activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
-                        >
-                          <ListTodo className="h-4 w-4" />
-                          <span>Tarefas</span>
+                        <NavLink to="/tarefas" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                          <ListTodo className="h-4 w-4" /><span>Tarefas</span>
                         </NavLink>
                       )}
                       {canAccess("analiticas") && (
-                        <NavLink
-                          to="/analiticas"
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                          activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
-                        >
-                          <BarChart3 className="h-4 w-4" />
-                          <span>Analíticas</span>
+                        <NavLink to="/analiticas" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                          <BarChart3 className="h-4 w-4" /><span>Analíticas</span>
                         </NavLink>
                       )}
+                      <NavLink to="/calendario" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                        <CalendarDays className="h-4 w-4" /><span>Calendário</span>
+                      </NavLink>
                     </div>
                   )}
                 </>
-              )
-            )}
+              )}
+            </nav>
+          </div>
+        )}
 
+        {/* FERRAMENTAS */}
+        <div className="mb-5">
+          {!collapsed && (
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
+              Ferramentas
+            </p>
+          )}
+          <nav className="flex flex-col gap-0.5">
             {canAccess("comodato") && <SidebarNavItem to="/comodato" icon={Package} label="Comodato" />}
-            <SidebarNavItem to="/mapa" icon={MapPin} label="Mapa de Clientes" />
-            <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" />
+            <SidebarNavItem to="/mapa" icon={Globe} label="Mapa de Clientes" />
             <SidebarNavItem to="/gamificacao" icon={Trophy} label="Ranking" />
           </nav>
         </div>
 
-        {/* ADMIN section — only for admins */}
+        {/* ADMINISTRAÇÃO */}
         {showAdminSection && (
           <div className="mb-5">
             {!collapsed && (
@@ -312,30 +311,15 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                   >
                     <Shield className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
                     <span className="flex-1 text-left">Painel Admin</span>
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${
-                        adminOpen ? "rotate-0" : "-rotate-90"
-                      }`}
-                    />
+                    <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${adminOpen ? "rotate-0" : "-rotate-90"}`} />
                   </button>
-
                   {(adminOpen || isAdminActive) && (
                     <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
-                      <NavLink
-                        to="/usuarios"
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                        activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>Usuários</span>
+                      <NavLink to="/usuarios" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                        <Users className="h-4 w-4" /><span>Usuários</span>
                       </NavLink>
-                      <NavLink
-                        to="/integracoes"
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white"
-                        activeClassName="!text-white !bg-white/[0.1] !rounded-xl"
-                      >
-                        <Plug className="h-4 w-4" />
-                        <span>Integrações</span>
+                      <NavLink to="/integracoes" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                        <Plug className="h-4 w-4" /><span>Integrações</span>
                       </NavLink>
                     </div>
                   )}
@@ -345,7 +329,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
           </div>
         )}
 
-        {/* SUPPORT section */}
+        {/* SUPORTE */}
         <div>
           {!collapsed && (
             <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
@@ -360,29 +344,18 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
 
       <SidebarFooter className={`!border-t-0 ${collapsed ? "px-1" : "px-3"} pb-4 pt-2 space-y-2`}>
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <UserAvatar
-          name={session?.name}
-          email={session?.email}
-          collapsed={collapsed}
-          avatarUrl={avatarUrl}
-        />
+        <UserAvatar name={session?.name} email={session?.email} collapsed={collapsed} avatarUrl={avatarUrl} />
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center justify-center rounded-xl py-2 text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400"
-              >
+              <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-xl py-2 text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400">
                 <LogOut className="h-[18px] w-[18px]" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Sair</TooltipContent>
           </Tooltip>
         ) : (
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400"
-          >
+          <button onClick={handleLogout} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400">
             <LogOut className="h-[18px] w-[18px]" />
             Sair
           </button>
