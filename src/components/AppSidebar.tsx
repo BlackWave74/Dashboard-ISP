@@ -23,12 +23,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseExt } from "@/lib/supabase";
 
-const supabaseExt = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/** Set auth session on the standalone client so storage/DB calls work */
+/** Set auth session on the shared client so storage/DB calls work */
 async function ensureSession(accessToken?: string, refreshToken?: string) {
   if (!accessToken || !refreshToken) return;
   const { data } = await supabaseExt.auth.getSession();
