@@ -80,9 +80,9 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
       <button
         ref={buttonRef}
         onClick={() => setOpen((o) => !o)}
-        className={`relative flex items-center justify-center rounded-xl transition-all duration-200 hover:bg-white/[0.08] ${
-          collapsed ? "h-9 w-9" : "h-9 w-9"
-        } ${open ? "bg-white/[0.1] text-white" : "text-white/50 hover:text-white/80"}`}
+        className={`relative flex items-center justify-center rounded-xl transition-all duration-200 hover:bg-white/[0.08] h-9 w-9 ${
+          open ? "bg-white/[0.1] text-white" : "text-white/50 hover:text-white/80"
+        }`}
         aria-label="Notificações"
       >
         <Bell className="h-[18px] w-[18px]" />
@@ -108,9 +108,11 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute left-full top-0 ml-3 z-50 w-[360px] max-h-[480px] overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/60"
+            className="fixed z-[100] w-[360px] max-h-[480px] overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/60"
             style={{
               background: "linear-gradient(160deg, hsl(234 50% 13%), hsl(260 45% 10%))",
+              top: buttonRef.current ? buttonRef.current.getBoundingClientRect().top : 0,
+              left: buttonRef.current ? buttonRef.current.getBoundingClientRect().right + 12 : 0,
             }}
           >
             {/* Header */}
