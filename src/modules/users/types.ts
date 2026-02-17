@@ -21,6 +21,8 @@ export const ALL_AREAS = [
   { value: "home", label: "Página Inicial" },
   { value: "tarefas", label: "Tarefas" },
   { value: "analiticas", label: "Analíticas" },
+  { value: "calendario", label: "Calendário" },
+  { value: "gamificacao", label: "Ranking" },
   { value: "comodato", label: "Comodato" },
   { value: "integracoes", label: "Integrações" },
   { value: "usuarios", label: "Usuários" },

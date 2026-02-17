@@ -46,7 +46,7 @@ const periodChips = [
   { value: "custom", label: "Período" },
 ];
 
-/* ── Custom dropdown (same style as analytics) ── */
+/* ── Custom dropdown with search/autocomplete ── */
 function CustomSelect({
   value,
   onChange,
@@ -63,26 +63,39 @@ function CustomSelect({
   mineSet?: Set<string>;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
   const selected = options.find((o) => o.value === value);
+
+  const filtered = search.trim()
+    ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
 
   // Sort: mine first if provided
   const sortedOptions = mineSet
-    ? [...options].sort((a, b) => {
+    ? [...filtered].sort((a, b) => {
         const aM = mineSet.has(a.value) ? 0 : 1;
         const bM = mineSet.has(b.value) ? 0 : 1;
         return aM - bM || a.label.localeCompare(b.label);
       })
-    : options;
+    : filtered;
 
   return (
     <div ref={ref} className="relative">
@@ -109,8 +122,24 @@ function CustomSelect({
             className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[220px] overflow-auto rounded-2xl border border-white/[0.08] p-1.5 shadow-xl shadow-black/40"
             style={{ background: "hsl(260 30% 12%)" }}
           >
+            {/* Search input */}
+            {options.length > 5 && (
+              <div className="sticky top-0 pb-1.5 mb-1 border-b border-white/[0.06]" style={{ background: "hsl(260 30% 12%)" }}>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-white/30" />
+                  <input
+                    ref={inputRef}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar..."
+                    className="h-7 w-full rounded-lg border border-white/[0.08] bg-white/[0.04] pl-7 pr-2 text-[11px] text-white/70 outline-none focus:border-[hsl(var(--task-purple)/0.4)] placeholder:text-white/25"
+                  />
+                </div>
+              </div>
+            )}
+
             <button
-              onClick={() => { onChange("all"); setOpen(false); }}
+              onClick={() => { onChange("all"); setOpen(false); setSearch(""); }}
               className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                 value === "all" || !value ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
               }`}
@@ -127,7 +156,7 @@ function CustomSelect({
                 {sortedOptions.filter(o => mineSet.has(o.value)).map((o) => (
                   <button
                     key={o.value}
-                    onClick={() => { onChange(o.value); setOpen(false); }}
+                    onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
                     className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                       value === o.value
                         ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
@@ -144,7 +173,7 @@ function CustomSelect({
                 {sortedOptions.filter(o => !mineSet.has(o.value)).map((o) => (
                   <button
                     key={o.value}
-                    onClick={() => { onChange(o.value); setOpen(false); }}
+                    onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
                     className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                       value === o.value
                         ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
@@ -158,10 +187,10 @@ function CustomSelect({
             )}
 
             {/* Normal list when no mineSet */}
-            {!mineSet && options.map((o) => (
+            {!mineSet && sortedOptions.map((o) => (
               <button
                 key={o.value}
-                onClick={() => { onChange(o.value); setOpen(false); }}
+                onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
                 className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
                   value === o.value
                     ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
@@ -171,6 +200,10 @@ function CustomSelect({
                 <span className="truncate">{o.label}</span>
               </button>
             ))}
+
+            {sortedOptions.length === 0 && search.trim() && (
+              <p className="px-3 py-4 text-center text-[11px] text-white/30">Nenhum resultado</p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

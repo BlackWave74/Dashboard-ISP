@@ -128,7 +128,7 @@ function ToggleButton() {
   );
 }
 
-type SectionKey = "gestao" | "calendario" | "automacao" | "admin";
+type SectionKey = "gestao" | "automacao" | "admin";
 
 type AppSidebarProps = {
   notificationBell?: React.ReactNode;
@@ -167,8 +167,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   // Determine which section is active based on route
   const getActiveSection = (): SectionKey | null => {
     const p = location.pathname;
-    if (["/tarefas", "/analiticas", "/gamificacao"].some((r) => p.startsWith(r))) return "gestao";
-    if (["/calendario"].some((r) => p.startsWith(r))) return "calendario";
+    if (["/tarefas", "/analiticas", "/gamificacao", "/calendario"].some((r) => p.startsWith(r))) return "gestao";
     if (["/comodato"].some((r) => p.startsWith(r))) return "automacao";
     if (["/usuarios", "/integracoes"].some((r) => p.startsWith(r))) return "admin";
     return null;
@@ -190,7 +189,6 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   }, []);
 
   const isGestaoActive = activeSection === "gestao";
-  const isCalendarioActive = activeSection === "calendario";
   const isAutomacaoActive = activeSection === "automacao";
   const isAdminActive = activeSection === "admin";
   const showAdminSection = canAccess("usuarios");
@@ -211,7 +209,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
       }}
     >
       {/* Logo + notifications + toggle */}
-      <div className={`flex items-center ${collapsed ? "justify-center px-1 pt-4 pb-1" : "justify-between px-4 pt-5 pb-1"}`}>
+      <div className={`flex ${collapsed ? "flex-col items-center gap-2 px-1 pt-4 pb-1" : "flex-row items-center justify-between px-4 pt-5 pb-1"}`}>
         {!collapsed && (
           <img
             src="/resouce/ISP-Consulte-v3-branco.png"
@@ -219,7 +217,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             className="h-9 w-auto object-contain transition-all duration-500 hover:brightness-125 hover:drop-shadow-[0_0_8px_hsl(234_89%_64%/0.5)]"
           />
         )}
-        <div className="flex items-center gap-1">
+        <div className={`flex ${collapsed ? "flex-col" : "flex-row"} items-center gap-1`}>
           {notificationBell}
           <ToggleButton />
         </div>
@@ -251,6 +249,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                 <>
                   {canAccess("tarefas") && <SidebarNavItem to="/tarefas" icon={ListTodo} label="Tarefas" iconColor="hsl(38 92% 50%)" />}
                   {canAccess("analiticas") && <SidebarNavItem to="/analiticas" icon={BarChart3} label="Analíticas" iconColor="hsl(280 70% 55%)" />}
+                  <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" iconColor="hsl(160 84% 39%)" />
                   <SidebarNavItem to="/gamificacao" icon={Trophy} label="Ranking" iconColor="hsl(45 90% 55%)" />
                 </>
               ) : (
@@ -282,6 +281,9 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                           <BarChart3 className="h-4 w-4" style={{ color: "hsl(280 70% 55%)" }} /><span>Analíticas</span>
                         </NavLink>
                       )}
+                      <NavLink to="/calendario" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                        <CalendarDays className="h-4 w-4" style={{ color: "hsl(160 84% 39%)" }} /><span>Calendário</span>
+                      </NavLink>
                       <NavLink to="/gamificacao" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
                         <Trophy className="h-4 w-4" style={{ color: "hsl(45 90% 55%)" }} /><span>Ranking</span>
                       </NavLink>
@@ -292,18 +294,6 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             </nav>
           </div>
         )}
-
-        {/* CALENDÁRIO */}
-        <div className="mb-5">
-          {!collapsed && (
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
-              Agenda
-            </p>
-          )}
-          <nav className="flex flex-col gap-0.5">
-            <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" iconColor="hsl(160 84% 39%)" />
-          </nav>
-        </div>
 
         {/* AUTOMAÇÃO — Comodato */}
         {canAccess("comodato") && (
