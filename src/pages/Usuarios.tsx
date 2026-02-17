@@ -11,6 +11,7 @@ import {
   Eye, EyeOff, FolderOpen, Clock, ChevronDown,
   MapPin, Key, Copy, Power, Check, Building2,
 } from "lucide-react";
+import { usePageSEO } from "@/hooks/usePageSEO";
 
 /* ─── Password generator ─── */
 function generatePassword(length = 14): string {
@@ -153,6 +154,7 @@ function MultiSelectDropdown({
 /* ─── Main Component ─── */
 /* ═══════════════════════════════════════════════ */
 export default function UsuariosPage() {
+  usePageSEO("/usuarios");
   const navigate = useNavigate();
   const { session, loadingSession } = useAuth();
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";

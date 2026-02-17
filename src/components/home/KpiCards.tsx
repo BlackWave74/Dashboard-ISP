@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Users, Clock, Package, ListTodo } from "lucide-react";
 
 const kpis = [
@@ -43,7 +44,7 @@ const kpis = [
   },
 ];
 
-export default function KpiCards() {
+function KpiCardsInner() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {kpis.map((k) => (
@@ -77,3 +78,5 @@ export default function KpiCards() {
     </div>
   );
 }
+
+export default memo(KpiCardsInner);

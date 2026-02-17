@@ -6,6 +6,7 @@ import {
   TrendingUp, PieChart, Activity,
 } from "lucide-react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { usePageSEO } from "@/hooks/usePageSEO";
 
 /* ---------- decorative data ---------- */
 const barData = [35, 55, 45, 75, 50, 65, 85, 55, 70, 80, 60, 90];
@@ -60,6 +61,7 @@ const Sparkline = () => {
 };
 
 export default function LoginPage() {
+  usePageSEO("/login");
   const navigate = useNavigate();
   const { login } = useAuth();
   const [rememberMe, setRememberMe] = useState(() => {

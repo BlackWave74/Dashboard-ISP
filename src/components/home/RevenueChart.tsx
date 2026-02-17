@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   AreaChart,
   Area,
@@ -23,7 +24,7 @@ const data = [
   { month: "Dez", atual: 8200, anterior: 6500 },
 ];
 
-export default function RevenueChart() {
+function RevenueChartInner() {
   return (
     <div className="rounded-xl border border-border/50 bg-card/80 p-5">
       <div className="mb-1 flex items-center justify-between">
@@ -103,3 +104,5 @@ export default function RevenueChart() {
     </div>
   );
 }
+
+export default memo(RevenueChartInner);

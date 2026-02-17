@@ -6,8 +6,10 @@ import { Package, Search, Send, Upload, Loader2 } from "lucide-react";
 import ComodatoImportTab from "@/modules/ixc/components/ComodatoImportTab";
 import ComodatoConsultaTab from "@/modules/ixc/components/ComodatoConsultaTab";
 import ComodatoLancarTab from "@/modules/ixc/components/ComodatoLancarTab";
+import { usePageSEO } from "@/hooks/usePageSEO";
 
 export default function ComodatoPage() {
+  usePageSEO("/comodato");
   const navigate = useNavigate();
   const { session, loadingSession, canAccess } = useAuth();
   const [activeTab, setActiveTab] = useState<"importar" | "consultar" | "lancar">("importar");

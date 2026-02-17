@@ -8,8 +8,10 @@ import { IntegrationWithState } from "@/modules/integrations/types/integration";
 import {
   Search, Plug, Zap, Globe, Shield, Sparkles,
 } from "lucide-react";
+import { usePageSEO } from "@/hooks/usePageSEO";
 
 export default function IntegracoesPage() {
+  usePageSEO("/integracoes");
   const { session } = useAuth();
   const isAdmin = session?.role === "admin";
 
