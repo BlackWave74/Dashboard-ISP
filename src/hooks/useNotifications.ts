@@ -41,7 +41,17 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
     const now = Date.now();
     const items: AppNotification[] = [];
 
-    tasks.forEach((task) => {
+    // Filter tasks relevant to the current user
+    const userTasks = userName
+      ? tasks.filter((task) => {
+          const consultant = (task.consultant || "").trim().toLowerCase();
+          const user = userName.trim().toLowerCase();
+          // Show tasks where user is the consultant, or tasks without consultant assigned
+          return !consultant || consultant === user || consultant.includes(user) || user.includes(consultant);
+        })
+      : tasks;
+
+    userTasks.forEach((task) => {
       const title = task.title || "Tarefa";
       const project = task.project || "";
 
@@ -73,7 +83,7 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
           id,
           type: "deadline_soon",
           title: "Prazo se aproximando",
-          message: `Você tem até ${dateStr} para completar "${title}".`,
+          message: `Tarefa "${title}" deve ser concluída até o dia ${dateStr}.`,
           timestamp: task.deadlineDate?.getTime() ?? now,
           read: readIds.has(id),
           projectName: project,
@@ -88,7 +98,7 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
     });
 
     return items.slice(0, 50); // cap at 50
-  }, [tasks, readIds]);
+  }, [tasks, readIds, userName]);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 

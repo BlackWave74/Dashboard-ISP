@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertTriangle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
@@ -19,11 +19,11 @@ function getTaskStatusKey(t: Record<string, any>): string {
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-const STATUS_COLORS: Record<string, { dot: string; bg: string; text: string }> = {
-  overdue: { dot: "bg-red-500", bg: "bg-red-500/10", text: "text-red-400" },
-  pending: { dot: "bg-amber-400", bg: "bg-amber-500/10", text: "text-amber-400" },
-  done: { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-400" },
-  unknown: { dot: "bg-muted-foreground", bg: "bg-muted/30", text: "text-muted-foreground" },
+const STATUS_COLORS: Record<string, { dot: string; bg: string; text: string; label: string }> = {
+  overdue: { dot: "bg-red-500", bg: "bg-red-500/10", text: "text-red-400", label: "Atrasada" },
+  pending: { dot: "bg-amber-400", bg: "bg-amber-500/10", text: "text-amber-400", label: "Pendente" },
+  done: { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-400", label: "Concluída" },
+  unknown: { dot: "bg-muted-foreground", bg: "bg-muted/30", text: "text-muted-foreground", label: "—" },
 };
 
 function getDaysInMonth(year: number, month: number) {
@@ -41,6 +41,7 @@ type CalendarTask = {
   project: string;
   statusKey: string;
   deadline: Date;
+  consultant: string;
 };
 
 export default function Calendario() {
@@ -63,6 +64,7 @@ export default function Calendario() {
           project: String(t.projects?.name ?? t.project_name ?? t.project ?? ""),
           statusKey: getTaskStatusKey(t),
           deadline,
+          consultant: String(t.responsible_name ?? t.consultant ?? t.owner ?? t.responsavel ?? ""),
         };
       })
       .filter(Boolean) as CalendarTask[];
@@ -115,12 +117,14 @@ export default function Calendario() {
       <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-6 px-6 pt-6 md:px-10 pb-16">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <CalendarDays className="h-6 w-6 text-primary" />
-              Calendário de Tarefas
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">Visualize suas tarefas organizadas por data de entrega</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+              <CalendarDays className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Calendário de Tarefas</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Visualize suas tarefas organizadas por data de entrega</p>
+            </div>
           </div>
           <div className="flex items-center gap-5">
             {[
@@ -129,35 +133,35 @@ export default function Calendario() {
               { label: "Concluídas", value: monthStats.done, color: "text-emerald-400" },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] text-muted-foreground font-medium">{s.label}</p>
               </div>
             ))}
           </div>
         </motion.div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           {/* Calendar Grid */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-            <div className="rounded-2xl bg-card/30 border border-border/20 backdrop-blur-xl p-5">
+            <div className="rounded-2xl bg-card/20 backdrop-blur-xl p-5" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
               {/* Month navigation */}
               <div className="flex items-center justify-between mb-5">
-                <Button variant="ghost" size="icon" onClick={prevMonth} className="text-muted-foreground hover:text-foreground"><ChevronLeft className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={prevMonth} className="text-muted-foreground hover:text-foreground rounded-xl"><ChevronLeft className="h-4 w-4" /></Button>
                 <h2 className="text-lg font-bold text-foreground">{MONTHS[month]} {year}</h2>
-                <Button variant="ghost" size="icon" onClick={nextMonth} className="text-muted-foreground hover:text-foreground"><ChevronRight className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={nextMonth} className="text-muted-foreground hover:text-foreground rounded-xl"><ChevronRight className="h-4 w-4" /></Button>
               </div>
 
               {/* Weekday headers */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {WEEKDAYS.map((d) => (
-                  <div key={d} className="text-center text-[11px] font-semibold text-muted-foreground py-1">{d}</div>
+                  <div key={d} className="text-center text-[11px] font-bold text-muted-foreground/60 py-1.5 uppercase tracking-wider">{d}</div>
                 ))}
               </div>
 
               {/* Days grid */}
               <div className="grid grid-cols-7 gap-1">
                 {days.map((day, i) => {
-                  if (!day) return <div key={i} />;
+                  if (!day) return <div key={i} className="min-h-[72px]" />;
                   const key = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
                   const dayTasks = tasksMap.get(key) ?? [];
                   const isToday = isSameDay(day, today);
@@ -167,33 +171,33 @@ export default function Calendario() {
                   return (
                     <motion.button
                       key={i}
-                      whileHover={{ scale: 1.06 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
                       onClick={() => setSelectedDay(day)}
                       className={`relative flex flex-col items-center justify-start rounded-xl p-1.5 min-h-[72px] transition-all ${
                         isSelected
-                          ? "bg-primary/15 ring-1 ring-primary/40 shadow-lg shadow-primary/10"
+                          ? "bg-primary/12 ring-1 ring-primary/30 shadow-lg shadow-primary/10"
                           : isToday
-                          ? "bg-primary/5 ring-1 ring-primary/20"
-                          : "bg-card/10 hover:bg-card/40"
+                          ? "bg-primary/5 ring-1 ring-primary/15"
+                          : "hover:bg-white/[0.03]"
                       }`}
                     >
-                      <span className={`text-sm font-semibold ${isToday ? "text-primary" : "text-foreground/80"}`}>
+                      <span className={`text-sm font-semibold ${isToday ? "text-primary" : isSelected ? "text-foreground" : "text-foreground/70"}`}>
                         {day.getDate()}
                       </span>
                       {dayTasks.length > 0 && (
-                        <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
+                        <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center">
                           {dayTasks.slice(0, 3).map((t, ti) => (
                             <motion.div
                               key={ti}
-                              className={`h-1.5 w-1.5 rounded-full ${STATUS_COLORS[t.statusKey]?.dot ?? STATUS_COLORS.unknown.dot}`}
+                              className={`h-2 w-2 rounded-full ${STATUS_COLORS[t.statusKey]?.dot ?? STATUS_COLORS.unknown.dot}`}
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               transition={{ delay: 0.3 + ti * 0.05 }}
                             />
                           ))}
                           {dayTasks.length > 3 && (
-                            <span className="text-[8px] text-muted-foreground ml-0.5">+{dayTasks.length - 3}</span>
+                            <span className="text-[9px] text-primary font-bold ml-0.5">+{dayTasks.length - 3}</span>
                           )}
                         </div>
                       )}
@@ -213,8 +217,8 @@ export default function Calendario() {
 
           {/* Day Detail */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-            <div className="rounded-2xl bg-card/30 border border-border/20 backdrop-blur-xl sticky top-6 p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-4">
+            <div className="rounded-2xl bg-card/20 backdrop-blur-xl sticky top-6 p-5" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
+              <h3 className="text-sm font-bold text-foreground mb-4">
                 {selectedDay
                   ? `${selectedDay.getDate()} de ${MONTHS[selectedDay.getMonth()]}`
                   : "Selecione um dia"}
@@ -232,7 +236,7 @@ export default function Calendario() {
                     <p className="text-sm">{selectedDay ? "Nenhuma tarefa neste dia" : "Clique em um dia"}</p>
                   </motion.div>
                 ) : (
-                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2 max-h-[60vh] overflow-y-auto">
+                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
                     {selectedTasks.map((t, i) => {
                       const colors = STATUS_COLORS[t.statusKey] ?? STATUS_COLORS.unknown;
                       const StatusIcon = t.statusKey === "done" ? CheckCircle2 : t.statusKey === "overdue" ? AlertTriangle : Clock;
@@ -242,13 +246,27 @@ export default function Calendario() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className={`rounded-xl p-3 ${colors.bg}`}
+                          className="rounded-xl p-3.5"
+                          style={{ background: "hsl(222 40% 8% / 0.5)", border: "1px solid hsl(234 89% 64% / 0.06)" }}
                         >
-                          <div className="flex items-start gap-2">
-                            <StatusIcon className={`h-4 w-4 mt-0.5 shrink-0 ${colors.text}`} />
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-foreground truncate">{t.title}</p>
-                              {t.project && <p className="text-xs text-muted-foreground mt-0.5">{t.project}</p>}
+                          <div className="flex items-start gap-2.5">
+                            <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${colors.bg}`}>
+                              <StatusIcon className={`h-3.5 w-3.5 ${colors.text}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[13px] font-semibold text-foreground line-clamp-2">{t.title}</p>
+                              {t.project && <p className="text-[11px] text-muted-foreground mt-0.5">{t.project}</p>}
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className={`text-[10px] font-semibold ${colors.text}`}>{colors.label}</span>
+                                {t.consultant && (
+                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                                    <User className="h-2.5 w-2.5" />{t.consultant}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground/50 mt-1">
+                                Prazo: {t.deadline.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                              </p>
                             </div>
                           </div>
                         </motion.div>
