@@ -2,6 +2,55 @@ export type TaskStatusKey = "done" | "pending" | "overdue" | "unknown";
 
 export const DEFAULT_DEADLINE_SOON_DAYS = 3;
 
+/**
+ * Returns today's date as "YYYY-MM-DD" in the user's local timezone.
+ * Avoids the UTC offset bug from `new Date().toISOString().slice(0,10)`.
+ */
+export const todayLocalIso = (): string => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
+/**
+ * Converts a Date object to "YYYY-MM-DD" using local timezone.
+ * Avoids the UTC offset bug from `.toISOString().slice(0,10)`.
+ */
+export const dateToLocalIso = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/**
+ * Formats an ISO date string "YYYY-MM-DD" to "DD/MM" or "DD/MM/YYYY"
+ * by parsing the string directly (no Date constructor = no timezone shift).
+ */
+export const formatIsoToPtBr = (iso: string, includeYear = false): string => {
+  const parts = String(iso).split("-");
+  if (parts.length < 3) return iso;
+  return includeYear ? `${parts[2]}/${parts[1]}/${parts[0]}` : `${parts[2]}/${parts[1]}`;
+};
+
+/**
+ * Safely formats a date-only ISO string or timestamp for display.
+ * Uses toLocaleDateString only on full timestamps (with time), avoiding
+ * the off-by-one bug that occurs with date-only strings like "2026-02-16".
+ */
+export const formatTimestampPtBr = (
+  raw: string | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string => {
+  if (!raw) return "—";
+  // If it's a date-only string (YYYY-MM-DD), parse directly
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, d] = raw.split("-");
+    const defaults = options ?? { day: "2-digit", month: "short" };
+    // Create at noon local to avoid any shift
+    return new Date(Number(y), Number(m) - 1, Number(d), 12).toLocaleDateString("pt-BR", defaults);
+  }
+  // Full timestamp — safe to use directly
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("pt-BR", options ?? { day: "2-digit", month: "short" });
+};
+
 export const parseDateValue = (value?: unknown): Date | null => {
   if (!value) return null;
   const parsed = new Date(String(value));

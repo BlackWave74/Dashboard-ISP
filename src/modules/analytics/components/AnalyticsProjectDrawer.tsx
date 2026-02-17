@@ -35,7 +35,7 @@ export default function AnalyticsProjectDrawer({ project, tasks, classifyTask, o
           title: String(t.title ?? t.nome ?? t.name ?? "Sem título"),
           responsible: String(t.responsible_name ?? t.responsavel ?? t.consultant ?? "—"),
           deadline: raw
-            ? new Date(String(raw)).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" })
+            ? (() => { const r = String(raw); const m = r.match(/^(\d{4})-(\d{2})-(\d{2})$/); if (m) { return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" }); } return new Date(r).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" }); })()
             : "—",
         });
       });

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { todayLocalIso } from "@/modules/tasks/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Loader2, AlertCircle, X, FileText, Hash, Box,
@@ -20,7 +21,7 @@ export default function ComodatoLancarTab({ auditUser }: { auditUser: string }) 
     descricao: "",
     valorUnitario: "0.10",
     mac: "",
-    data: new Date().toISOString().slice(0, 10),
+    data: todayLocalIso(),
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ComodatoLaunchResult | null>(null);
@@ -59,7 +60,7 @@ export default function ComodatoLancarTab({ auditUser }: { auditUser: string }) 
   };
 
   const resetForm = () => {
-    setForm({ contratoId: "", numeroSerie: "", numeroPatrimonial: "", descricao: "", valorUnitario: "0.10", mac: "", data: new Date().toISOString().slice(0, 10) });
+    setForm({ contratoId: "", numeroSerie: "", numeroPatrimonial: "", descricao: "", valorUnitario: "0.10", mac: "", data: todayLocalIso() });
     setResult(null);
     setError("");
   };
