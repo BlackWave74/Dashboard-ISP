@@ -57,7 +57,7 @@ function getLevelProgress(points: number) {
   return Math.min(100, Math.round((current / needed) * 100));
 }
 
-/** Animated floating trophy */
+/** Animated floating trophy — reduced glow intensity */
 function TrophyAnimation() {
   return (
     <motion.div
@@ -66,50 +66,44 @@ function TrophyAnimation() {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.2, type: "spring", stiffness: 120, damping: 10 }}
     >
-      {/* Outer glow rings */}
+      {/* Outer glow ring — softer */}
       <motion.div
         className="absolute rounded-full"
-        style={{ width: 140, height: 140, background: "radial-gradient(circle, hsl(45 90% 55% / 0.15), transparent 70%)" }}
-        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
+        style={{ width: 120, height: 120, background: "radial-gradient(circle, hsl(45 90% 55% / 0.08), transparent 70%)" }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.15, 0.4] }}
         transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute rounded-full"
-        style={{ width: 100, height: 100, background: "radial-gradient(circle, hsl(45 90% 55% / 0.25), transparent 70%)" }}
-        animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.3, 0.6] }}
-        transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", delay: 0.3 }}
       />
       {/* Floating trophy */}
       <motion.div
-        animate={{ y: [0, -8, 0] }}
+        animate={{ y: [0, -6, 0] }}
         transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
         className="relative z-10"
       >
         <motion.div
-          className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/20 to-yellow-600/10 border border-amber-400/20 backdrop-blur-sm"
-          animate={{ rotate: [0, 3, -3, 0] }}
+          className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/15 to-yellow-600/8 border border-amber-400/15 backdrop-blur-sm"
+          animate={{ rotate: [0, 2, -2, 0] }}
           transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
         >
-          <Trophy className="h-10 w-10 text-amber-400" />
+          <Trophy className="h-8 w-8 text-amber-400" />
         </motion.div>
-        {/* Sparkle particles */}
-        {[...Array(4)].map((_, i) => (
+        {/* Sparkle particles — fewer, softer */}
+        {[...Array(3)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute h-1.5 w-1.5 rounded-full bg-amber-400"
+            className="absolute h-1 w-1 rounded-full bg-amber-400/60"
             style={{
-              top: `${20 + Math.sin(i * 1.5) * 30}%`,
-              left: `${20 + Math.cos(i * 1.5) * 35}%`,
+              top: `${25 + Math.sin(i * 2) * 25}%`,
+              left: `${25 + Math.cos(i * 2) * 30}%`,
             }}
             animate={{
               scale: [0, 1, 0],
-              opacity: [0, 0.8, 0],
-              y: [0, -10, -20],
+              opacity: [0, 0.6, 0],
+              y: [0, -8, -16],
             }}
             transition={{
               repeat: Infinity,
-              duration: 2,
-              delay: i * 0.5,
+              duration: 2.5,
+              delay: i * 0.6,
               ease: "easeOut",
             }}
           />
@@ -160,74 +154,72 @@ export default function Gamificacao() {
       <div className="pointer-events-none absolute inset-0" style={{
         background: "linear-gradient(180deg, hsl(270 60% 10%) 0%, hsl(250 50% 8%) 25%, hsl(234 45% 7%) 50%, hsl(260 40% 9%) 75%, hsl(234 45% 6%) 100%)",
       }} />
-      <div className="pointer-events-none absolute top-[10%] left-[20%] h-[500px] w-[500px] rounded-full opacity-12 blur-[140px]" style={{ background: "radial-gradient(circle, hsl(45 90% 55%), transparent 70%)" }} />
-      <div className="pointer-events-none absolute bottom-[20%] right-[10%] h-[400px] w-[400px] rounded-full opacity-8 blur-[120px]" style={{ background: "radial-gradient(circle, hsl(280 70% 55%), transparent 70%)" }} />
+      <div className="pointer-events-none absolute top-[10%] left-[20%] h-[400px] w-[400px] rounded-full opacity-8 blur-[140px]" style={{ background: "radial-gradient(circle, hsl(45 90% 55%), transparent 70%)" }} />
+      <div className="pointer-events-none absolute bottom-[20%] right-[10%] h-[300px] w-[300px] rounded-full opacity-6 blur-[120px]" style={{ background: "radial-gradient(circle, hsl(280 70% 55%), transparent 70%)" }} />
 
       <div className="relative z-10 mx-auto w-full max-w-[1200px] space-y-8 px-6 pt-6 md:px-10 pb-16">
         {/* Header with trophy animation */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-3">
           <TrophyAnimation />
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-2xl font-bold text-foreground">
               Ranking de Produtividade
             </h1>
-            <p className="text-sm text-muted-foreground mt-2">Últimos 90 dias • Baseado em tarefas concluídas no prazo</p>
+            <p className="text-sm text-muted-foreground mt-1.5">Últimos 90 dias • Baseado em tarefas concluídas no prazo</p>
           </div>
         </motion.div>
 
-        {/* Podium */}
+        {/* Podium — fixed sizes, no oscillation */}
         {topThree.length > 0 && (
-          <div className="flex items-end justify-center gap-4 pt-4">
+          <div className="flex items-end justify-center gap-4 pt-2">
             {[1, 0, 2].map((podiumIdx) => {
               const person = topThree[podiumIdx];
-              if (!person) return <div key={podiumIdx} className="w-40" />;
+              if (!person) return <div key={podiumIdx} className="w-36" />;
               const isFirst = podiumIdx === 0;
-              const heights = ["h-48", "h-40", "h-32"];
+              const podiumHeights = [180, 150, 120];
+              const avatarSizes = [isFirst ? "h-14 w-14" : "h-11 w-11"];
               const medals = [
-                <Crown key="g" className="h-8 w-8 text-amber-400" />,
-                <Medal key="s" className="h-7 w-7 text-gray-400" />,
-                <Medal key="b" className="h-6 w-6 text-amber-700" />,
+                <Crown key="g" className="h-7 w-7 text-amber-400" />,
+                <Medal key="s" className="h-6 w-6 text-gray-400" />,
+                <Medal key="b" className="h-5 w-5 text-amber-700" />,
               ];
               return (
                 <motion.div
                   key={podiumIdx}
-                  initial={{ opacity: 0, y: 50 }}
+                  initial={{ opacity: 0, y: 40 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 + podiumIdx * 0.2, type: "spring", stiffness: 100 }}
                   className="flex flex-col items-center"
                 >
-                  {/* Crown for #1 */}
                   {isFirst && (
                     <motion.div
-                      animate={{ y: [0, -4, 0], rotate: [0, 5, -5, 0] }}
+                      animate={{ y: [0, -3, 0] }}
                       transition={{ repeat: Infinity, duration: 3 }}
                       className="mb-1"
                     >
-                      <Crown className="h-6 w-6 text-amber-400" />
+                      <Crown className="h-5 w-5 text-amber-400" />
                     </motion.div>
                   )}
-                  <motion.div
-                    className={`flex items-center justify-center rounded-full bg-gradient-to-br ${isFirst ? "from-amber-400 to-yellow-600 h-16 w-16" : "from-primary to-[hsl(280_70%_55%)] h-12 w-12"} text-white font-bold text-lg shadow-xl mb-2`}
-                    animate={isFirst ? { boxShadow: ["0 0 20px hsl(45 90% 55% / 0.3)", "0 0 40px hsl(45 90% 55% / 0.5)", "0 0 20px hsl(45 90% 55% / 0.3)"] } : {}}
-                    transition={{ repeat: Infinity, duration: 2 }}
+                  <div
+                    className={`flex items-center justify-center rounded-full ${avatarSizes[0]} ${isFirst ? "bg-gradient-to-br from-amber-400 to-yellow-600" : "bg-gradient-to-br from-primary to-[hsl(280_70%_55%)]"} text-white font-bold text-sm shadow-lg mb-2`}
                   >
                     {person.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
-                  </motion.div>
-                  <p className="text-sm font-bold text-foreground text-center truncate max-w-[120px]">{person.name}</p>
+                  </div>
+                  <p className="text-sm font-bold text-foreground text-center truncate max-w-[110px]">{person.name}</p>
                   <p className="text-xs text-primary font-semibold">{person.points} pts</p>
-                  {/* Podium bar */}
+                  {/* Podium bar — no scaleY animation to prevent flickering */}
                   <motion.div
-                    className={`${heights[podiumIdx]} w-28 mt-3 rounded-t-xl flex flex-col items-center justify-start pt-4`}
+                    className="w-28 mt-3 rounded-t-xl flex flex-col items-center justify-start pt-4"
                     style={{
+                      height: podiumHeights[podiumIdx],
                       background: isFirst
-                        ? "linear-gradient(180deg, hsl(45 90% 55% / 0.12), hsl(45 90% 55% / 0.02))"
-                        : "linear-gradient(180deg, hsl(234 89% 64% / 0.1), hsl(234 89% 64% / 0.02))",
+                        ? "linear-gradient(180deg, hsl(45 90% 55% / 0.08), hsl(45 90% 55% / 0.02))"
+                        : "linear-gradient(180deg, hsl(234 89% 64% / 0.08), hsl(234 89% 64% / 0.02))",
                       border: "1px solid hsl(234 89% 64% / 0.08)",
-                      transformOrigin: "bottom",
                     }}
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ delay: 0.8 + podiumIdx * 0.15, duration: 0.6, ease: "backOut" }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 + podiumIdx * 0.15, duration: 0.5 }}
                   >
                     {medals[podiumIdx]}
                     <span className="text-2xl font-black text-foreground/15 mt-2">#{podiumIdx + 1}</span>
@@ -238,8 +230,8 @@ export default function Gamificacao() {
           </div>
         )}
 
-        {/* Badges Legend */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+        {/* Badges Legend — moved down with more spacing */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="pt-4">
           <div className="rounded-2xl bg-card/25 backdrop-blur-xl p-5" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <Award className="h-4 w-4 text-primary" />
@@ -249,18 +241,13 @@ export default function Gamificacao() {
               {Object.entries(BADGE_DEFS).map(([key, def], i) => (
                 <motion.div
                   key={key}
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.9 + i * 0.08 }}
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.03 }}
                   className="flex items-center gap-2 rounded-xl bg-card/25 p-3 cursor-default" style={{ border: "1px solid hsl(234 89% 64% / 0.06)" }}
                 >
-                  <motion.div
-                    whileHover={{ rotate: 15 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <def.icon className="h-5 w-5 shrink-0" style={{ color: def.color }} />
-                  </motion.div>
+                  <def.icon className="h-5 w-5 shrink-0" style={{ color: def.color }} />
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-foreground">{def.label}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{def.description}</p>
@@ -285,15 +272,11 @@ export default function Gamificacao() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 1.1 + i * 0.04 }}
-                    whileHover={{ x: 4, backgroundColor: "hsl(222 40% 8% / 0.6)" }}
-                    className="flex items-center gap-4 rounded-xl bg-card/15 p-3 transition-all cursor-default" style={{ border: "1px solid hsl(234 89% 64% / 0.06)" }}
+                    className="flex items-center gap-4 rounded-xl bg-card/15 p-3 transition-colors hover:bg-card/30 cursor-default" style={{ border: "1px solid hsl(234 89% 64% / 0.06)" }}
                   >
-                    <motion.span
-                      className={`text-lg font-black w-8 text-center ${i < 3 ? "text-amber-400" : "text-muted-foreground"}`}
-                      whileHover={{ scale: 1.2 }}
-                    >
+                    <span className={`text-lg font-black w-8 text-center ${i < 3 ? "text-amber-400" : "text-muted-foreground"}`}>
                       {i + 1}
-                    </motion.span>
+                    </span>
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: `linear-gradient(135deg, ${levelColor}, hsl(234 89% 64%))` }}>
                       {person.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                     </div>
@@ -315,15 +298,14 @@ export default function Gamificacao() {
                         const def = BADGE_DEFS[b];
                         if (!def) return null;
                         return (
-                          <motion.div
+                          <div
                             key={b}
-                            whileHover={{ scale: 1.3, rotate: 15 }}
                             className="flex h-7 w-7 items-center justify-center rounded-lg"
                             style={{ background: `${def.color}12` }}
                             title={def.description}
                           >
                             <def.icon className="h-3.5 w-3.5" style={{ color: def.color }} />
-                          </motion.div>
+                          </div>
                         );
                       })}
                     </div>

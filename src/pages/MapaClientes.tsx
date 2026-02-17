@@ -7,10 +7,9 @@ import { usePageSEO } from "@/hooks/usePageSEO";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 
-// More realistic Brazil outline path
+// Brazil outline — more visible
 const BRAZIL_OUTLINE = "M290,25 L310,20 L330,25 L340,45 L350,60 L370,70 L395,65 L420,70 L430,85 L420,100 L430,120 L420,140 L430,155 L420,170 L415,185 L400,200 L395,220 L400,240 L390,260 L380,280 L375,300 L385,320 L380,340 L370,350 L350,360 L330,370 L300,380 L275,385 L260,420 L250,445 L235,460 L215,455 L200,435 L205,410 L215,395 L210,380 L200,360 L195,340 L190,315 L175,290 L160,265 L155,240 L140,215 L135,195 L120,180 L100,170 L85,155 L90,135 L110,120 L140,100 L155,75 L170,55 L185,40 L210,30 L240,25 L260,22 Z";
 
-// Brazilian state approximate centers for labels
 const BRAZIL_REGIONS = [
   { id: "N", path: "M140,50 L200,35 L250,30 L290,25 L340,45 L345,60 L340,85 L310,100 L280,110 L250,105 L220,95 L195,100 L170,110 L145,100 L120,120 L100,130 L90,110 L110,80 L140,60 Z", label: "Norte" },
   { id: "NE", path: "M310,100 L340,85 L370,70 L395,65 L420,70 L430,85 L420,100 L430,120 L420,140 L430,155 L420,170 L415,185 L400,200 L395,220 L380,230 L350,240 L320,230 L300,210 L290,180 L280,150 L280,125 Z", label: "Nordeste" },
@@ -89,7 +88,6 @@ function MapDot({ client, index, selected, onSelect }: {
       style={{ cursor: "pointer" }}
       onClick={onSelect}
     >
-      {/* Outer pulse */}
       <motion.circle
         cx={x} cy={y} r={selected ? 18 : 12}
         fill="none"
@@ -99,9 +97,7 @@ function MapDot({ client, index, selected, onSelect }: {
         animate={{ r: selected ? [18, 28, 18] : [12, 18, 12], opacity: [0.3, 0.05, 0.3] }}
         transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
       />
-      {/* Inner glow */}
       <circle cx={x} cy={y} r={selected ? 12 : 8} fill={config.color} fillOpacity={0.06} />
-      {/* Main dot */}
       <motion.circle
         cx={x} cy={y}
         r={selected ? 5.5 : 4}
@@ -111,7 +107,6 @@ function MapDot({ client, index, selected, onSelect }: {
         whileHover={{ r: 7 }}
         filter="url(#mapGlow)"
       />
-      {/* Label on select */}
       {selected && (
         <motion.foreignObject
           x={x - 75} y={y - 42} width={150} height={34}
@@ -153,35 +148,36 @@ export default function MapaClientes() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background */}
       <div className="pointer-events-none absolute inset-0" style={{
         background: "linear-gradient(180deg, hsl(270 60% 10%) 0%, hsl(250 50% 8%) 25%, hsl(234 45% 7%) 50%, hsl(260 40% 9%) 75%, hsl(234 45% 6%) 100%)",
       }} />
       <div className="pointer-events-none absolute top-[20%] left-[-5%] h-[500px] w-[500px] rounded-full opacity-12 blur-[140px]" style={{ background: "radial-gradient(circle, hsl(160 84% 39%), transparent 70%)" }} />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-6 px-6 pt-6 md:px-10 pb-16">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15">
-              <MapPin className="h-5 w-5 text-emerald-400" />
+        {/* Header — centered with search inline */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15">
+                <MapPin className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Mapa de Clientes</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Distribuição geográfica dos projetos ativos</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Mapa de Clientes</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Distribuição geográfica dos projetos ativos</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar projeto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-56 bg-card/50 border-primary/10 focus:border-primary/30" />
-            </div>
-            <div className="flex gap-1.5">
-              {(["all", "active", "warning", "inactive"] as const).map((s) => (
-                <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${statusFilter === s ? "bg-primary/15 text-primary ring-1 ring-primary/25" : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"}`}>
-                  {s === "all" ? "Todos" : STATUS_CONFIG[s].label}
-                </button>
-              ))}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Buscar projeto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-56 bg-card/50 border-border/20 focus:border-primary/30" />
+              </div>
+              <div className="flex gap-1.5">
+                {(["all", "active", "warning", "inactive"] as const).map((s) => (
+                  <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${statusFilter === s ? "bg-primary/15 text-primary ring-1 ring-primary/25" : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"}`}>
+                    {s === "all" ? "Todos" : STATUS_CONFIG[s].label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -210,9 +206,9 @@ export default function MapaClientes() {
 
         {/* Map + Details */}
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-          {/* Map */}
+          {/* Map — centered, better visibility */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
-            <div className="rounded-2xl bg-card/20 backdrop-blur-xl overflow-hidden p-6" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
+            <div className="rounded-2xl bg-card/20 backdrop-blur-xl overflow-hidden p-6 flex items-center justify-center" style={{ border: "1px solid hsl(234 89% 64% / 0.08)" }}>
               <svg viewBox="0 0 520 500" className="w-full h-auto" style={{ maxHeight: "68vh" }}>
                 <defs>
                   <filter id="mapGlow">
@@ -223,37 +219,36 @@ export default function MapaClientes() {
                     </feMerge>
                   </filter>
                   <radialGradient id="mapBg" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="hsl(234 89% 64%)" stopOpacity="0.04" />
+                    <stop offset="0%" stopColor="hsl(234 89% 64%)" stopOpacity="0.06" />
                     <stop offset="100%" stopColor="transparent" />
                   </radialGradient>
                 </defs>
 
-                {/* Background glow */}
                 <circle cx="260" cy="250" r="200" fill="url(#mapBg)" />
 
-                {/* Region fills */}
+                {/* Region fills — brighter for better visibility */}
                 {BRAZIL_REGIONS.map((region, i) => (
                   <motion.path
                     key={region.id}
                     d={region.path}
                     fill="hsl(234 89% 64%)"
-                    fillOpacity="0.04"
+                    fillOpacity="0.08"
                     stroke="hsl(234 89% 64%)"
-                    strokeWidth="0.8"
-                    strokeOpacity="0.15"
+                    strokeWidth="1"
+                    strokeOpacity="0.25"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }}
                   />
                 ))}
 
-                {/* Main outline */}
+                {/* Main outline — more visible */}
                 <motion.path
                   d={BRAZIL_OUTLINE}
                   fill="none"
                   stroke="hsl(234 89% 64%)"
-                  strokeWidth="1.2"
-                  strokeOpacity="0.25"
+                  strokeWidth="1.8"
+                  strokeOpacity="0.4"
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: 1 }}
                   transition={{ duration: 2, ease: "easeInOut" }}
@@ -272,13 +267,31 @@ export default function MapaClientes() {
                       d={`M${from.x},${from.y} Q${mx},${my} ${to.x},${to.y}`}
                       fill="none"
                       stroke="hsl(234 89% 64%)"
-                      strokeOpacity="0.08"
+                      strokeOpacity="0.12"
                       strokeWidth="0.8"
                       strokeDasharray="4 3"
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
                       transition={{ delay: 1.0 + i * 0.06, duration: 0.8 }}
                     />
+                  );
+                })}
+
+                {/* Region labels */}
+                {BRAZIL_REGIONS.map((region) => {
+                  // Approximate center for each region label
+                  const centers: Record<string, {x: number, y: number}> = {
+                    N: {x: 210, y: 80}, NE: {x: 380, y: 150}, CO: {x: 240, y: 200},
+                    SE: {x: 310, y: 310}, S: {x: 240, y: 400},
+                  };
+                  const c = centers[region.id];
+                  if (!c) return null;
+                  return (
+                    <text key={`label-${region.id}`} x={c.x} y={c.y} textAnchor="middle"
+                      fill="hsl(234 89% 64%)" fillOpacity="0.2" fontSize="11" fontWeight="600"
+                    >
+                      {region.label}
+                    </text>
                   );
                 })}
 

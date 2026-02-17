@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, memo } from "react";
-import { Bell, Check, CheckCheck, AlertTriangle, Clock, X, Sparkles } from "lucide-react";
+import { Bell, Check, CheckCheck, AlertTriangle, Clock, X, Sparkles, CalendarClock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AppNotification } from "@/hooks/useNotifications";
 
@@ -11,6 +11,14 @@ type Props = {
   collapsed?: boolean;
 };
 
+/** Get urgency color based on days remaining */
+function getDeadlineColor(daysRemaining?: number): { clockColor: string; badgeBg: string } {
+  if (daysRemaining === undefined) return { clockColor: "text-muted-foreground", badgeBg: "bg-muted/30" };
+  if (daysRemaining <= 1) return { clockColor: "text-red-400", badgeBg: "bg-red-500/15" };
+  if (daysRemaining <= 3) return { clockColor: "text-amber-400", badgeBg: "bg-amber-500/15" };
+  return { clockColor: "text-emerald-400", badgeBg: "bg-emerald-500/15" };
+}
+
 const typeConfig = {
   overdue: {
     icon: AlertTriangle,
@@ -20,7 +28,7 @@ const typeConfig = {
     dot: "bg-rose-400",
   },
   deadline_soon: {
-    icon: Clock,
+    icon: CalendarClock,
     color: "text-amber-400",
     bg: "bg-amber-500/10",
     border: "border-amber-500/20",
@@ -58,7 +66,6 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -158,6 +165,7 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
                 notifications.map((notif, i) => {
                   const config = typeConfig[notif.type];
                   const Icon = config.icon;
+                  const deadlineColors = getDeadlineColor(notif.daysRemaining);
                   return (
                     <motion.div
                       key={notif.id}
@@ -182,6 +190,15 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
                           )}
                         </div>
                         <p className="text-[11px] text-white/40 mt-0.5 line-clamp-2">{notif.message}</p>
+                        {/* Deadline date with color-coded clock */}
+                        {notif.deadlineDateStr && (
+                          <div className={`inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md ${deadlineColors.badgeBg}`}>
+                            <Clock className={`h-2.5 w-2.5 ${deadlineColors.clockColor}`} />
+                            <span className={`text-[10px] font-semibold ${deadlineColors.clockColor}`}>
+                              {notif.deadlineDateStr}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-1">
                           {notif.projectName && (
                             <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider truncate max-w-[150px]">

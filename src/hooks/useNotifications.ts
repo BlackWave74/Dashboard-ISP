@@ -9,11 +9,14 @@ export type AppNotification = {
   timestamp: number;
   read: boolean;
   projectName?: string;
+  /** Days remaining until deadline (negative = overdue) */
+  daysRemaining?: number;
+  /** Formatted deadline date string */
+  deadlineDateStr?: string;
 };
 
 const STORAGE_KEY = "app_notifications_read";
 
-/** Generate a stable id for deduplication */
 const makeId = (type: string, title: string) =>
   `${type}::${title}`.replace(/\s+/g, "_").slice(0, 80);
 
@@ -32,7 +35,6 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
     return new Set(saved);
   });
 
-  // Persist read state
   const persistRead = useCallback((ids: Set<string>) => {
     storage.set(STORAGE_KEY, [...ids]);
   }, []);
@@ -46,7 +48,6 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
       ? tasks.filter((task) => {
           const consultant = (task.consultant || "").trim().toLowerCase();
           const user = userName.trim().toLowerCase();
-          // Show tasks where user is the consultant, or tasks without consultant assigned
           return !consultant || consultant === user || consultant.includes(user) || user.includes(consultant);
         })
       : tasks;
@@ -60,10 +61,17 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
         return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
       };
 
+      const getDaysRemaining = (d: Date | null | undefined): number | undefined => {
+        if (!d) return undefined;
+        const diffMs = d.getTime() - Date.now();
+        return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      };
+
       // Overdue tasks
       if (task.statusKey === "overdue") {
         const id = makeId("overdue", title);
         const dateStr = formatDate(task.deadlineDate);
+        const daysRemaining = getDaysRemaining(task.deadlineDate);
         items.push({
           id,
           type: "overdue",
@@ -72,6 +80,8 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
           timestamp: task.deadlineDate?.getTime() ?? now,
           read: readIds.has(id),
           projectName: project,
+          daysRemaining,
+          deadlineDateStr: dateStr,
         });
       }
 
@@ -79,6 +89,7 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
       if (task.deadlineIsSoon && task.statusKey !== "done" && task.statusKey !== "overdue") {
         const id = makeId("soon", title);
         const dateStr = formatDate(task.deadlineDate);
+        const daysRemaining = getDaysRemaining(task.deadlineDate);
         items.push({
           id,
           type: "deadline_soon",
@@ -87,6 +98,8 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
           timestamp: task.deadlineDate?.getTime() ?? now,
           read: readIds.has(id),
           projectName: project,
+          daysRemaining,
+          deadlineDateStr: dateStr,
         });
       }
     });
@@ -97,7 +110,7 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
       return b.timestamp - a.timestamp;
     });
 
-    return items.slice(0, 50); // cap at 50
+    return items.slice(0, 50);
   }, [tasks, readIds, userName]);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);

@@ -605,7 +605,7 @@ export default function TarefasPage() {
                     deadlineLabel: t.deadlineLabel,
                     durationLabel: t.durationLabel,
                   }));
-                  exportTasksPDF({
+                  void exportTasksPDF({
                     tasks: rows,
                     stats: {
                       total: stats.total,

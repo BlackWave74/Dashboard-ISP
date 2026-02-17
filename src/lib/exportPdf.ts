@@ -24,7 +24,23 @@ type ExportOptions = {
   };
 };
 
-export function exportTasksPDF({
+/** Load logo as base64 for PDF embedding */
+async function loadLogoBase64(): Promise<string | null> {
+  try {
+    const response = await fetch("/resouce/ISP-Consulte-v3-branco.png");
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function exportTasksPDF({
   title = "Relatório de Tarefas",
   subtitle,
   fileName = "relatorio-tarefas.pdf",
@@ -41,8 +57,10 @@ export function exportTasksPDF({
     minute: "2-digit",
   });
 
+  const logo = await loadLogoBase64();
+
   // Header bar
-  doc.setFillColor(30, 27, 75); // deep indigo
+  doc.setFillColor(30, 27, 75);
   doc.rect(0, 0, pageW, 28, "F");
 
   doc.setTextColor(255, 255, 255);
@@ -54,8 +72,19 @@ export function exportTasksPDF({
   doc.setFont("helvetica", "normal");
   doc.text(subtitle || `Gerado em ${now}`, 14, 20);
 
+  // Logo in top-right instead of text
+  if (logo) {
+    try {
+      doc.addImage(logo, "PNG", pageW - 50, 3, 36, 12);
+    } catch {
+      doc.setFontSize(8);
+      doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
+    }
+  } else {
+    doc.setFontSize(8);
+    doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
+  }
   doc.setFontSize(8);
-  doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
   doc.text(now, pageW - 14, 19, { align: "right" });
 
   let yPos = 34;
@@ -130,7 +159,6 @@ export function exportTasksPDF({
     },
     margin: { left: 14, right: 14 },
     didDrawPage: (data) => {
-      // Footer on each page
       const pageH = doc.internal.pageSize.getHeight();
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 170);
@@ -171,7 +199,7 @@ type AnalyticsExportOptions = {
   };
 };
 
-export function exportAnalyticsPDF({
+export async function exportAnalyticsPDF({
   userName,
   period,
   fileName = "relatorio-analiticas.pdf",
@@ -188,6 +216,8 @@ export function exportAnalyticsPDF({
     minute: "2-digit",
   });
 
+  const logo = await loadLogoBase64();
+
   // Header
   doc.setFillColor(30, 27, 75);
   doc.rect(0, 0, pageW, 28, "F");
@@ -202,8 +232,18 @@ export function exportAnalyticsPDF({
   const sub = [userName, period].filter(Boolean).join(" · ") || now;
   doc.text(sub, 14, 20);
 
+  if (logo) {
+    try {
+      doc.addImage(logo, "PNG", pageW - 50, 3, 36, 12);
+    } catch {
+      doc.setFontSize(8);
+      doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
+    }
+  } else {
+    doc.setFontSize(8);
+    doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
+  }
   doc.setFontSize(8);
-  doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
   doc.text(now, pageW - 14, 19, { align: "right" });
 
   let yPos = 34;

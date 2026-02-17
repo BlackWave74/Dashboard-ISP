@@ -257,7 +257,7 @@ export default function AnaliticasPage() {
                   overdueTasks: p.tasksOverdue,
                   hours: p.hoursUsed,
                 }));
-                exportAnalyticsPDF({
+                void exportAnalyticsPDF({
                   userName: effectiveUser,
                   period: `Últimos ${periodDays} dias`,
                   projects: projectRows,
