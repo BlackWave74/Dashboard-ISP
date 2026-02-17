@@ -65,7 +65,7 @@ function DashboardInner() {
   const notifTasks = useMemo(() => tasks.map(toNotifTask), [tasks]);
 
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications(notifTasks, session?.name);
+    useNotifications(notifTasks, session?.name, session?.role);
 
   if (loadingSession) {
     return (
