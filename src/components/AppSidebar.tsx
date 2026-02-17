@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 import {
   Home,
   FolderKanban,
@@ -11,10 +10,8 @@ import {
   ChevronDown,
   Plug,
   HelpCircle,
-  MoreVertical,
   PanelLeft,
   Shield,
-  Camera,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -28,18 +25,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
-// Safely import cloud client — may fail if env vars are missing
-let cloudSupabase: any = null;
-try {
-  // Dynamic require-like pattern: the import is static but wrapped in try
-  const cloudUrl = import.meta.env.VITE_SUPABASE_URL;
-  const cloudKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (cloudUrl && cloudKey) {
-    cloudSupabase = createClient(cloudUrl, cloudKey);
-  }
-} catch {
-  // Cloud client unavailable
-}
 
 const supabaseExt = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -52,26 +37,13 @@ async function ensureSession(accessToken?: string, refreshToken?: string) {
   }
 }
 
-const MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
-import { AnimatePresence, motion } from "framer-motion";
-
-function UserAvatar({ name, email, collapsed, avatarUrl, onChangePhoto }: { name?: string; email?: string; collapsed?: boolean; avatarUrl?: string | null; onChangePhoto?: () => void }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+function UserAvatar({ name, email, collapsed, avatarUrl }: { name?: string; email?: string; collapsed?: boolean; avatarUrl?: string | null }) {
   const initials = (name || email || "U")
     .split(" ")
     .map((w) => w[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const avatar = avatarUrl ? (
     <img src={avatarUrl} alt="Avatar" className="h-full w-full rounded-full object-cover" />
@@ -95,47 +67,16 @@ function UserAvatar({ name, email, collapsed, avatarUrl, onChangePhoto }: { name
   }
 
   return (
-    <div ref={menuRef} className="relative">
-      <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] border border-white/[0.08] px-3 py-3 transition-all hover:bg-white/[0.1] cursor-pointer group">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(234_89%_64%)] to-[hsl(280_70%_55%)] text-xs font-bold text-white shadow-lg shadow-[hsl(234_89%_50%/0.4)] overflow-hidden">
-          {avatar}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold text-white">
-            {name || "Usuário"}
-          </p>
-          <p className="truncate text-[11px] text-white/50">{email || ""}</p>
-        </div>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-          className="text-white/30 group-hover:text-white/60 transition-colors shrink-0"
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
+    <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] border border-white/[0.08] px-3 py-3 transition-all hover:bg-white/[0.1] cursor-pointer group">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(234_89%_64%)] to-[hsl(280_70%_55%)] text-xs font-bold text-white shadow-lg shadow-[hsl(234_89%_50%/0.4)] overflow-hidden">
+        {avatar}
       </div>
-
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-0 mb-1 w-full rounded-xl border border-white/[0.08] p-1 shadow-xl z-50"
-            style={{ background: "hsl(260 30% 12%)" }}
-          >
-            <button
-              type="button"
-              onClick={() => { setMenuOpen(false); onChangePhoto?.(); }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[12px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white transition"
-            >
-              <Camera className="h-3.5 w-3.5" />
-              Alterar foto de perfil
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-semibold text-white">
+          {name || "Usuário"}
+        </p>
+        <p className="truncate text-[11px] text-white/50">{email || ""}</p>
+      </div>
     </div>
   );
 }
@@ -193,7 +134,6 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Load avatar on mount
@@ -217,77 +157,6 @@ export function AppSidebar() {
     };
     loadAvatar();
     return () => { cancelled = true; };
-  }, [session?.accessToken, session?.refreshToken]);
-
-  const handleAvatarUpload = useCallback(async (file: File) => {
-    // Validate file size
-    if (file.size > MAX_AVATAR_SIZE) {
-      toast.error("Arquivo muito grande", { description: `O tamanho máximo é 2 MB. Sua imagem tem ${(file.size / 1024 / 1024).toFixed(1)} MB. Reduza a resolução ou use outra imagem.` });
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Formato inválido", { description: "Selecione um arquivo JPG, PNG, WebP ou GIF." });
-      return;
-    }
-
-    try {
-      await ensureSession(session?.accessToken, session?.refreshToken);
-      const { data: { user } } = await supabaseExt.auth.getUser();
-      if (!user) {
-        toast.error("Erro de autenticação", { description: "Faça login novamente e tente outra vez." });
-        return;
-      }
-
-      toast.loading("Enviando foto...", { id: "avatar-upload" });
-
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${user.id}/avatar_${Date.now()}.${ext}`;
-
-      if (!cloudSupabase) {
-        throw new Error("Serviço de armazenamento não configurado. Recarregue a página e tente novamente.");
-      }
-
-      // Upload to Lovable Cloud storage (has the avatars bucket)
-      const { error: uploadError } = await cloudSupabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        // Provide user-friendly error based on the error type
-        if (uploadError.message?.includes("Payload too large") || uploadError.statusCode === 413) {
-          throw new Error("Imagem muito grande. Reduza a resolução (recomendado: 500×500 px) e tente novamente.");
-        }
-        if (uploadError.message?.includes("security") || uploadError.statusCode === 403) {
-          throw new Error("Permissão negada. O serviço de armazenamento pode estar indisponível. Tente novamente em alguns instantes.");
-        }
-        throw new Error(`Falha no upload: ${uploadError.message}`);
-      }
-
-      const { data: urlData } = cloudSupabase.storage.from("avatars").getPublicUrl(path);
-      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-
-      // Save URL to external DB
-      const { error: dbError } = await supabaseExt
-        .from("users")
-        .update({ avatar_url: publicUrl } as any)
-        .eq("auth_user_id", user.id);
-      if (dbError) {
-        console.error("DB update error:", dbError);
-        throw new Error(`Erro ao salvar URL: ${dbError.message}`);
-      }
-
-      setAvatarUrl(publicUrl);
-      toast.success("Foto atualizada!", { id: "avatar-upload" });
-    } catch (err) {
-      console.error("Avatar upload failed:", err);
-      toast.error("Falha ao enviar foto", {
-        id: "avatar-upload",
-        description: err instanceof Error ? err.message : "Serviço temporariamente indisponível. Tente novamente.",
-      });
-    }
   }, [session?.accessToken, session?.refreshToken]);
 
   const [projectsOpen, setProjectsOpen] = useState(() => {
@@ -481,23 +350,11 @@ export function AppSidebar() {
 
       <SidebarFooter className={`!border-t-0 ${collapsed ? "px-1" : "px-3"} pb-4 pt-2 space-y-2`}>
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleAvatarUpload(file);
-            e.target.value = "";
-          }}
-        />
         <UserAvatar
           name={session?.name}
           email={session?.email}
           collapsed={collapsed}
           avatarUrl={avatarUrl}
-          onChangePhoto={() => fileInputRef.current?.click()}
         />
         {collapsed ? (
           <Tooltip>
