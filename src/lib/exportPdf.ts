@@ -135,11 +135,29 @@ function drawDonutChart(
   });
 }
 
-/** Draw a simple line chart (timeline) */
-function drawLineChart(
+/** Draw a performance area chart (smooth filled area) */
+function drawPerformanceChart(
   doc: jsPDF, x: number, y: number, width: number, height: number,
-  data: { label: string; value: number }[], title: string, lineColor: number[]
+  tasks: TaskRow[], title: string
 ) {
+  // Group by project and compute completion rate
+  const projectMap = new Map<string, { total: number; done: number }>();
+  tasks.forEach((t) => {
+    const p = t.project || "Sem projeto";
+    const cur = projectMap.get(p) ?? { total: 0, done: 0 };
+    cur.total += 1;
+    if (t.statusLabel === "Concluída" || t.statusLabel === "Done") cur.done += 1;
+    projectMap.set(p, cur);
+  });
+
+  const data = Array.from(projectMap.entries())
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 8)
+    .map(([name, { total, done }]) => ({
+      label: name.length > 12 ? name.slice(0, 11) + "…" : name,
+      value: total > 0 ? Math.round((done / total) * 100) : 0,
+    }));
+
   if (data.length < 2) return;
 
   doc.setFontSize(9);
@@ -149,33 +167,60 @@ function drawLineChart(
 
   const chartY = y + 12;
   const chartH = height - 22;
-  const maxVal = Math.max(...data.map((d) => d.value), 1);
+  const maxVal = 100;
   const stepX = width / (data.length - 1);
 
   // Grid lines
   doc.setDrawColor(220, 220, 230);
   doc.setLineWidth(0.1);
-  for (let i = 0; i <= 3; i++) {
-    const gy = chartY + (i / 3) * chartH;
+  for (let i = 0; i <= 4; i++) {
+    const gy = chartY + (i / 4) * chartH;
     doc.line(x, gy, x + width, gy);
+    doc.setFontSize(5);
+    doc.setTextColor(150, 150, 170);
+    doc.text(`${100 - i * 25}%`, x - 1, gy + 1.5, { align: "right" });
   }
 
-  // Line
-  doc.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
-  doc.setLineWidth(0.6);
+  // Points
   const points = data.map((d, i) => ({
     px: x + i * stepX,
     py: chartY + chartH - (d.value / maxVal) * chartH,
   }));
+
+  // Fill area
+  doc.setFillColor(99, 102, 241);
+  doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+  const areaPoints: number[][] = [];
+  points.forEach((p) => areaPoints.push([p.px, p.py]));
+  areaPoints.push([points[points.length - 1].px, chartY + chartH]);
+  areaPoints.push([points[0].px, chartY + chartH]);
+  // Draw area with triangles
+  for (let i = 0; i < areaPoints.length - 2; i++) {
+    doc.triangle(
+      areaPoints[0][0], areaPoints[0][1],
+      areaPoints[i + 1][0], areaPoints[i + 1][1],
+      areaPoints[i + 2][0], areaPoints[i + 2][1], "F"
+    );
+  }
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+
+  // Line
+  doc.setDrawColor(99, 102, 241);
+  doc.setLineWidth(0.6);
   for (let i = 0; i < points.length - 1; i++) {
     doc.line(points[i].px, points[i].py, points[i + 1].px, points[i + 1].py);
   }
 
   // Dots + labels
   data.forEach((d, i) => {
-    doc.setFillColor(lineColor[0], lineColor[1], lineColor[2]);
-    doc.circle(points[i].px, points[i].py, 1, "F");
+    doc.setFillColor(99, 102, 241);
+    doc.circle(points[i].px, points[i].py, 1.2, "F");
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(99, 102, 241);
+    doc.text(`${d.value}%`, points[i].px, points[i].py - 3, { align: "center" });
     doc.setFontSize(5);
+    doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 120);
     doc.text(d.label, points[i].px, chartY + chartH + 6, { align: "center" });
   });
@@ -311,25 +356,10 @@ export async function exportTasksPDF({
 
     yPos += 50;
 
-    // Row 2: Timeline chart — deadline distribution by month
-    const monthCounts = new Map<string, number>();
-    tasks.forEach((t) => {
-      if (t.deadlineLabel && t.deadlineLabel !== "—") {
-        const parts = t.deadlineLabel.split("/");
-        if (parts.length >= 2) {
-          const key = `${parts[1]}/${parts[2] || ""}`.trim();
-          const shortKey = parts.length >= 3 ? `${parts[1]}/${parts[2].slice(-2)}` : parts[1];
-          monthCounts.set(shortKey, (monthCounts.get(shortKey) ?? 0) + 1);
-        }
-      }
-    });
-    const timelineData = Array.from(monthCounts.entries())
-      .slice(0, 8)
-      .map(([label, value]) => ({ label, value }));
-
-    if (timelineData.length >= 2) {
-      drawLineChart(doc, 14, yPos, pageW - 28, 36, timelineData, "Linha do Tempo — Prazos por Mês", [99, 102, 241]);
-      yPos += 42;
+    // Row 2: Performance chart — completion % by project
+    if (tasks.length >= 2) {
+      drawPerformanceChart(doc, 14, yPos, pageW - 28, 40, tasks, "Performance por Projeto — Taxa de Conclusão (%)");
+      yPos += 46;
     }
   }
 

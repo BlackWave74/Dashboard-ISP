@@ -508,7 +508,7 @@ export function TaskCharts({
           <div className="flex-1 min-h-[180px] max-h-[280px]">
             {lineByDeadline.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={lineByDeadline} margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
+                <LineChart data={lineByDeadline} margin={{ top: 20, right: 10, bottom: 10, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" />
                   <XAxis dataKey="iso" tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`} />
                   <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} width={30} />
@@ -519,7 +519,7 @@ export function TaskCharts({
                     formatter={lineTooltipFormatter}
                     labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))}
                   />
-                  <ReferenceLine x={todayIso} stroke="hsl(160 84% 60%)" strokeDasharray="4 4" label={{ position: "top", value: "Hoje", fill: "#94a3b8", fontSize: 10 }} />
+                  <ReferenceLine x={todayIso} stroke="hsl(160 84% 60%)" strokeDasharray="4 4" label={{ position: "insideTopRight", value: "Hoje", fill: "#94a3b8", fontSize: 10, dy: -4 }} />
                   <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
                 </LineChart>
               </ResponsiveContainer>
