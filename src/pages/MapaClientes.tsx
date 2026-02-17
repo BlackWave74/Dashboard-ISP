@@ -7,8 +7,41 @@ import { usePageSEO } from "@/hooks/usePageSEO";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 
-// Brazil SVG outline path (simplified)
-const BRAZIL_PATH = "M280,30 C290,28 310,35 320,40 L340,42 L355,48 L370,55 L385,52 L400,58 L410,68 L420,72 L430,85 L425,100 L430,115 L440,125 L445,140 L450,160 L445,175 L440,190 L435,210 L430,225 L425,245 L415,260 L405,275 L395,290 L385,305 L375,320 L360,335 L345,345 L330,355 L315,365 L300,375 L285,385 L270,395 L255,400 L240,395 L225,385 L215,370 L210,355 L200,340 L195,320 L190,300 L185,280 L178,260 L170,240 L162,225 L155,210 L150,195 L148,175 L152,155 L158,135 L165,120 L175,105 L185,90 L195,78 L210,65 L225,55 L245,45 L260,38 Z";
+// Simplified Brazil state boundaries for a more realistic map
+const BRAZIL_STATES: { id: string; path: string }[] = [
+  // Norte
+  { id: "AM", path: "M120,80 L180,60 L220,70 L240,90 L230,130 L200,150 L160,140 L130,120 Z" },
+  { id: "PA", path: "M220,70 L290,55 L330,75 L340,110 L310,140 L270,145 L240,130 L230,130 L240,90 Z" },
+  { id: "RR", path: "M160,30 L200,25 L220,50 L200,60 L180,60 L160,50 Z" },
+  { id: "AP", path: "M290,30 L320,25 L335,45 L330,65 L310,60 L290,55 Z" },
+  { id: "TO", path: "M270,145 L300,140 L310,140 L310,200 L290,220 L270,210 L265,180 Z" },
+  { id: "RO", path: "M160,140 L200,150 L210,170 L200,195 L170,195 L150,175 Z" },
+  { id: "AC", path: "M100,140 L130,120 L160,140 L150,175 L120,175 L100,160 Z" },
+  // Nordeste
+  { id: "MA", path: "M310,100 L340,110 L360,100 L370,120 L350,150 L320,155 L310,140 Z" },
+  { id: "PI", path: "M320,155 L350,150 L360,160 L355,200 L330,210 L315,195 Z" },
+  { id: "CE", path: "M360,100 L390,95 L400,115 L390,140 L370,145 L360,130 L360,120 Z" },
+  { id: "RN", path: "M390,95 L415,100 L410,115 L400,115 Z" },
+  { id: "PB", path: "M390,120 L415,118 L410,135 L395,135 Z" },
+  { id: "PE", path: "M370,145 L415,140 L410,158 L380,160 L360,160 Z" },
+  { id: "AL", path: "M395,160 L415,158 L412,172 L398,170 Z" },
+  { id: "SE", path: "M390,172 L410,172 L408,185 L392,182 Z" },
+  { id: "BA", path: "M315,195 L355,200 L380,190 L395,200 L400,230 L380,270 L350,290 L320,280 L300,250 L290,220 Z" },
+  // Centro-Oeste
+  { id: "MT", path: "M170,195 L200,195 L230,180 L265,180 L270,210 L260,250 L230,265 L195,260 L175,235 Z" },
+  { id: "MS", path: "M195,260 L230,265 L240,290 L230,320 L205,325 L185,305 L180,280 Z" },
+  { id: "GO", path: "M260,250 L290,220 L300,250 L310,270 L300,295 L275,305 L255,295 L240,290 L245,270 Z" },
+  { id: "DF", path: "M290,260 L300,258 L302,268 L292,268 Z" },
+  // Sudeste
+  { id: "MG", path: "M300,250 L320,280 L350,290 L375,300 L370,330 L340,340 L310,330 L290,320 L275,305 L300,295 Z" },
+  { id: "ES", path: "M375,300 L395,305 L390,330 L370,330 Z" },
+  { id: "RJ", path: "M340,340 L370,330 L385,340 L375,355 L350,355 Z" },
+  { id: "SP", path: "M240,290 L275,305 L310,330 L340,340 L330,360 L295,370 L265,355 L240,335 L230,320 Z" },
+  // Sul
+  { id: "PR", path: "M230,320 L265,355 L275,375 L250,390 L225,385 L210,365 L205,340 Z" },
+  { id: "SC", path: "M250,390 L275,375 L285,395 L265,410 L245,405 Z" },
+  { id: "RS", path: "M225,385 L250,390 L265,410 L260,440 L235,455 L210,445 L200,420 L210,400 Z" },
+];
 
 const STATUS_CONFIG = {
   active: { color: "hsl(160 84% 39%)", label: "Ativo", badge: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
@@ -16,15 +49,13 @@ const STATUS_CONFIG = {
   inactive: { color: "hsl(0 84% 60%)", label: "Inativo", badge: "bg-red-500/20 text-red-400 border-red-500/30" },
 };
 
-// Convert lat/lng to SVG position
 function toSvg(lat: number, lng: number) {
   const minLat = -34, maxLat = 6, minLng = -75, maxLng = -33;
   const x = ((lng - minLng) / (maxLng - minLng)) * 320 + 90;
-  const y = ((maxLat - lat) / (maxLat - minLat)) * 380 + 20;
+  const y = ((maxLat - lat) / (maxLat - minLat)) * 440 + 15;
   return { x, y };
 }
 
-// Extract unique clients from tasks projects
 function useClientLocations() {
   const { session } = useAuth();
   const { tasks } = useTasks({ accessToken: session?.accessToken, period: "all" });
@@ -47,7 +78,6 @@ function useClientLocations() {
       if (isOverdue) entry.hasOverdue = true;
     });
 
-    // Distribute across Brazil coordinates for visual representation
     const coords = [
       { lat: -23.55, lng: -46.63 }, { lat: -22.91, lng: -43.17 }, { lat: -19.92, lng: -43.94 },
       { lat: -25.43, lng: -49.27 }, { lat: -30.03, lng: -51.23 }, { lat: -12.97, lng: -38.51 },
@@ -79,40 +109,42 @@ function MapDot({ client, index, selected, onSelect }: {
     <motion.g
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: 0.6 + index * 0.08, type: "spring", stiffness: 200, damping: 15 }}
+      transition={{ delay: 1.2 + index * 0.1, type: "spring", stiffness: 200, damping: 15 }}
       style={{ cursor: "pointer" }}
       onClick={onSelect}
     >
-      {/* Pulse ring */}
+      {/* Outer pulse */}
       <motion.circle
-        cx={x} cy={y} r={selected ? 16 : 10}
+        cx={x} cy={y} r={selected ? 18 : 12}
         fill="none"
         stroke={config.color}
         strokeWidth={1}
-        opacity={0.3}
-        animate={{ r: selected ? [16, 22, 16] : [10, 14, 10], opacity: [0.3, 0.08, 0.3] }}
-        transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+        opacity={0.25}
+        animate={{ r: selected ? [18, 25, 18] : [12, 17, 12], opacity: [0.25, 0.05, 0.25] }}
+        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
       />
+      {/* Inner glow */}
+      <circle cx={x} cy={y} r={selected ? 10 : 7} fill={config.color} fillOpacity={0.08} />
       {/* Main dot */}
       <motion.circle
         cx={x} cy={y}
-        r={selected ? 6 : 4}
+        r={selected ? 5 : 3.5}
         fill={config.color}
         stroke="hsl(222 47% 5%)"
-        strokeWidth={2}
-        whileHover={{ r: 8 }}
+        strokeWidth={1.5}
+        whileHover={{ r: 7 }}
         filter="url(#mapGlow)"
       />
       {/* Label on select */}
       {selected && (
         <motion.foreignObject
-          x={x - 60} y={y - 40} width={120} height={32}
-          initial={{ opacity: 0, y: y - 30 }}
-          animate={{ opacity: 1, y: y - 40 }}
+          x={x - 70} y={y - 38} width={140} height={30}
+          initial={{ opacity: 0, y: y - 28 }}
+          animate={{ opacity: 1, y: y - 38 }}
         >
           <div className="flex items-center justify-center">
-            <span className="rounded-lg bg-card/90 border border-border/40 px-2 py-0.5 text-[10px] font-semibold text-foreground backdrop-blur-sm text-center truncate max-w-[110px]">
-              {client.name}
+            <span className="rounded-lg bg-card/95 border border-border/30 px-2.5 py-1 text-[10px] font-semibold text-foreground backdrop-blur-md text-center truncate max-w-[130px] shadow-lg shadow-black/40">
+              {client.name} • {client.tasks} tarefas
             </span>
           </div>
         </motion.foreignObject>
@@ -165,11 +197,11 @@ export default function MapaClientes() {
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar projeto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-56 bg-card/50 border-border/30" />
+              <Input placeholder="Buscar projeto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-56 bg-card/50 border-border/20" />
             </div>
             <div className="flex gap-1.5">
               {(["all", "active", "warning", "inactive"] as const).map((s) => (
-                <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === s ? "bg-primary/20 text-primary border border-primary/30" : "bg-card/30 text-muted-foreground border border-border/20 hover:bg-card/60"}`}>
+                <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === s ? "bg-primary/20 text-primary border border-primary/30" : "bg-card/30 text-muted-foreground border border-border/15 hover:bg-card/60"}`}>
                   {s === "all" ? "Todos" : STATUS_CONFIG[s].label}
                 </button>
               ))}
@@ -186,8 +218,8 @@ export default function MapaClientes() {
             { icon: Users, label: "Tarefas", value: stats.tasks, color: "hsl(280 70% 55%)" },
           ].map((kpi, i) => (
             <motion.div key={kpi.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <div className="flex items-center gap-3 rounded-2xl bg-card/40 border border-border/20 backdrop-blur-xl p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${kpi.color}15` }}>
+              <div className="flex items-center gap-3 rounded-2xl bg-card/40 border border-border/15 backdrop-blur-xl p-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${kpi.color}12` }}>
                   <kpi.icon className="h-5 w-5" style={{ color: kpi.color }} />
                 </div>
                 <div>
@@ -203,8 +235,8 @@ export default function MapaClientes() {
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           {/* Map */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
-            <div className="rounded-2xl bg-card/30 border border-border/20 backdrop-blur-xl overflow-hidden p-4">
-              <svg viewBox="0 0 500 440" className="w-full h-auto" style={{ maxHeight: "65vh" }}>
+            <div className="rounded-2xl bg-card/25 border border-border/15 backdrop-blur-xl overflow-hidden p-5">
+              <svg viewBox="0 0 500 480" className="w-full h-auto" style={{ maxHeight: "68vh" }}>
                 <defs>
                   <filter id="mapGlow">
                     <feGaussianBlur stdDeviation="3" result="blur" />
@@ -213,30 +245,25 @@ export default function MapaClientes() {
                       <feMergeNode in="SourceGraphic" />
                     </feMerge>
                   </filter>
-                  <linearGradient id="brazilGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="hsl(234 89% 64%)" stopOpacity="0.12" />
-                    <stop offset="100%" stopColor="hsl(280 70% 55%)" stopOpacity="0.06" />
+                  <linearGradient id="stateGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="hsl(234 89% 64%)" stopOpacity="0.08" />
+                    <stop offset="100%" stopColor="hsl(280 70% 55%)" stopOpacity="0.03" />
                   </linearGradient>
                 </defs>
 
-                {/* Brazil outline */}
-                <motion.path
-                  d={BRAZIL_PATH}
-                  fill="url(#brazilGrad)"
-                  stroke="hsl(234 89% 64%)"
-                  strokeWidth="1.5"
-                  strokeOpacity="0.25"
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: 1 }}
-                  transition={{ duration: 2, ease: "easeInOut" }}
-                />
-
-                {/* Grid overlay */}
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <line key={`h${i}`} x1="90" y1={20 + i * 48} x2="410" y2={20 + i * 48} stroke="hsl(234 89% 64%)" strokeOpacity="0.04" strokeWidth="0.5" />
-                ))}
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <line key={`v${i}`} x1={90 + i * 40} y1="20" x2={90 + i * 40} y2="420" stroke="hsl(234 89% 64%)" strokeOpacity="0.04" strokeWidth="0.5" />
+                {/* State boundaries */}
+                {BRAZIL_STATES.map((state, i) => (
+                  <motion.path
+                    key={state.id}
+                    d={state.path}
+                    fill="url(#stateGrad)"
+                    stroke="hsl(234 89% 64%)"
+                    strokeWidth="0.6"
+                    strokeOpacity="0.2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 + i * 0.03, duration: 0.5 }}
+                  />
                 ))}
 
                 {/* Connection lines */}
@@ -244,17 +271,20 @@ export default function MapaClientes() {
                   const next = filtered[i + 1];
                   const from = toSvg(c.lat, c.lng);
                   const to = toSvg(next.lat, next.lng);
+                  const mx = (from.x + to.x) / 2;
+                  const my = (from.y + to.y) / 2 - 15;
                   return (
-                    <motion.line
+                    <motion.path
                       key={`line-${c.id}-${next.id}`}
-                      x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                      d={`M${from.x},${from.y} Q${mx},${my} ${to.x},${to.y}`}
+                      fill="none"
                       stroke="hsl(234 89% 64%)"
-                      strokeOpacity="0.08"
-                      strokeWidth="0.6"
-                      strokeDasharray="3 3"
+                      strokeOpacity="0.1"
+                      strokeWidth="0.7"
+                      strokeDasharray="4 3"
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
-                      transition={{ delay: 0.8 + i * 0.05, duration: 0.6 }}
+                      transition={{ delay: 1.0 + i * 0.06, duration: 0.8 }}
                     />
                   );
                 })}
@@ -274,7 +304,7 @@ export default function MapaClientes() {
               <AnimatePresence>
                 {filtered.length === 0 ? (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10">
-                    <MapPin className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                    <MapPin className="h-10 w-10 text-muted-foreground/20 mb-3" />
                     <p className="text-sm text-muted-foreground">Nenhum projeto encontrado</p>
                   </motion.div>
                 ) : filtered.map((c, i) => {
@@ -288,12 +318,10 @@ export default function MapaClientes() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => setSelectedId(selectedId === c.id ? null : c.id)}
-                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${selectedId === c.id ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/10" : "bg-card/30 border-border/20 hover:bg-card/60"}`}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${selectedId === c.id ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/10" : "bg-card/25 border-border/15 hover:bg-card/50"}`}
                     >
                       <div className="flex items-start justify-between">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
-                        </div>
+                        <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
                         <Badge variant="outline" className={`text-[10px] shrink-0 ${config.badge}`}>{config.label}</Badge>
                       </div>
                       <div className="flex items-center gap-4 mt-2">
