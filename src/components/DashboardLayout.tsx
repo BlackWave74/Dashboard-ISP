@@ -33,6 +33,9 @@ function toNotifTask(task: Record<string, any>) {
   const project = String(
     task.projects?.name ?? task.project_name ?? task.project ?? task.projeto ?? ""
   );
+  const consultant = String(
+    task.consultant ?? task.consultor ?? task.responsavel ?? task.responsible ?? ""
+  );
   const statusRaw = String(task.status ?? task.situacao ?? "").toLowerCase();
   const deadline =
     parseDateValue(task.due_date) ??
@@ -47,6 +50,7 @@ function toNotifTask(task: Record<string, any>) {
   return {
     title,
     project,
+    consultant,
     statusKey: isDone ? "done" : isOverdue ? "overdue" : "pending",
     deadlineDate: deadline,
     deadlineIsSoon,
