@@ -45,14 +45,20 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
       const title = task.title || "Tarefa";
       const project = task.project || "";
 
+      const formatDate = (d: Date | null | undefined) => {
+        if (!d) return "";
+        return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+      };
+
       // Overdue tasks
       if (task.statusKey === "overdue") {
         const id = makeId("overdue", title);
+        const dateStr = formatDate(task.deadlineDate);
         items.push({
           id,
           type: "overdue",
           title: "Tarefa atrasada",
-          message: `"${title}" está com o prazo estourado.`,
+          message: `"${title}" tinha prazo para ${dateStr || "data não definida"}.`,
           timestamp: task.deadlineDate?.getTime() ?? now,
           read: readIds.has(id),
           projectName: project,
@@ -62,11 +68,12 @@ export function useNotifications(tasks: TaskLike[], userName?: string) {
       // Deadline approaching (within 3 days)
       if (task.deadlineIsSoon && task.statusKey !== "done" && task.statusKey !== "overdue") {
         const id = makeId("soon", title);
+        const dateStr = formatDate(task.deadlineDate);
         items.push({
           id,
           type: "deadline_soon",
           title: "Prazo se aproximando",
-          message: `"${title}" tem prazo próximo.`,
+          message: `Você tem até ${dateStr} para completar "${title}".`,
           timestamp: task.deadlineDate?.getTime() ?? now,
           read: readIds.has(id),
           projectName: project,
