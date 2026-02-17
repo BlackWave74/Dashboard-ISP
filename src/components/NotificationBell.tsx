@@ -125,7 +125,7 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">Notificações</h3>
+                <h3 className="text-sm font-bold text-white">Tarefas Pendentes</h3>
                 {unreadCount > 0 && (
                   <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-400">
                     {unreadCount} nova{unreadCount > 1 ? "s" : ""}

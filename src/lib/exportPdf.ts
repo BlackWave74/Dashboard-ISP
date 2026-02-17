@@ -15,6 +15,7 @@ type ExportOptions = {
   subtitle?: string;
   fileName?: string;
   tasks: TaskRow[];
+  generatedBy?: string;
   stats?: {
     total: number;
     done: number;
@@ -40,14 +41,13 @@ async function loadLogoBase64(): Promise<string | null> {
   }
 }
 
-/** Draw logo with correct aspect ratio (not stretched) */
+/** Draw logo with correct aspect ratio */
 function drawLogo(doc: jsPDF, logo: string, pageW: number) {
   try {
-    // Logo natural aspect ~ 4:1. Target height = 10mm, width auto.
     const h = 10;
-    const w = h * 3.6; // keep proportional
+    const w = h * 3.6;
     const x = pageW - w - 10;
-    const y = (28 - h) / 2; // vertically center in header
+    const y = (28 - h) / 2;
     doc.addImage(logo, "PNG", x, y, w, h);
   } catch {
     doc.setFontSize(8);
@@ -56,15 +56,10 @@ function drawLogo(doc: jsPDF, logo: string, pageW: number) {
   }
 }
 
-/** Draw a simple horizontal bar chart in the PDF */
+/** Draw a simple horizontal bar chart */
 function drawBarChart(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  data: { label: string; value: number; color: number[] }[],
-  title: string
+  doc: jsPDF, x: number, y: number, width: number, height: number,
+  data: { label: string; value: number; color: number[] }[], title: string
 ) {
   const maxVal = Math.max(...data.map((d) => d.value), 1);
   const barGap = 4;
@@ -72,27 +67,21 @@ function drawBarChart(
   const chartH = height - labelH - 10;
   const barW = (width - barGap * (data.length + 1)) / data.length;
 
-  // Title
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 27, 75);
   doc.text(title, x, y + 6);
 
-  // Bars
   data.forEach((d, i) => {
     const bx = x + barGap + i * (barW + barGap);
     const bh = (d.value / maxVal) * chartH;
     const by = y + 10 + (chartH - bh);
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
     doc.roundedRect(bx, by, barW, bh, 1, 1, "F");
-
-    // Value on top
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(d.color[0], d.color[1], d.color[2]);
     doc.text(String(d.value), bx + barW / 2, by - 2, { align: "center" });
-
-    // Label below
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 120);
@@ -101,12 +90,9 @@ function drawBarChart(
   });
 }
 
-/** Draw a donut-style pie chart (approximated with arcs) */
+/** Draw a donut chart */
 function drawDonutChart(
-  doc: jsPDF,
-  cx: number,
-  cy: number,
-  r: number,
+  doc: jsPDF, cx: number, cy: number, r: number,
   data: { label: string; value: number; color: number[] }[]
 ) {
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -115,9 +101,6 @@ function drawDonutChart(
   let startAngle = -Math.PI / 2;
   data.forEach((d) => {
     const sliceAngle = (d.value / total) * 2 * Math.PI;
-    const endAngle = startAngle + sliceAngle;
-
-    // Draw filled arc using polygon approximation
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
     const points: number[][] = [[cx, cy]];
     const steps = Math.max(8, Math.ceil(sliceAngle * 20));
@@ -125,36 +108,21 @@ function drawDonutChart(
       const a = startAngle + (s / steps) * sliceAngle;
       points.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
     }
-    // Draw as triangle fan
     for (let s = 1; s < points.length - 1; s++) {
-      doc.triangle(
-        points[0][0], points[0][1],
-        points[s][0], points[s][1],
-        points[s + 1][0], points[s + 1][1],
-        "F"
-      );
+      doc.triangle(points[0][0], points[0][1], points[s][0], points[s][1], points[s + 1][0], points[s + 1][1], "F");
     }
-
-    startAngle = endAngle;
+    startAngle += sliceAngle;
   });
 
-  // Center hole (white)
   doc.setFillColor(255, 255, 255);
   const inner = r * 0.55;
-  // Approximate circle
   const cSteps = 40;
   for (let s = 0; s < cSteps; s++) {
     const a1 = (s / cSteps) * 2 * Math.PI;
     const a2 = ((s + 1) / cSteps) * 2 * Math.PI;
-    doc.triangle(
-      cx, cy,
-      cx + inner * Math.cos(a1), cy + inner * Math.sin(a1),
-      cx + inner * Math.cos(a2), cy + inner * Math.sin(a2),
-      "F"
-    );
+    doc.triangle(cx, cy, cx + inner * Math.cos(a1), cy + inner * Math.sin(a1), cx + inner * Math.cos(a2), cy + inner * Math.sin(a2), "F");
   }
 
-  // Legend
   const legendX = cx + r + 6;
   data.forEach((d, i) => {
     const ly = cy - r + i * 10 + 2;
@@ -167,11 +135,60 @@ function drawDonutChart(
   });
 }
 
-function drawFooter(doc: jsPDF, pageW: number, now: string) {
+/** Draw a simple line chart (timeline) */
+function drawLineChart(
+  doc: jsPDF, x: number, y: number, width: number, height: number,
+  data: { label: string; value: number }[], title: string, lineColor: number[]
+) {
+  if (data.length < 2) return;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 27, 75);
+  doc.text(title, x, y + 6);
+
+  const chartY = y + 12;
+  const chartH = height - 22;
+  const maxVal = Math.max(...data.map((d) => d.value), 1);
+  const stepX = width / (data.length - 1);
+
+  // Grid lines
+  doc.setDrawColor(220, 220, 230);
+  doc.setLineWidth(0.1);
+  for (let i = 0; i <= 3; i++) {
+    const gy = chartY + (i / 3) * chartH;
+    doc.line(x, gy, x + width, gy);
+  }
+
+  // Line
+  doc.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
+  doc.setLineWidth(0.6);
+  const points = data.map((d, i) => ({
+    px: x + i * stepX,
+    py: chartY + chartH - (d.value / maxVal) * chartH,
+  }));
+  for (let i = 0; i < points.length - 1; i++) {
+    doc.line(points[i].px, points[i].py, points[i + 1].px, points[i + 1].py);
+  }
+
+  // Dots + labels
+  data.forEach((d, i) => {
+    doc.setFillColor(lineColor[0], lineColor[1], lineColor[2]);
+    doc.circle(points[i].px, points[i].py, 1, "F");
+    doc.setFontSize(5);
+    doc.setTextColor(100, 100, 120);
+    doc.text(d.label, points[i].px, chartY + chartH + 6, { align: "center" });
+  });
+}
+
+function drawFooter(doc: jsPDF, pageW: number, now: string, generatedBy?: string) {
   const pageH = doc.internal.pageSize.getHeight();
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 170);
-  doc.text(`ISP Consulte — ${now}`, 14, pageH - 6);
+  const footer = generatedBy
+    ? `ISP Consulte — Gerado por ${generatedBy} em ${now}`
+    : `ISP Consulte — ${now}`;
+  doc.text(footer, 14, pageH - 6);
   doc.text(`Página ${doc.getCurrentPageInfo().pageNumber}`, pageW - 14, pageH - 6, { align: "right" });
 }
 
@@ -181,6 +198,7 @@ export async function exportTasksPDF({
   fileName = "relatorio-tarefas.pdf",
   tasks,
   stats,
+  generatedBy,
 }: ExportOptions) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -199,7 +217,10 @@ export async function exportTasksPDF({
   doc.text(title, 14, 13);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(subtitle || `Gerado em ${now}`, 14, 20);
+  const subLine = generatedBy
+    ? `Gerado por ${generatedBy} em ${now}`
+    : subtitle || `Gerado em ${now}`;
+  doc.text(subLine, 14, 20);
 
   if (logo) drawLogo(doc, logo, pageW);
   else {
@@ -236,14 +257,13 @@ export async function exportTasksPDF({
     });
     yPos += 22;
 
-    // Charts — status donut + bar chart by project
+    // Row 1: Status donut + Tasks by project bar chart
     const chartData = [
       { label: "Concluídas", value: stats.done, color: [34, 197, 94] },
       { label: "Andamento", value: stats.pending, color: [250, 204, 21] },
       { label: "Atrasadas", value: stats.overdue, color: [239, 68, 68] },
     ];
 
-    // Donut
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(30, 27, 75);
@@ -266,10 +286,51 @@ export async function exportTasksPDF({
       }));
 
     if (topProjects.length > 0) {
-      drawBarChart(doc, 110, yPos, pageW - 124, 44, topProjects, "Tarefas por Projeto");
+      drawBarChart(doc, 110, yPos, (pageW - 124) / 2, 44, topProjects, "Tarefas por Projeto");
+    }
+
+    // Bar chart — tasks by consultant
+    const consultantCounts = new Map<string, number>();
+    tasks.forEach((t) => {
+      const c = t.consultant || "Não atribuído";
+      consultantCounts.set(c, (consultantCounts.get(c) ?? 0) + 1);
+    });
+    const topConsultants = Array.from(consultantCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map((e, i) => ({
+        label: e[0],
+        value: e[1],
+        color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21], [239, 68, 68]][i % 5],
+      }));
+
+    if (topConsultants.length > 0) {
+      const chartX = 110 + (pageW - 124) / 2 + 8;
+      drawBarChart(doc, chartX, yPos, (pageW - 124) / 2 - 8, 44, topConsultants, "Tarefas por Responsável");
     }
 
     yPos += 50;
+
+    // Row 2: Timeline chart — deadline distribution by month
+    const monthCounts = new Map<string, number>();
+    tasks.forEach((t) => {
+      if (t.deadlineLabel && t.deadlineLabel !== "—") {
+        const parts = t.deadlineLabel.split("/");
+        if (parts.length >= 2) {
+          const key = `${parts[1]}/${parts[2] || ""}`.trim();
+          const shortKey = parts.length >= 3 ? `${parts[1]}/${parts[2].slice(-2)}` : parts[1];
+          monthCounts.set(shortKey, (monthCounts.get(shortKey) ?? 0) + 1);
+        }
+      }
+    });
+    const timelineData = Array.from(monthCounts.entries())
+      .slice(0, 8)
+      .map(([label, value]) => ({ label, value }));
+
+    if (timelineData.length >= 2) {
+      drawLineChart(doc, 14, yPos, pageW - 28, 36, timelineData, "Linha do Tempo — Prazos por Mês", [99, 102, 241]);
+      yPos += 42;
+    }
   }
 
   // Table
@@ -292,13 +353,14 @@ export async function exportTasksPDF({
       5: { halign: "center", cellWidth: 22 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: () => drawFooter(doc, pageW, now),
+    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
   });
 
   doc.save(fileName);
 }
 
 type AnalyticsExportOptions = {
+  generatedBy?: string;
   userName?: string;
   period?: string;
   fileName?: string;
@@ -324,6 +386,7 @@ export async function exportAnalyticsPDF({
   fileName = "relatorio-analiticas.pdf",
   projects,
   totals,
+  generatedBy,
 }: AnalyticsExportOptions) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -342,8 +405,10 @@ export async function exportAnalyticsPDF({
   doc.text("Relatório de Analíticas", 14, 13);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  const sub = [userName, period].filter(Boolean).join(" · ") || now;
-  doc.text(sub, 14, 20);
+  const subLine = generatedBy
+    ? `Gerado por ${generatedBy} em ${now}`
+    : [userName, period].filter(Boolean).join(" · ") || now;
+  doc.text(subLine, 14, 20);
 
   if (logo) drawLogo(doc, logo, pageW);
   else {
@@ -428,7 +493,7 @@ export async function exportAnalyticsPDF({
       5: { halign: "center", cellWidth: 22 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: () => drawFooter(doc, pageW, now),
+    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
   });
 
   doc.save(fileName);

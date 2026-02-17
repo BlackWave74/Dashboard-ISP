@@ -614,7 +614,7 @@ export default function TarefasPage() {
                       pending: stats.pending,
                       totalHours: `${totalHoursLabel}h`,
                     },
-                    subtitle: session?.name ? `Gerado por ${session.name}` : undefined,
+                    generatedBy: session?.name || undefined,
                   });
                 }}
                 disabled={filteredTasks.length === 0}

@@ -20,7 +20,7 @@ const ComodatoPage = lazy(() => import("./pages/Comodato"));
 const IntegracoesPage = lazy(() => import("./pages/Integracoes"));
 const SuportePage = lazy(() => import("./pages/Suporte"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const MapaClientesPage = lazy(() => import("./pages/MapaClientes"));
+
 const CalendarioPage = lazy(() => import("./pages/Calendario"));
 const GamificacaoPage = lazy(() => import("./pages/Gamificacao"));
 
@@ -50,7 +50,7 @@ const App = () => (
             <Route path="/integracoes" element={<LazyPage><IntegracoesPage /></LazyPage>} />
             <Route path="/comodato" element={<LazyPage><ComodatoPage /></LazyPage>} />
             <Route path="/suporte" element={<LazyPage><SuportePage /></LazyPage>} />
-            <Route path="/mapa" element={<LazyPage><MapaClientesPage /></LazyPage>} />
+            
             <Route path="/calendario" element={<LazyPage><CalendarioPage /></LazyPage>} />
             <Route path="/gamificacao" element={<LazyPage><GamificacaoPage /></LazyPage>} />
           </Route>
