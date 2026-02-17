@@ -67,57 +67,64 @@ export function useNotifications(
       ? tasks
       : tasks.filter((t) => isOwnTask(t));
 
+    const formatDate = (d: Date | null | undefined) => {
+      if (!d) return "";
+      return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    };
+
+    const getDaysRemaining = (d: Date | null | undefined): number | undefined => {
+      if (!d) return undefined;
+      return Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    };
+
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
     visibleTasks.forEach((task) => {
       const title = task.title || "Tarefa";
       const project = task.project || "";
       const own = isOwnTask(task);
 
-      const formatDate = (d: Date | null | undefined) => {
-        if (!d) return "";
-        return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-      };
+      // Skip done tasks
+      if (task.statusKey === "done") return;
 
-      const getDaysRemaining = (d: Date | null | undefined): number | undefined => {
-        if (!d) return undefined;
-        return Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      };
-
-      // Overdue tasks
-      if (task.statusKey === "overdue") {
-        const id = makeId("overdue", title);
-        const dateStr = formatDate(task.deadlineDate);
+      // Only show tasks with deadline within 7 days or already overdue
+      if (task.deadlineDate) {
         const daysRemaining = getDaysRemaining(task.deadlineDate);
-        items.push({
-          id,
-          type: "overdue",
-          title: own ? "⚠️ Sua tarefa está atrasada" : "Tarefa atrasada",
-          message: `"${title}" tinha prazo para ${dateStr || "data não definida"}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
-          timestamp: task.deadlineDate?.getTime() ?? now,
-          read: readIds.has(id),
-          projectName: project,
-          daysRemaining,
-          deadlineDateStr: dateStr,
-          isOwnTask: own,
-        });
-      }
-
-      // Deadline approaching
-      if (task.deadlineIsSoon && task.statusKey !== "done" && task.statusKey !== "overdue") {
-        const id = makeId("soon", title);
         const dateStr = formatDate(task.deadlineDate);
-        const daysRemaining = getDaysRemaining(task.deadlineDate);
-        items.push({
-          id,
-          type: "deadline_soon",
-          title: own ? "📅 Prazo se aproximando" : "Prazo se aproximando",
-          message: `Tarefa "${title}" deve ser concluída até o dia ${dateStr}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
-          timestamp: task.deadlineDate?.getTime() ?? now,
-          read: readIds.has(id),
-          projectName: project,
-          daysRemaining,
-          deadlineDateStr: dateStr,
-          isOwnTask: own,
-        });
+        const isWithinWeek = task.deadlineDate.getTime() - now <= ONE_WEEK_MS;
+        const isOverdue = task.statusKey === "overdue" || task.deadlineDate.getTime() < now;
+
+        if (!isOverdue && !isWithinWeek) return;
+
+        if (isOverdue) {
+          const id = makeId("overdue", title);
+          items.push({
+            id,
+            type: "overdue",
+            title: own ? "⚠️ Sua tarefa está atrasada" : "Tarefa atrasada",
+            message: `"${title}" tinha prazo para ${dateStr || "data não definida"}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
+            timestamp: task.deadlineDate?.getTime() ?? now,
+            read: readIds.has(id),
+            projectName: project,
+            daysRemaining,
+            deadlineDateStr: dateStr,
+            isOwnTask: own,
+          });
+        } else {
+          const id = makeId("soon", title);
+          items.push({
+            id,
+            type: "deadline_soon",
+            title: own ? "📅 Prazo se aproximando" : "Prazo se aproximando",
+            message: `Tarefa "${title}" deve ser concluída até o dia ${dateStr}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
+            timestamp: task.deadlineDate?.getTime() ?? now,
+            read: readIds.has(id),
+            projectName: project,
+            daysRemaining,
+            deadlineDateStr: dateStr,
+            isOwnTask: own,
+          });
+        }
       }
     });
 
