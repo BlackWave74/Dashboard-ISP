@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { usePageSEO } from "@/hooks/usePageSEO";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import DataErrorCard from "@/components/ui/DataErrorCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -165,6 +166,7 @@ const stagger = {
 /* ─── Page ─── */
 
 export default function TarefasPage() {
+  usePageSEO("/tarefas");
   const { session } = useAuth();
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const [nowTs] = useState(() => Date.now());

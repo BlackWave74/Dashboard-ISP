@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 
@@ -14,7 +14,7 @@ const COLORS = [
   "hsl(0 84% 60%)",    // overdue - red
 ];
 
-export default function AnalyticsStatusDonut({ done, pending, overdue }: Props) {
+function AnalyticsStatusDonutInner({ done, pending, overdue }: Props) {
   const total = done + pending + overdue;
 
   const data = useMemo(() => {
@@ -82,3 +82,5 @@ export default function AnalyticsStatusDonut({ done, pending, overdue }: Props) 
     </motion.div>
   );
 }
+
+export default memo(AnalyticsStatusDonutInner);

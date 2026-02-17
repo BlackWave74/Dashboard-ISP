@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storage } from "@/modules/shared/storage";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import {
+  fetchUserRole,
+  fetchAllowedAreas,
+  fetchAccessibleProjects,
+  fetchClienteInfo,
+} from "@/modules/auth/api/fetchAuthData";
 
 export type UserRole = "admin" | "consultor" | "gerente" | "coordenador" | "cliente";
 export type AccessArea = "home" | "comodato" | "integracoes" | "tarefas" | "usuarios" | "analiticas";
@@ -42,150 +48,38 @@ export const ACCESS_RULES: Record<UserRole, Record<AccessArea, boolean>> = {
 
 const SESSION_KEY = "auth_session";
 
-const normalizeRole = (value?: string): UserRole => {
-  const role = (value ?? "").toLowerCase();
-  if (role === "admin" || role === "administrador") return "admin";
-  if (role === "gerente") return "gerente";
-  if (role === "coordenador") return "coordenador";
-  if (role === "cliente") return "cliente";
-  return "consultor";
-};
+/** Build a full session from Supabase auth response data */
+const buildSession = async (
+  data: Record<string, any>,
+  fallbackEmail: string,
+  storedSession?: AuthSession | null
+): Promise<AuthSession> => {
+  const user = data?.user;
+  const metadata = user?.user_metadata ?? {};
+  const metaObj = metadata as Record<string, unknown>;
+  const clientName = metaObj?.["client_name"] as string | undefined;
+  const expiresIn = Number(data?.expires_in ?? 0);
+  const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-/** Fetch role: user_roles → users.user_profile → JWT metadata fallback */
-const fetchUserRole = async (
-  accessToken: string,
-  authUserId: string,
-  jwtMetadata?: Record<string, unknown>
-): Promise<UserRole> => {
-  const base = SUPABASE_URL.replace(/\/$/, "");
+  const [role, allowedAreas, accessibleProjectIds, clienteInfo] = await Promise.all([
+    fetchUserRole(data?.access_token, user?.id, metaObj),
+    fetchAllowedAreas(data?.access_token, user?.id),
+    fetchAccessibleProjects(data?.access_token, user?.id),
+    fetchClienteInfo(data?.access_token, user?.id),
+  ]);
 
-  // 1. Try user_roles table
-  try {
-    const res = await fetch(
-      `${base}/rest/v1/user_roles?user_id=eq.${authUserId}&select=role&limit=1`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` } }
-    );
-    if (res.ok) {
-      const rows = await res.json();
-      if (Array.isArray(rows) && rows.length > 0) {
-        return normalizeRole(rows[0].role);
-      }
-    }
-  } catch { /* fallback */ }
-
-  // 2. Fallback: users.user_profile
-  try {
-    const res2 = await fetch(
-      `${base}/rest/v1/users?auth_user_id=eq.${authUserId}&select=user_profile&limit=1`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` } }
-    );
-    if (res2.ok) {
-      const rows2 = await res2.json();
-      if (Array.isArray(rows2) && rows2.length > 0) {
-        return normalizeRole(rows2[0].user_profile);
-      }
-    }
-  } catch { /* fallback */ }
-
-  // 3. Fallback: JWT user_metadata
-  if (jwtMetadata?.user_profile) {
-    return normalizeRole(jwtMetadata.user_profile as string);
-  }
-
-  return "consultor";
-};
-
-/** Fetch allowed areas from user_allowed_areas table */
-const fetchAllowedAreas = async (
-  accessToken: string,
-  authUserId: string
-): Promise<AccessArea[] | null> => {
-  const base = SUPABASE_URL.replace(/\/$/, "");
-  try {
-    const res = await fetch(
-      `${base}/rest/v1/user_allowed_areas?user_id=eq.${authUserId}&select=area_name`,
-      {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-    if (!res.ok) return null;
-    const rows = await res.json();
-    if (Array.isArray(rows) && rows.length > 0) {
-      return rows.map((r: { area_name: string }) => r.area_name as AccessArea);
-    }
-  } catch {
-    // fallback
-  }
-  return null;
-};
-
-/** Fetch accessible project IDs from user_project_access table */
-const fetchAccessibleProjects = async (
-  accessToken: string,
-  authUserId: string
-): Promise<number[] | null> => {
-  const base = SUPABASE_URL.replace(/\/$/, "");
-  try {
-    const res = await fetch(
-      `${base}/rest/v1/user_project_access?user_id=eq.${authUserId}&select=project_id`,
-      {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-    if (!res.ok) return null;
-    const rows = await res.json();
-    if (Array.isArray(rows) && rows.length > 0) {
-      return rows.map((r: { project_id: number }) => r.project_id);
-    }
-  } catch {
-    // fallback
-  }
-  return null;
-};
-
-/** Fetch cliente_id and client name from users + clientes tables */
-const fetchClienteInfo = async (
-  accessToken: string,
-  authUserId: string
-): Promise<{ clienteId: number | null; clienteName: string | null }> => {
-  const base = SUPABASE_URL.replace(/\/$/, "");
-  try {
-    const res = await fetch(
-      `${base}/rest/v1/users?auth_user_id=eq.${authUserId}&select=cliente_id&limit=1`,
-      {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-    if (!res.ok) return { clienteId: null, clienteName: null };
-    const rows = await res.json();
-    const clienteId = rows?.[0]?.cliente_id ?? null;
-    if (!clienteId) return { clienteId: null, clienteName: null };
-
-    // Fetch client name
-    const res2 = await fetch(
-      `${base}/rest/v1/clientes?cliente_id=eq.${clienteId}&select=nome&limit=1`,
-      {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-    if (!res2.ok) return { clienteId, clienteName: null };
-    const rows2 = await res2.json();
-    return { clienteId, clienteName: rows2?.[0]?.nome ?? null };
-  } catch {
-    return { clienteId: null, clienteName: null };
-  }
+  return {
+    name: metadata.name || user?.email || storedSession?.name || "Usuário",
+    email: user?.email ?? fallbackEmail,
+    role,
+    company: clienteInfo.clienteName ?? clientName ?? storedSession?.company ?? null,
+    clienteId: clienteInfo.clienteId ?? storedSession?.clienteId ?? null,
+    allowedAreas,
+    accessibleProjectIds,
+    accessToken: data?.access_token,
+    refreshToken: data?.refresh_token ?? storedSession?.refreshToken,
+    expiresAt,
+  };
 };
 
 export function useAuth() {
@@ -204,53 +98,21 @@ export function useAuth() {
 
   const refreshSession = useCallback(
     async (stored: AuthSession, attempt = 0): Promise<AuthSession | null> => {
-      const supabaseUrl = SUPABASE_URL;
-      const anon = SUPABASE_ANON_KEY;
-      if (!supabaseUrl || !anon || !stored.refreshToken) return null;
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !stored.refreshToken) return null;
       try {
-        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+        const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
           method: "POST",
-          headers: {
-            apikey: anon,
-            "Content-Type": "application/json",
-          },
+          headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: stored.refreshToken }),
         });
         const data = await response.json();
         if (!response.ok) return null;
-        const user = data?.user;
-        const metadata = user?.user_metadata ?? {};
-        const metaObj = metadata as Record<string, unknown>;
-        const clientName = metaObj?.["client_name"] as string | undefined;
-        const expiresIn = Number(data?.expires_in ?? 0);
-        const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-        // Fetch role and allowed areas from DB tables
-        const refreshMeta = metadata as Record<string, unknown>;
-        const [role, allowedAreas, accessibleProjectIds, clienteInfo] = await Promise.all([
-          fetchUserRole(data?.access_token, user?.id, refreshMeta),
-          fetchAllowedAreas(data?.access_token, user?.id),
-          fetchAccessibleProjects(data?.access_token, user?.id),
-          fetchClienteInfo(data?.access_token, user?.id),
-        ]);
-
-        const refreshed: AuthSession = {
-          name: metadata.name || user?.email || stored.name,
-          email: user?.email ?? stored.email,
-          role,
-          company: clienteInfo.clienteName ?? clientName ?? stored.company ?? null,
-          clienteId: clienteInfo.clienteId ?? stored.clienteId ?? null,
-          allowedAreas,
-          accessibleProjectIds,
-          accessToken: data?.access_token,
-          refreshToken: data?.refresh_token ?? stored.refreshToken,
-          expiresAt,
-        };
+        const refreshed = await buildSession(data, stored.email, stored);
         setSession(refreshed);
         persistSession(refreshed);
         return refreshed;
       } catch (err) {
-        // Retry once on network failure
         if (attempt < 1) {
           await new Promise((r) => setTimeout(r, 2000));
           return refreshSession(stored, attempt + 1);
@@ -269,10 +131,7 @@ export function useAuth() {
         const expired = saved.expiresAt ? saved.expiresAt < Date.now() : false;
         if (expired && saved.refreshToken) {
           const refreshed = await refreshSession(saved);
-          if (refreshed) {
-            setLoadingSession(false);
-            return;
-          }
+          if (refreshed) { setLoadingSession(false); return; }
         }
         setSession(saved);
       } else {
@@ -288,16 +147,10 @@ export function useAuth() {
     async ({ email, password }: AuthPayload): Promise<AuthResult> => {
       const now = Date.now();
 
-      // Check if blocked due to failed password attempts (3 failures = 60s block)
       if (now < failedBlockedUntilRef.current) {
         const seconds = Math.ceil((failedBlockedUntilRef.current - now) / 1000);
-        return {
-          success: false,
-          message: `Conta bloqueada temporariamente após 3 tentativas incorretas. Aguarde ${seconds}s ou entre em contato com seu consultor para recuperar a senha.`,
-        };
+        return { success: false, message: `Conta bloqueada temporariamente após 3 tentativas incorretas. Aguarde ${seconds}s ou entre em contato com seu consultor para recuperar a senha.` };
       }
-
-      // Anti-spam: rapid clicking
       if (now < loginBlockedUntilRef.current) {
         const seconds = Math.ceil((loginBlockedUntilRef.current - now) / 1000);
         return { success: false, message: `Aguarde ${seconds}s antes de tentar novamente.` };
@@ -313,68 +166,30 @@ export function useAuth() {
       }
       loginAttemptRef.current = now;
 
-      const supabaseUrl = SUPABASE_URL;
-      const anon = SUPABASE_ANON_KEY;
-      if (!supabaseUrl || !anon) {
-        return {
-          success: false,
-          message: "Conexão com o servidor não configurada.",
-        };
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        return { success: false, message: "Conexão com o servidor não configurada." };
       }
 
       try {
-        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
           method: "POST",
-          headers: {
-            apikey: anon,
-            "Content-Type": "application/json",
-          },
+          headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
         const data = await response.json();
         if (!response.ok) {
-          // Track failed password attempts
           failedAttemptsRef.current += 1;
           if (failedAttemptsRef.current >= 3) {
-            failedBlockedUntilRef.current = Date.now() + 60_000; // block 60s
+            failedBlockedUntilRef.current = Date.now() + 60_000;
             failedAttemptsRef.current = 0;
-            return {
-              success: false,
-              message: "Conta bloqueada por 60 segundos após 3 tentativas incorretas. Entre em contato com seu consultor para recuperar a senha.",
-            };
+            return { success: false, message: "Conta bloqueada por 60 segundos após 3 tentativas incorretas. Entre em contato com seu consultor para recuperar a senha." };
           }
           const remaining = 3 - failedAttemptsRef.current;
           const msg = data?.msg || data?.error_description || data?.error || "Credenciais inválidas.";
           return { success: false, message: `${msg} (${remaining} tentativa${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""})` };
         }
 
-        const user = data?.user;
-        const metadata = user?.user_metadata ?? {};
-        const metaObj = metadata as Record<string, unknown>;
-        const clientName = metaObj?.["client_name"] as string | undefined;
-        const expiresIn = Number(data?.expires_in ?? 0);
-        const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
-
-        // Fetch role, allowed areas, accessible projects, and client info from DB tables
-        const [role, allowedAreas, accessibleProjectIds, clienteInfo] = await Promise.all([
-          fetchUserRole(data?.access_token, user?.id, metaObj),
-          fetchAllowedAreas(data?.access_token, user?.id),
-          fetchAccessibleProjects(data?.access_token, user?.id),
-          fetchClienteInfo(data?.access_token, user?.id),
-        ]);
-
-        const authSession: AuthSession = {
-          name: metadata.name || user?.email || "Usuário",
-          email: user?.email ?? email,
-          role,
-          company: clienteInfo.clienteName ?? clientName ?? null,
-          clienteId: clienteInfo.clienteId ?? null,
-          allowedAreas,
-          accessibleProjectIds,
-          accessToken: data?.access_token,
-          refreshToken: data?.refresh_token,
-          expiresAt,
-        };
+        const authSession = await buildSession(data, email);
         setSession(authSession);
         persistSession(authSession);
         loginSpamCountRef.current = 0;
@@ -395,21 +210,14 @@ export function useAuth() {
   }, []);
 
   const logout = useCallback(async () => {
-    // Revoke token server-side before clearing local state
     if (session?.accessToken) {
       try {
         const base = SUPABASE_URL.replace(/\/$/, "");
         await fetch(`${base}/auth/v1/logout`, {
           method: "POST",
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${session.accessToken}`,
-            "Content-Type": "application/json",
-          },
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${session.accessToken}`, "Content-Type": "application/json" },
         });
-      } catch {
-        // Best-effort: continue with local logout even if server revocation fails
-      }
+      } catch { /* best-effort */ }
     }
     setSession(null);
     persistSession(null);
@@ -419,11 +227,7 @@ export function useAuth() {
     (area: AccessArea, roleOverride?: UserRole) => {
       const role = roleOverride ?? session?.role ?? "consultor";
       const allowed = session?.allowedAreas;
-      // If allowedAreas is defined, it overrides role-based rules entirely
-      if (allowed && allowed.length > 0) {
-        return allowed.includes(area);
-      }
-      // Fallback to role-based rules when no custom areas are set
+      if (allowed && allowed.length > 0) return allowed.includes(area);
       const rules = ACCESS_RULES[role] ?? ACCESS_RULES.consultor;
       return Boolean(rules[area]);
     },
@@ -431,15 +235,7 @@ export function useAuth() {
   );
 
   return useMemo(
-    () => ({
-      session,
-      loadingSession,
-      isAuthenticated: Boolean(session),
-      canAccess,
-      login,
-      register,
-      logout,
-    }),
+    () => ({ session, loadingSession, isAuthenticated: Boolean(session), canAccess, login, register, logout }),
     [session, loadingSession, canAccess, login, register, logout]
   );
 }

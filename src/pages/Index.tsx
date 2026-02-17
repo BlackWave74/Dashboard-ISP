@@ -2,8 +2,10 @@ import HeroSection from "@/components/home/HeroSection";
 import StatsCards from "@/components/home/StatsCards";
 import FeaturesGrid from "@/components/home/FeaturesGrid";
 import QuickGuide from "@/components/home/QuickGuide";
+import { usePageSEO } from "@/hooks/usePageSEO";
 
 export default function IndexPage() {
+  usePageSEO("/");
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Full page purple background */}

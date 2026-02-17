@@ -6,6 +6,7 @@ import {
   Search, HelpCircle, Loader2, Headphones, BookOpen, ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import { usePageSEO } from "@/hooks/usePageSEO";
 
 /* ─── FAQ Data ─── */
 type FaqItem = { q: string; a: string };
@@ -49,6 +50,7 @@ const FAQ_ITEMS: FaqCategory[] = [
 ];
 
 export default function SuportePage() {
+  usePageSEO("/suporte");
   const navigate = useNavigate();
   const { session, loadingSession, canAccess } = useAuth();
   const [faqSearch, setFaqSearch] = useState("");

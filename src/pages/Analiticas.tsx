@@ -18,6 +18,7 @@ import AnalyticsPendingTasks from "@/modules/analytics/components/AnalyticsPendi
 import AnalyticsProjectDrawer from "@/modules/analytics/components/AnalyticsProjectDrawer";
 import type { AnalyticsFilterState } from "@/modules/analytics/components/AnalyticsFilters";
 import type { ProjectAnalytics } from "@/modules/analytics/types";
+import { usePageSEO } from "@/hooks/usePageSEO";
 
 const PERIOD_DAYS: Record<AnalyticsFilterState["period"], number> = {
   "30d": 30,
@@ -27,6 +28,7 @@ const PERIOD_DAYS: Record<AnalyticsFilterState["period"], number> = {
 };
 
 export default function AnaliticasPage() {
+  usePageSEO("/analiticas");
   const { session } = useAuth();
   const accessToken = session?.accessToken;
   const userName = session?.name;

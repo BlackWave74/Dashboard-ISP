@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import { dateToLocalIso, formatIsoToPtBr } from "@/modules/tasks/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import {
@@ -43,7 +43,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function AnalyticsPerformanceChart({ times }: Props) {
+function AnalyticsPerformanceChartInner({ times }: Props) {
   const [period, setPeriod] = useState<string>("180d");
   const [animKey, setAnimKey] = useState(0);
 
@@ -204,3 +204,5 @@ export default function AnalyticsPerformanceChart({ times }: Props) {
     </motion.div>
   );
 }
+
+export default memo(AnalyticsPerformanceChartInner);

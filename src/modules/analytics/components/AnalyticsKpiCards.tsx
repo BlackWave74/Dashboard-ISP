@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { FolderKanban, Clock, CheckCircle2, AlertTriangle, TrendingUp, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -11,7 +12,7 @@ type Props = {
   loading?: boolean;
 };
 
-export default function AnalyticsKpiCards({ clients, activeProjects, totalHours, totalTasks, doneCount, overdueCount, loading }: Props) {
+function AnalyticsKpiCardsInner({ clients, activeProjects, totalHours, totalTasks, doneCount, overdueCount, loading }: Props) {
   const pendingCount = totalTasks - doneCount - overdueCount;
   const completionPct = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
 
@@ -98,3 +99,5 @@ export default function AnalyticsKpiCards({ clients, activeProjects, totalHours,
     </div>
   );
 }
+
+export default memo(AnalyticsKpiCardsInner);
