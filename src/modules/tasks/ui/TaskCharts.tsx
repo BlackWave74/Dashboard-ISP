@@ -306,9 +306,10 @@ export function TaskCharts({
   };
 
   const formatIsoDatePtBr = (iso: string) => {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+    // Parse directly from ISO string parts to avoid timezone offset issues
+    const parts = String(iso).split("-");
+    if (parts.length < 3) return iso;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
 
   return (
