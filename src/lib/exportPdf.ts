@@ -334,12 +334,6 @@ export async function exportTasksPDF({
     }
 
     yPos += 50;
-
-    // Row 2: Performance chart — completion % by project
-    if (tasks.length >= 2) {
-      drawHorizontalCompletionChart(doc, 14, yPos, pageW - 28, 48, tasks, "Conclusão por Projeto (%)");
-      yPos += 54;
-    }
   }
 
   // Table
@@ -509,18 +503,6 @@ export async function exportClientPDF({
   doc.text("Status das Tarefas", 14, yPos + 4);
   drawDonutChart(doc, 50, yPos + 26, 16, completionData);
 
-  // Hours bar chart by project (right side)
-  const hoursData = [...projects]
-    .sort((a, b) => b.hours - a.hours)
-    .slice(0, 6)
-    .map((p, i) => ({
-      label: p.name,
-      value: Math.round(p.hours),
-      color: [[99,102,241],[34,197,94],[250,204,21],[139,92,246],[239,68,68],[59,130,246]][i % 6] as number[],
-    }));
-  if (hoursData.length > 0) {
-    drawBarChart(doc, 110, yPos, pageW - 124, 44, hoursData, "Horas por Projeto");
-  }
   yPos += 52;
 
   // Hours progress bars per project
@@ -651,19 +633,6 @@ export async function exportAnalyticsPDF({
   doc.text("Status Geral", 14, yPos + 4);
   drawDonutChart(doc, 50, yPos + 26, 16, completionData);
 
-  // Bar chart — hours by top projects
-  const topByHours = [...projects]
-    .sort((a, b) => b.hours - a.hours)
-    .slice(0, 6)
-    .map((p, i) => ({
-      label: p.name,
-      value: Math.round(p.hours),
-      color: [[99, 102, 241], [34, 197, 94], [250, 204, 21], [139, 92, 246], [239, 68, 68], [59, 130, 246]][i % 6],
-    }));
-
-  if (topByHours.length > 0) {
-    drawBarChart(doc, 110, yPos, pageW - 124, 44, topByHours, "Horas por Projeto");
-  }
   yPos += 50;
 
   // Projects table

@@ -42,6 +42,7 @@ import {
 } from "@/modules/tasks/utils";
 import { STATUS_LABELS } from "@/modules/tasks/types";
 import { exportTasksPDF } from "@/lib/exportPdf";
+import ExportPDFModal, { type PDFExportSelection } from "@/modules/analytics/components/ExportPDFModal";
 
 /* ─── Helpers (business logic preserved) ─── */
 
@@ -189,6 +190,7 @@ export default function TarefasPage() {
   const [chartSlide, setChartSlide] = useState(0);
   const [showCharts, setShowCharts] = useState(true);
   const [showDashboard, setShowDashboard] = useState(true);
+  const [showExportModal, setShowExportModal] = useState(false);
   const pageSize = 10;
 
   const searchInputRef = useRef<HTMLInputElement>(null!);
@@ -615,27 +617,7 @@ export default function TarefasPage() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  const rows = filteredTasks.map((t) => ({
-                    title: t.title,
-                    project: t.project,
-                    consultant: t.consultant,
-                    statusLabel: STATUS_LABELS[t.statusKey]?.label ?? "—",
-                    deadlineLabel: t.deadlineLabel,
-                    durationLabel: t.durationLabel,
-                  }));
-                  void exportTasksPDF({
-                    tasks: rows,
-                    stats: {
-                      total: stats.total,
-                      done: stats.done,
-                      overdue: stats.overdue,
-                      pending: stats.pending,
-                      totalHours: `${totalHoursLabel}h`,
-                    },
-                    generatedBy: session?.name || undefined,
-                  });
-                }}
+                onClick={() => setShowExportModal(true)}
                 disabled={filteredTasks.length === 0}
                 className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-40 whitespace-nowrap"
                 title="Exportar PDF"
@@ -1071,6 +1053,42 @@ export default function TarefasPage() {
           )}
         </motion.div>
       </div>
+
+      {/* Modal de opções de exportação PDF */}
+      {showExportModal && (
+        <ExportPDFModal
+          title="Exportar Relatório de Tarefas"
+          onClose={() => setShowExportModal(false)}
+          onExport={async (sel: PDFExportSelection) => {
+            const rows = filteredTasks
+              .filter((t) => {
+                if (t.statusKey === "done" && !sel.includeDone) return false;
+                if (t.statusKey === "overdue" && !sel.includeOverdue) return false;
+                if ((t.statusKey === "pending" || t.statusKey === "unknown") && !sel.includePending) return false;
+                return true;
+              })
+              .map((t) => ({
+                title: t.title,
+                project: t.project,
+                consultant: sel.includeResponsible ? t.consultant : "—",
+                statusLabel: STATUS_LABELS[t.statusKey]?.label ?? "—",
+                deadlineLabel: sel.includeDeadline ? t.deadlineLabel : "—",
+                durationLabel: sel.includeDuration ? t.durationLabel : "—",
+              }));
+            await exportTasksPDF({
+              tasks: rows,
+              stats: {
+                total: rows.length,
+                done: rows.filter((r) => r.statusLabel === STATUS_LABELS.done?.label).length,
+                overdue: rows.filter((r) => r.statusLabel === STATUS_LABELS.overdue?.label).length,
+                pending: rows.filter((r) => r.statusLabel === STATUS_LABELS.pending?.label || r.statusLabel === STATUS_LABELS.unknown?.label).length,
+                totalHours: `${totalHoursLabel}h`,
+              },
+              generatedBy: session?.name || undefined,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -20,6 +20,7 @@ import type { AnalyticsFilterState } from "@/modules/analytics/components/Analyt
 import type { ProjectAnalytics } from "@/modules/analytics/types";
 import { usePageSEO } from "@/hooks/usePageSEO";
 import { exportAnalyticsPDF } from "@/lib/exportPdf";
+import ExportPDFModal, { type PDFExportSelection } from "@/modules/analytics/components/ExportPDFModal";
 
 // Lazy-load contracted hours components so a DB error doesn't crash the whole page
 const ContractedHoursModal = lazy(() =>
@@ -253,6 +254,7 @@ export default function AnaliticasPage() {
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
   const [hoursModalProject, setHoursModalProject] = useState<ProjectAnalytics | null>(null);
   const [hoursModalClientProjects, setHoursModalClientProjects] = useState<ProjectAnalytics[] | undefined>(undefined);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Contracted hours — loaded dynamically to avoid crashing if table is missing
   const [contractedHoursData, setContractedHoursData] = useState<Map<number, { contracted_hours: number; notes?: string | null }>>(new Map());
@@ -391,27 +393,7 @@ export default function AnaliticasPage() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                const projectRows = projects.map((p) => ({
-                  name: p.projectName,
-                  totalTasks: p.tasksDone + p.tasksPending + p.tasksOverdue,
-                  doneTasks: p.tasksDone,
-                  overdueTasks: p.tasksOverdue,
-                  hours: p.hoursUsed,
-                }));
-                void exportAnalyticsPDF({
-                  userName: effectiveUser,
-                  period: `Últimos ${periodDays} dias`,
-                  projects: projectRows,
-                  totals: {
-                    projects: projects.length,
-                    tasks: userTaskCount,
-                    done: totalDone,
-                    overdue: totalOverdue,
-                    hours: periodHours > 0 ? periodHours : totalHours,
-                  },
-                });
-              }}
+              onClick={() => setShowExportModal(true)}
               disabled={projects.length === 0}
               className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-emerald-500/30 hover:text-emerald-400 disabled:opacity-40"
               title="Exportar PDF"
@@ -516,6 +498,37 @@ export default function AnaliticasPage() {
             onSaveAll={handleSaveAllClientHours}
           />
         </Suspense>
+      )}
+
+      {/* Modal de opções de exportação PDF */}
+      {showExportModal && (
+        <ExportPDFModal
+          title="Exportar Relatório de Analíticas"
+          onClose={() => setShowExportModal(false)}
+          onExport={async (_sel: PDFExportSelection) => {
+            const projectRows = projectsWithContracted.map((p) => ({
+              name: p.projectName,
+              totalTasks: p.tasksDone + p.tasksPending + p.tasksOverdue,
+              doneTasks: p.tasksDone,
+              overdueTasks: p.tasksOverdue,
+              hours: p.hoursUsed,
+              hoursContracted: p.hoursContracted,
+            }));
+            await exportAnalyticsPDF({
+              userName: effectiveUser,
+              period: `Últimos ${periodDays} dias`,
+              generatedBy: userName || undefined,
+              projects: projectRows,
+              totals: {
+                projects: projectsWithContracted.length,
+                tasks: userTaskCount,
+                done: totalDone,
+                overdue: totalOverdue,
+                hours: periodHours > 0 ? periodHours : totalHours,
+              },
+            });
+          }}
+        />
       )}
     </div>
   );

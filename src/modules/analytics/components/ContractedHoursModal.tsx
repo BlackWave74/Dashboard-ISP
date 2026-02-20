@@ -153,7 +153,14 @@ export default function ContractedHoursModal({
           </div>
 
           {/* Form */}
-          <div className="space-y-4 px-6 pb-6">
+          <div
+            className="space-y-4 px-6 pb-6 overflow-y-auto"
+            style={{
+              maxHeight: "calc(80vh - 180px)",
+              scrollbarWidth: "thin",
+              scrollbarColor: "hsl(262 83% 58% / 0.35) hsl(270 50% 10% / 0.4)",
+            }}
+          >
             {/* Hours input */}
             <div>
               <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-white/40">

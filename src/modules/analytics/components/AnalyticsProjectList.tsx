@@ -134,7 +134,8 @@ function groupByClient(projects: ProjectAnalytics[]) {
 
   return new Map(
     [...map.entries()].sort(([, a], [, b]) =>
-      a.displayLabel.localeCompare(b.displayLabel, "pt-BR")
+      // Ordena por número de projetos (decrescente), desempate pelo nome
+      b.projects.length - a.projects.length || a.displayLabel.localeCompare(b.displayLabel, "pt-BR")
     )
   );
 }
@@ -415,12 +416,11 @@ export default function AnalyticsProjectList({
       </div>
 
       {/* ── Barra de busca ── */}
-      <div className="relative flex items-center">
+      <div className="relative">
         {/* Ícone lupa — absolutamente posicionado, não interativo */}
-        <Search
-          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30"
-          aria-hidden
-        />
+        <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center" aria-hidden>
+          <Search className="h-4 w-4 text-white/30" />
+        </span>
         <input
           type="text"
           value={search}
