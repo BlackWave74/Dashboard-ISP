@@ -95,7 +95,7 @@ export default function FerramentasPage() {
   const nowTime = new Date().toTimeString().slice(0, 5);
 
   const [form, setForm] = useState<MeetFormState>({
-    title: "",
+    title: "Reunião MIT",
     date: today,
     time: nowTime,
     duration: "60",
@@ -350,11 +350,33 @@ export default function FerramentasPage() {
                   })}
                 </div>
               </div>
-              {/* Nota de duração máxima */}
-              <p className="mt-1.5 flex items-center gap-1.5 text-[10px]" style={{ color: "hsl(38 80% 60% / 0.75)" }}>
-                <span className="inline-block h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ background: "hsl(38 80% 60%)" }} />
-                Duração máxima: <strong style={{ color: "hsl(38 90% 65%)" }}>1 hora</strong> — o Google Meet encerra a sessão automaticamente.
-              </p>
+              {/* Aviso limites Google Meet */}
+              <div
+                className="mt-2 rounded-xl p-3.5 space-y-2"
+                style={{
+                  background: "hsl(38 80% 50% / 0.07)",
+                  boxShadow: "0 0 0 1px hsl(38 80% 50% / 0.18)",
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Info className="h-3.5 w-3.5 shrink-0" style={{ color: "hsl(38 90% 65%)" }} />
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "hsl(38 90% 65%)" }}>
+                    Limites Google Meet (conta gratuita)
+                  </p>
+                </div>
+                <ul className="space-y-1.5 pl-1">
+                  {[
+                    { icon: "👥", text: "Reuniões em grupo (3+): máximo de ", bold: "60 minutos" },
+                    { icon: "👤", text: "Chamadas individuais (1 a 1): até ", bold: "24 horas" },
+                    { icon: "🧑‍🤝‍🧑", text: "Limite de participantes: até ", bold: "100 pessoas" },
+                  ].map(({ icon, text, bold }) => (
+                    <li key={bold} className="flex items-start gap-2 text-[11px]" style={{ color: "hsl(38 60% 70% / 0.85)" }}>
+                      <span className="text-sm leading-none mt-0.5">{icon}</span>
+                      <span>{text}<strong style={{ color: "hsl(38 90% 72%)" }}>{bold}</strong></span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               {/* Guests — chip input */}
               <div>

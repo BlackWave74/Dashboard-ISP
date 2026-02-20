@@ -713,7 +713,14 @@ export default function UsuariosPage() {
                 { label: "Ativos", value: stats.active, icon: CheckCircle2, color: "green" },
                 { label: "Online agora", value: stats.online, icon: Wifi, color: "teal" },
               ].map(s => (
-                <div key={s.label} className="task-card flex items-center gap-3 p-3 sm:p-4 min-w-0 overflow-hidden">
+                <div
+                  key={s.label}
+                  className={`task-card flex items-center gap-3 p-3 sm:p-4 min-w-0 overflow-hidden transition-all ${
+                    s.color === "teal" && s.value > 0
+                      ? "border border-teal-500/30 shadow-[0_0_16px_hsl(160_60%_40%/0.12)]"
+                      : ""
+                  }`}
+                >
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                     s.color === "purple" ? "bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]" :
                     s.color === "yellow" ? "bg-[hsl(var(--task-yellow)/0.15)] text-[hsl(var(--task-yellow))]" :
@@ -723,9 +730,19 @@ export default function UsuariosPage() {
                   }`}>
                     <s.icon className={`h-4 w-4 ${s.color === "teal" && s.value > 0 ? "animate-pulse" : ""}`} />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] truncate">{s.label}</p>
-                    <p className="text-xl font-extrabold text-[hsl(var(--task-text))]">{s.value}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className={`text-xl font-extrabold ${
+                        s.color === "teal" && s.value > 0 ? "text-teal-400" : "text-[hsl(var(--task-text))]"
+                      }`}>{s.value}</p>
+                      {s.color === "teal" && s.value > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-teal-500/15 text-teal-400 border border-teal-500/25">
+                          <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+                          ao vivo
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -750,6 +767,21 @@ export default function UsuariosPage() {
                         {filteredUsers.length}
                       </span>
                     </h2>
+                    {/* Legenda de status */}
+                    <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--task-text-muted)/0.7)]">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-teal-400 shadow-[0_0_6px_rgba(45,212,191,0.6)]" />
+                        Online
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--task-text-muted)/0.3)]" />
+                        Offline
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+                        Inativo
+                      </span>
+                    </div>
                   </div>
 
                   {/* Search + Client filter row */}
