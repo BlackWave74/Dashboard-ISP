@@ -95,7 +95,7 @@ export default function FerramentasPage() {
   const nowTime = new Date().toTimeString().slice(0, 5);
 
   const [form, setForm] = useState<MeetFormState>({
-    title: "Reunião MIT",
+    title: "Reunião Meet",
     date: today,
     time: nowTime,
     duration: "60",
@@ -229,7 +229,7 @@ export default function FerramentasPage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold" style={{ color: "hsl(210 40% 94%)" }}>
-                    Gerador de Reunião Meet
+                    Reunião Meet
                   </p>
                   <p className="text-[11px] mt-0.5" style={{ color: "hsl(215 20% 48%)" }}>
                     Preencha os dados e gere o link da reunião
