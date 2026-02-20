@@ -188,9 +188,13 @@ export default function AdminDiagnostico() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.25 }}
-          className="rounded-2xl border border-border/20 bg-card overflow-hidden"
+          className="rounded-2xl bg-card overflow-hidden"
+          style={{ boxShadow: "inset 0 0 0 1px hsl(var(--border) / 0.12)" }}
         >
-          <div className="grid grid-cols-[1fr_180px_120px_190px] text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border/20 px-5 py-3 bg-muted/10">
+          <div
+            className="grid grid-cols-[1fr_180px_120px_190px] text-[10px] uppercase tracking-widest text-muted-foreground px-5 py-3 bg-muted/10"
+            style={{ borderBottom: "1px solid hsl(var(--border) / 0.10)" }}
+          >
             <span>Tarefa</span>
             <span>Responsável</span>
             <span>Prazo</span>
@@ -231,7 +235,8 @@ export default function AdminDiagnostico() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.04 * idx }}
-                    className="grid grid-cols-[1fr_180px_120px_190px] items-center border-b border-border/10 last:border-0 px-5 py-3 hover:bg-muted/5 transition"
+                    className="grid grid-cols-[1fr_180px_120px_190px] items-center px-5 py-3 hover:bg-muted/5 transition"
+                    style={{ borderBottom: "1px solid hsl(var(--border) / 0.07)" }}
                   >
                     <div className="min-w-0 pr-4">
                       <p className="text-sm font-medium text-foreground/80 truncate">
