@@ -202,13 +202,47 @@ export default function Gamificacao() {
               const person = topThree[podiumIdx];
               if (!person) return <div key={podiumIdx} className="w-36" />;
               const isFirst = podiumIdx === 0;
+              const isSecond = podiumIdx === 1;
+              // isThird = podiumIdx === 2
+
               const podiumHeights = [180, 150, 120];
-              const avatarSizes = [isFirst ? "h-14 w-14" : "h-11 w-11"];
-              const medals = [
-                <Crown key="g" className="h-7 w-7 text-amber-400" />,
-                <Medal key="s" className="h-6 w-6 text-gray-400" />,
-                <Medal key="b" className="h-5 w-5 text-amber-700" />,
+
+              // Medal colors: gold, silver, bronze
+              const medalConfigs = [
+                {
+                  // 1st — GOLD
+                  avatarGradient: "linear-gradient(135deg, hsl(45 90% 55%), hsl(38 92% 40%))",
+                  avatarSize: "h-14 w-14",
+                  barBg: "linear-gradient(180deg, hsl(45 90% 55% / 0.14), hsl(45 90% 55% / 0.03))",
+                  barBorder: "1px solid hsl(45 90% 55% / 0.25)",
+                  medalEl: <Crown key="g" className="h-7 w-7" style={{ color: "hsl(45 90% 55%)" }} />,
+                  rankColor: "hsl(45 90% 55%)",
+                  glow: "0 0 24px hsl(45 90% 55% / 0.18)",
+                },
+                {
+                  // 2nd — SILVER
+                  avatarGradient: "linear-gradient(135deg, hsl(0 0% 80%), hsl(0 0% 55%))",
+                  avatarSize: "h-11 w-11",
+                  barBg: "linear-gradient(180deg, hsl(0 0% 70% / 0.10), hsl(0 0% 70% / 0.02))",
+                  barBorder: "1px solid hsl(0 0% 70% / 0.20)",
+                  medalEl: <Medal key="s" className="h-6 w-6" style={{ color: "hsl(0 0% 75%)" }} />,
+                  rankColor: "hsl(0 0% 75%)",
+                  glow: "0 0 18px hsl(0 0% 70% / 0.12)",
+                },
+                {
+                  // 3rd — BRONZE
+                  avatarGradient: "linear-gradient(135deg, hsl(25 70% 55%), hsl(20 65% 38%))",
+                  avatarSize: "h-11 w-11",
+                  barBg: "linear-gradient(180deg, hsl(25 70% 45% / 0.10), hsl(25 70% 45% / 0.02))",
+                  barBorder: "1px solid hsl(25 70% 45% / 0.20)",
+                  medalEl: <Medal key="b" className="h-5 w-5" style={{ color: "hsl(25 70% 55%)" }} />,
+                  rankColor: "hsl(25 70% 55%)",
+                  glow: "0 0 18px hsl(25 70% 45% / 0.12)",
+                },
               ];
+
+              const mc = medalConfigs[podiumIdx];
+
               return (
                 <motion.div
                   key={podiumIdx}
@@ -223,32 +257,37 @@ export default function Gamificacao() {
                       transition={{ repeat: Infinity, duration: 3 }}
                       className="mb-1"
                     >
-                      <Crown className="h-5 w-5 text-amber-400" />
+                      <Crown className="h-5 w-5" style={{ color: "hsl(45 90% 55%)" }} />
                     </motion.div>
                   )}
                   <div
-                    className={`flex items-center justify-center rounded-full ${avatarSizes[0]} ${isFirst ? "bg-gradient-to-br from-amber-400 to-yellow-600" : "bg-gradient-to-br from-primary to-[hsl(280_70%_55%)]"} text-white font-bold text-sm shadow-lg mb-2`}
+                    className={`flex items-center justify-center rounded-full ${mc.avatarSize} text-white font-bold text-sm mb-2`}
+                    style={{
+                      background: mc.avatarGradient,
+                      boxShadow: mc.glow,
+                    }}
                   >
                     {person.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                   </div>
                   <p className="text-sm font-bold text-foreground text-center truncate max-w-[110px]">{person.name}</p>
-                  <p className="text-xs text-primary font-semibold">{person.points} pts</p>
-                  {/* Podium bar — no scaleY animation to prevent flickering */}
+                  <p className="text-xs font-semibold" style={{ color: mc.rankColor }}>{person.points} pts</p>
+                  {/* Podium bar */}
                   <motion.div
                     className="w-28 mt-3 rounded-t-xl flex flex-col items-center justify-start pt-4"
                     style={{
                       height: podiumHeights[podiumIdx],
-                      background: isFirst
-                        ? "linear-gradient(180deg, hsl(45 90% 55% / 0.08), hsl(45 90% 55% / 0.02))"
-                        : "linear-gradient(180deg, hsl(234 89% 64% / 0.08), hsl(234 89% 64% / 0.02))",
-                      border: "1px solid hsl(234 89% 64% / 0.08)",
+                      background: mc.barBg,
+                      border: mc.barBorder,
+                      boxShadow: mc.glow,
                     }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 + podiumIdx * 0.15, duration: 0.5 }}
                   >
-                    {medals[podiumIdx]}
-                    <span className="text-2xl font-black text-foreground/15 mt-2">#{podiumIdx + 1}</span>
+                    {mc.medalEl}
+                    <span className="text-2xl font-black mt-2" style={{ color: `${mc.rankColor.replace(")", " / 0.2)")}` }}>
+                      #{podiumIdx + 1}
+                    </span>
                   </motion.div>
                 </motion.div>
               );
