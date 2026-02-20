@@ -110,6 +110,8 @@ export function useAuth() {
         const data = await response.json();
         if (!response.ok) return null;
 
+        // IMPORTANT: Always rebuild full session from DB (including project names)
+        // so that admin changes to project access take effect on next token refresh.
         const refreshed = await buildSession(data, stored.email, stored);
         setSession(refreshed);
         persistSession(refreshed);
@@ -132,10 +134,47 @@ export function useAuth() {
       if (saved?.accessToken) {
         const expired = saved.expiresAt ? saved.expiresAt < Date.now() : false;
         if (expired && saved.refreshToken) {
+          // Token expired: full refresh rebuilds everything including project names
           const refreshed = await refreshSession(saved);
           if (refreshed) { setLoadingSession(false); return; }
         }
+
+        // Token still valid: re-fetch project access from DB in background
+        // so that admin changes (e.g. adding/removing projects) take effect
+        // without requiring a full logout/login cycle.
         setSession(saved);
+        setLoadingSession(false);
+
+        if (saved.accessToken && saved.email) {
+          try {
+            // Get user ID from the current token
+            const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+              headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${saved.accessToken}` },
+            });
+            if (userRes.ok) {
+              const userData = await userRes.json();
+              const userId = userData?.id;
+              if (userId) {
+                const [accessibleProjects, clienteInfo] = await Promise.all([
+                  fetchAccessibleProjects(saved.accessToken, userId),
+                  fetchClienteInfo(saved.accessToken, userId),
+                ]);
+                const updated: AuthSession = {
+                  ...saved,
+                  accessibleProjectIds: accessibleProjects?.ids ?? null,
+                  accessibleProjectNames: accessibleProjects?.names ?? null,
+                  company: clienteInfo.clienteName ?? saved.company ?? null,
+                  clienteId: clienteInfo.clienteId ?? saved.clienteId ?? null,
+                };
+                setSession(updated);
+                persistSession(updated);
+              }
+            }
+          } catch {
+            // Background refresh failed silently — cached session is still used
+          }
+        }
+        return;
       } else {
         storage.remove(SESSION_KEY);
         setSession(null);
@@ -143,7 +182,7 @@ export function useAuth() {
       setLoadingSession(false);
     };
     void load();
-  }, [refreshSession]);
+  }, [refreshSession, persistSession]);
 
   const login = useCallback(
     async ({ email, password }: AuthPayload): Promise<AuthResult> => {
