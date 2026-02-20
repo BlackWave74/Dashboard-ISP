@@ -1,6 +1,16 @@
 import { useState, useMemo } from "react";
 import EmptyState from "@/components/ui/EmptyState";
-import { ListTodo, BarChart3, Loader2, AlertCircle, Clock, CheckCircle2, AlertTriangle, HelpCircle } from "lucide-react";
+import {
+  ListTodo,
+  BarChart3,
+  Loader2,
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Building2,
+  ChevronDown,
+} from "lucide-react";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
@@ -49,7 +59,6 @@ export default function ProjectsSection() {
   const accessToken = session?.accessToken;
 
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const { tasks, loading: loadingTasks, error: errorTasks } = useTasks({ accessToken, period: "all" });
   const { times, loading: loadingTimes } = useElapsedTimes({ accessToken, period: "all" });
@@ -76,7 +85,12 @@ export default function ProjectsSection() {
       {tab === "tarefas" ? (
         <TasksTab tasks={tasks} loading={loadingTasks} error={errorTasks} />
       ) : (
-        <AnalyticsTab tasks={tasks} times={times} projectHours={projectHours} loading={loadingTasks || loadingTimes || loadingHours} />
+        <AnalyticsTab
+          tasks={tasks}
+          times={times}
+          projectHours={projectHours}
+          loading={loadingTasks || loadingTimes || loadingHours}
+        />
       )}
     </div>
   );
@@ -111,22 +125,45 @@ function TabButton({
 
 /* ─── Tasks Tab ─── */
 function TasksTab({ tasks, loading, error }: { tasks: TaskRecord[]; loading: boolean; error: string | null }) {
+  const [clientFilter, setClientFilter] = useState<string>("all");
+
+  // Extract unique clients/projects from tasks
+  const clients = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach((t) => {
+      const client = t.projects?.name || t.project || t.project_name || "";
+      if (client) set.add(client);
+    });
+    return Array.from(set).sort();
+  }, [tasks]);
+
+  const filteredTasks = useMemo(
+    () =>
+      clientFilter === "all"
+        ? tasks
+        : tasks.filter((t) => {
+            const client = t.projects?.name || t.project || t.project_name || "";
+            return client === clientFilter;
+          }),
+    [tasks, clientFilter]
+  );
+
   const classified = useMemo(() => {
     const counts = { done: 0, overdue: 0, pending: 0 };
-    tasks.forEach((t) => counts[classifyTask(t)]++);
+    filteredTasks.forEach((t) => counts[classifyTask(t)]++);
     return counts;
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const recentTasks = useMemo(
     () =>
-      [...tasks]
+      [...filteredTasks]
         .sort((a, b) => {
           const da = new Date(String(a.inserted_at ?? a.created_at ?? a.createdAt ?? 0)).getTime();
           const db = new Date(String(b.inserted_at ?? b.created_at ?? b.createdAt ?? 0)).getTime();
           return db - da;
         })
         .slice(0, 8),
-    [tasks]
+    [filteredTasks]
   );
 
   if (loading) {
@@ -149,6 +186,36 @@ function TasksTab({ tasks, loading, error }: { tasks: TaskRecord[]; loading: boo
 
   return (
     <div className="space-y-4">
+      {/* Client filter */}
+      {clients.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="relative">
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="appearance-none rounded-lg bg-muted/30 border border-border/30 px-3 py-1.5 pr-8 text-sm text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/40 transition-colors hover:bg-muted/50"
+            >
+              <option value="all">Todos os projetos</option>
+              {clients.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          {clientFilter !== "all" && (
+            <button
+              onClick={() => setClientFilter("all")}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+            >
+              Limpar
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Status summary cards */}
       <div className="grid gap-3 sm:grid-cols-3">
         {(["done", "overdue", "pending"] as const).map((key) => {
@@ -205,9 +272,18 @@ function AnalyticsTab({
 }: {
   tasks: TaskRecord[];
   times: { seconds?: number; task_id?: string | number; inserted_at?: string | Date | null }[];
-  projectHours: { projectName: string; hours: number }[];
+  projectHours: { projectName: string; clientName: string; hours: number }[];
   loading: boolean;
 }) {
+  const [clientFilter, setClientFilter] = useState<string>("all");
+
+  /* Unique clients from projectHours */
+  const clients = useMemo(() => {
+    const set = new Set<string>();
+    projectHours.forEach((p) => { if (p.clientName) set.add(p.clientName); });
+    return Array.from(set).sort();
+  }, [projectHours]);
+
   /* Monthly hours chart data */
   const monthlyData = useMemo(() => {
     const months: Record<string, number> = {};
@@ -222,7 +298,7 @@ function AnalyticsTab({
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
       .map(([key, hours]) => {
-        const [y, m] = key.split("-");
+        const [, m] = key.split("-");
         const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         return { month: monthNames[Number(m) - 1] ?? m, hours: Math.round(hours * 10) / 10 };
       });
@@ -239,13 +315,18 @@ function AnalyticsTab({
     ].filter((d) => d.value > 0);
   }, [tasks]);
 
-  /* Hours by project bar chart */
+  /* Hours by project — filtered by client */
   const projectData = useMemo(() => {
     return projectHours
+      .filter((p) => clientFilter === "all" || p.clientName === clientFilter)
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 8)
-      .map((p) => ({ name: p.projectName?.slice(0, 20) || "—", hours: Math.round(p.hours * 10) / 10 }));
-  }, [projectHours]);
+      .map((p) => ({
+        name: p.projectName?.slice(0, 22) || "—",
+        hours: Math.round(p.hours * 10) / 10,
+        client: p.clientName,
+      }));
+  }, [projectHours, clientFilter]);
 
   const totalHours = useMemo(() => times.reduce((s, t) => s + (t.seconds ?? 0), 0) / 3600, [times]);
 
@@ -359,33 +440,61 @@ function AnalyticsTab({
         </div>
       </div>
 
-      {/* Hours by project */}
-      {projectData.length > 0 && (
-        <div className="rounded-2xl bg-card/40 p-5">
-          <h3 className="mb-4 text-sm font-semibold text-foreground">Horas por Projeto</h3>
-          <div className="h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={projectData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 25% 14%)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "hsl(215 20% 60%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" width={120} tick={{ fill: "hsl(215 20% 60%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(222 40% 8%)",
-                    border: "none",
-                    borderRadius: 10,
-                    fontSize: 12,
-                    color: "hsl(210 40% 96%)",
-                    boxShadow: "0 8px 30px -8px rgba(0,0,0,0.5)",
-                  }}
-                  formatter={(value: number) => [`${value}h`, "Horas"]}
-                />
-                <Bar dataKey="hours" radius={[0, 6, 6, 0]} fill="hsl(234 89% 64%)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Hours by project — with client filter */}
+      <div className="rounded-2xl bg-card/40 p-5">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h3 className="text-sm font-semibold text-foreground">Horas por Projeto</h3>
+          {clients.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <div className="relative">
+                <select
+                  value={clientFilter}
+                  onChange={(e) => setClientFilter(e.target.value)}
+                  className="appearance-none rounded-lg bg-muted/30 border border-border/30 px-3 py-1 pr-7 text-xs text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/40 transition-colors hover:bg-muted/50"
+                >
+                  <option value="all">Todos os clientes</option>
+                  {clients.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {projectData.length > 0 ? (
+          <div className="space-y-2">
+            {projectData.map((p) => {
+              const maxHours = projectData[0]?.hours || 1;
+              const pct = Math.round((p.hours / maxHours) * 100);
+              return (
+                <div key={p.name} className="group rounded-xl bg-muted/10 hover:bg-muted/20 transition-colors px-4 py-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
+                      {p.client && <p className="text-[11px] text-muted-foreground">{p.client}</p>}
+                    </div>
+                    <span className="ml-4 text-sm font-bold text-primary shrink-0">{p.hours}h</span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary/70 transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyState variant="chart" message="Nenhum dado de horas por projeto disponível." />
+        )}
+      </div>
     </div>
   );
 }

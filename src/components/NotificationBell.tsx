@@ -81,8 +81,8 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   in_progress: "Em andamento",
 };
 
-/** Bell shake animation — runs every 45 seconds when there are unread notifications */
-const SHAKE_INTERVAL_MS = 45_000;
+/** Bell shake animation — runs every 15 seconds when there are unread notifications */
+const SHAKE_INTERVAL_MS = 15_000;
 
 function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, collapsed }: Props) {
   const [open, setOpen] = useState(false);
