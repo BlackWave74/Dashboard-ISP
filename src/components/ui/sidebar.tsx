@@ -170,24 +170,14 @@ const Sidebar = React.forwardRef<
     );
   }
 
-  // Compute sidebar width via JS — NEVER depends on Tailwind classes, production-safe.
+  // All sizing via JS — never affected by Tailwind purging in production.
   const isCollapsed = state === "collapsed";
   const isIconCollapsible = collapsible === "icon";
   const isOffcanvasCollapsible = collapsible === "offcanvas";
 
-  // Width reserved in the flex layout (the "gap" that pushes main content)
-  const spacerWidth =
-    isCollapsed && isIconCollapsible
-      ? SIDEBAR_WIDTH_ICON
-      : isCollapsed && isOffcanvasCollapsible
-        ? "0px"
-        : SIDEBAR_WIDTH;
-
-  // Width of the visual fixed panel
   const panelWidth =
     isCollapsed && isIconCollapsible ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH;
 
-  // Left/right offset for offcanvas slide-out
   const panelLeft =
     side === "left"
       ? isCollapsed && isOffcanvasCollapsible
@@ -201,63 +191,51 @@ const Sidebar = React.forwardRef<
         : "0px"
       : undefined;
 
+  /*
+   * The sidebar renders ONLY as a fixed visual panel.
+   * It does NOT participate in the flex layout of the parent container.
+   * The parent layout (DashboardLayout) is responsible for reserving the sidebar space
+   * via a dedicated spacer div — this avoids any containing-block issues with
+   * overflow-x:hidden or will-change ancestors.
+   */
   return (
-    <>
-      {/*
-       * Spacer: a plain flex item that reserves horizontal space for the fixed sidebar.
-       * Width is driven by JS (inline style) — NEVER purged by Tailwind in production.
-       */}
+    <div
+      ref={ref}
+      data-state={state}
+      data-collapsible={isCollapsed ? collapsible : ""}
+      data-variant={variant}
+      data-side={side}
+      className={cn(
+        "text-sidebar-foreground",
+        variant === "floating" || variant === "inset" ? "p-2" : "",
+        side === "left" ? "border-r border-border/30" : "border-l border-border/30",
+        className,
+      )}
+      style={{
+        position: "fixed",
+        top: 0,
+        bottom: 0,
+        left: panelLeft,
+        right: panelRight,
+        zIndex: 20,
+        width: panelWidth,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        transition: "left 200ms linear, right 200ms linear, width 200ms linear",
+      }}
+      {...props}
+    >
       <div
-        aria-hidden
-        style={{
-          width: spacerWidth,
-          flexShrink: 0,
-          transition: "width 200ms linear",
-        }}
-      />
-
-      {/*
-       * Fixed visual panel: the actual sidebar, out of the normal flow.
-       * All layout-critical properties use inline styles.
-       */}
-      <div
-        ref={ref}
-        data-state={state}
-        data-collapsible={isCollapsed ? collapsible : ""}
-        data-variant={variant}
-        data-side={side}
+        data-sidebar="sidebar"
         className={cn(
-          "text-sidebar-foreground",
-          variant === "floating" || variant === "inset" ? "p-2" : "",
-          side === "left" ? "border-r border-border/30" : "border-l border-border/30",
-          className,
+          "flex h-full w-full flex-col bg-transparent",
+          variant === "floating" ? "rounded-lg border border-sidebar-border shadow" : "",
         )}
-        style={{
-          position: "fixed",
-          top: 0,
-          bottom: 0,
-          left: panelLeft,
-          right: panelRight,
-          zIndex: 20,
-          width: panelWidth,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          transition: "left 200ms linear, right 200ms linear, width 200ms linear",
-        }}
-        {...props}
       >
-        <div
-          data-sidebar="sidebar"
-          className={cn(
-            "flex h-full w-full flex-col bg-transparent",
-            variant === "floating" ? "rounded-lg border border-sidebar-border shadow" : "",
-          )}
-        >
-          {children}
-        </div>
+        {children}
       </div>
-    </>
+    </div>
   );
 });
 Sidebar.displayName = "Sidebar";
