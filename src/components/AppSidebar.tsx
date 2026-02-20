@@ -26,13 +26,28 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { supabaseExt } from "@/lib/supabase";
+// URLs do Lovable Cloud (banco principal de gestão de usuários/permissões)
+const LOVABLE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const LOVABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-async function ensureSession(accessToken?: string, refreshToken?: string) {
-  if (!accessToken || !refreshToken) return;
-  const { data } = await supabaseExt.auth.getSession();
-  if (!data.session) {
-    await supabaseExt.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+
+/** Busca avatar_url do usuário no Lovable Cloud (banco principal) */
+async function fetchAvatarFromCloud(accessToken: string, authUserId: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${LOVABLE_URL}/rest/v1/users?auth_user_id=eq.${authUserId}&select=avatar_url&limit=1`,
+      {
+        headers: {
+          apikey: LOVABLE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows?.[0]?.avatar_url ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -147,22 +162,21 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
     let cancelled = false;
     const loadAvatar = async () => {
       try {
-        await ensureSession(session.accessToken, session.refreshToken);
-        const { data: { user } } = await supabaseExt.auth.getUser();
-        if (!user || cancelled) return;
-        const { data: userData, error } = await supabaseExt
-          .from("users")
-          .select("avatar_url")
-          .eq("auth_user_id", user.id)
-          .maybeSingle();
-        if (!cancelled && !error && userData?.avatar_url) {
-          setAvatarUrl(userData.avatar_url);
-        }
+        const userRes = await fetch(`${LOVABLE_URL}/auth/v1/user`, {
+          headers: { apikey: LOVABLE_KEY, Authorization: `Bearer ${session.accessToken}` },
+        });
+        if (!userRes.ok || cancelled) return;
+        const userData = await userRes.json();
+        const userId = userData?.id;
+        if (!userId || cancelled) return;
+        const url = await fetchAvatarFromCloud(session.accessToken!, userId);
+        if (!cancelled && url) setAvatarUrl(url);
       } catch { /* ignore */ }
     };
     loadAvatar();
     return () => { cancelled = true; };
-  }, [session?.accessToken, session?.refreshToken]);
+  }, [session?.accessToken]);
+
 
   // Determine which section is active based on route
   const getActiveSection = (): SectionKey | null => {

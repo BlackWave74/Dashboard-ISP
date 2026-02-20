@@ -33,8 +33,9 @@ function toNotifTask(task: Record<string, any>) {
   const project = String(
     task.projects?.name ?? task.project_name ?? task.project ?? task.projeto ?? ""
   );
+  // IXC usa "responsible_name" como campo do responsável da tarefa
   const consultant = String(
-    task.consultant ?? task.consultor ?? task.responsavel ?? task.responsible ?? ""
+    task.responsible_name ?? task.consultant ?? task.consultor ?? task.responsavel ?? task.responsible ?? ""
   );
   const statusRaw = String(task.status ?? task.situacao ?? "").toLowerCase();
   const deadline =
@@ -111,8 +112,10 @@ function DashboardInner() {
       return false;
     });
 
-    // Fallback: se não achou nada, usa tudo
-    if (filtered.length === 0 && tasks.length > 0) return tasks;
+    // Para notificações: não usar fallback "show all" — melhor silencioso
+    // do que notificar de projetos não autorizados
+    if (filtered.length === 0) return [];
+
 
     return filtered;
   }, [tasks, isAdmin, accessibleProjectNames, companyName]);

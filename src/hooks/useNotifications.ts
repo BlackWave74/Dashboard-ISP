@@ -59,7 +59,10 @@ export function useNotifications(
       if (!userName) return false;
       const consultant = (task.consultant || "").trim().toLowerCase();
       const user = userName.trim().toLowerCase();
-      return !consultant || consultant === user || consultant.includes(user) || user.includes(consultant);
+      // Se não há consultor definido na tarefa, NÃO consideramos como própria
+      // para não-privilegiados (evita falsos positivos)
+      if (!consultant) return isPrivileged;
+      return consultant === user || consultant.includes(user) || user.includes(consultant);
     };
 
     // Non-privileged users only see their own tasks
