@@ -108,20 +108,7 @@ const SidebarProvider = React.forwardRef<
   return (
     <SidebarContext.Provider value={contextValue}>
       <TooltipProvider delayDuration={0}>
-        <div
-          style={
-            {
-              "--sidebar-width": SIDEBAR_WIDTH,
-              "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-              ...style,
-            } as React.CSSProperties
-          }
-          className={cn("group/sidebar-wrapper", className)}
-          ref={ref}
-          {...props}
-        >
-          {children}
-        </div>
+        {children}
       </TooltipProvider>
     </SidebarContext.Provider>
   );
@@ -138,22 +125,9 @@ const Sidebar = React.forwardRef<
 >(({ side = "left", variant = "sidebar", collapsible = "offcanvas", className, children, ...props }, ref) => {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
-  if (collapsible === "none") {
-    return (
-      <div
-        className={cn("flex h-full flex-col bg-sidebar text-sidebar-foreground", className)}
-        style={{ width: SIDEBAR_WIDTH }}
-        ref={ref}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-
   if (isMobile) {
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
@@ -167,60 +141,19 @@ const Sidebar = React.forwardRef<
     );
   }
 
-  const isCollapsed = state === "collapsed";
-  const isIconCollapsible = collapsible === "icon";
-  const isOffcanvasCollapsible = collapsible === "offcanvas";
-
-  // Width of the fixed visual panel
-  const panelWidth =
-    isCollapsed && isIconCollapsible
-      ? SIDEBAR_WIDTH_ICON
-      : isCollapsed && isOffcanvasCollapsible
-      ? "0px"
-      : SIDEBAR_WIDTH;
-
-  const panelLeft =
-    side === "left"
-      ? isCollapsed && isOffcanvasCollapsible
-        ? `calc(-1 * ${SIDEBAR_WIDTH})`
-        : "0px"
-      : undefined;
-  const panelRight =
-    side === "right"
-      ? isCollapsed && isOffcanvasCollapsible
-        ? `calc(-1 * ${SIDEBAR_WIDTH})`
-        : "0px"
-      : undefined;
-
+  // Desktop: render inline (no position:fixed) — the parent sticky container
+  // in DashboardLayout handles the layout via CSS grid + sticky.
   return (
     <div
       ref={ref}
       data-state={state}
-      data-collapsible={isCollapsed ? collapsible : ""}
+      data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
       data-side={side}
-      className={cn("text-sidebar-foreground", className)}
-      style={{
-        position: "fixed",
-        top: 0,
-        bottom: 0,
-        left: panelLeft,
-        right: panelRight,
-        zIndex: 20,
-        width: panelWidth,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        transition: "left 200ms linear, right 200ms linear, width 200ms linear",
-      }}
+      className={cn("text-sidebar-foreground h-full w-full flex flex-col", className)}
       {...props}
     >
-      <div
-        data-sidebar="sidebar"
-        className="flex h-full w-full flex-col bg-transparent"
-      >
-        {children}
-      </div>
+      {children}
     </div>
   );
 });

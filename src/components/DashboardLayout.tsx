@@ -139,43 +139,49 @@ function DashboardInner() {
     return <Navigate to="/" replace />;
   }
 
-  // marginLeft drives the main content offset — avoids the flex+fixed+overflow-hidden
-  // containing-block trap that breaks position:fixed on some browsers/builds.
-  const marginLeft = isMobile
+  const sidebarWidth = isMobile
     ? "0px"
     : sidebarState === "collapsed"
     ? SIDEBAR_WIDTH_ICON
     : SIDEBAR_WIDTH;
 
   return (
-    <div style={{ minHeight: "100vh", background: "hsl(222 47% 5%)" }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `${sidebarWidth} 1fr`,
+        minHeight: "100vh",
+        transition: "grid-template-columns 200ms linear",
+        background: "hsl(222 47% 5%)",
+      }}
+    >
       <SyncIndicator syncing={loading} />
 
-      {/* Fixed visual sidebar panel */}
-      <AppSidebar
-        notificationBell={
-          <NotificationBell
-            notifications={notifications}
-            unreadCount={unreadCount}
-            onMarkAsRead={markAsRead}
-            onMarkAllAsRead={markAllAsRead}
-          />
-        }
-      />
-
-      {/*
-       * margin-left approach: pushes main content away from the fixed sidebar
-       * without using a flex spacer div. This avoids the containing-block issue
-       * caused by overflow-x:hidden on html/body in index.css.
-       */}
-      <main
+      {/* Sidebar column — sticky so it stays visible while scrolling */}
+      <div
         style={{
-          marginLeft,
-          minHeight: "100vh",
-          transition: "margin-left 200ms linear",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowY: "auto",
           overflowX: "hidden",
+          zIndex: 20,
         }}
       >
+        <AppSidebar
+          notificationBell={
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkAsRead={markAsRead}
+              onMarkAllAsRead={markAllAsRead}
+            />
+          }
+        />
+      </div>
+
+      {/* Main content column */}
+      <main style={{ minWidth: 0, overflowX: "hidden" }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
