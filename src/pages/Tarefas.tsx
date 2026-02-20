@@ -312,11 +312,6 @@ export default function TarefasPage() {
       return false;
     });
 
-    // Fallback: se o filtro zerar, mostra todas as tarefas para não deixar a tela em branco.
-    if (filtered.length === 0 && normalizedTasks.length > 0) {
-      return normalizedTasks;
-    }
-
     return filtered;
   }, [normalizedTasks, isAdmin, accessibleProjectNames, companyName]);
 
@@ -598,7 +593,7 @@ export default function TarefasPage() {
         />
       </div>
 
-      <div className="relative z-10 w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
+      <div className="relative z-10 w-full max-w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
         <motion.div {...fadeUp} className="mb-5">
@@ -1012,7 +1007,8 @@ export default function TarefasPage() {
             </div>
           )}
 
-          {loading || loadingTimes ? (
+          {/* Show shimmer ONLY when loading with no cached data */}
+          {(loading || loadingTimes) && tasks.length === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="task-shimmer h-14 rounded-xl" />
