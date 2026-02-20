@@ -2,19 +2,23 @@ import { useMemo } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth, type AccessArea } from "@/modules/auth/hooks/useAuth";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import SyncIndicator from "@/components/SyncIndicator";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/NotificationBell";
-import { useSidebar } from "@/components/ui/sidebar";
 import {
   parseDateValue,
   isDeadlineSoon,
   normalizeTaskTitle,
 } from "@/modules/tasks/utils";
+
+// Sidebar widths — must match sidebar.tsx constants
+const SIDEBAR_WIDTH = "15.5rem";
+const SIDEBAR_WIDTH_ICON = "3rem";
+
 
 /** Map route paths to access areas */
 const ROUTE_TO_AREA: Record<string, AccessArea> = {
@@ -65,6 +69,10 @@ const norm = (s: string) =>
 function DashboardInner() {
   const { session, isAuthenticated, loadingSession, canAccess } = useAuth();
   const location = useLocation();
+  // Read sidebar state to adjust main content margin
+  const { state: sidebarState, isMobile } = useSidebar();
+  const sidebarCollapsed = sidebarState === "collapsed";
+
 
   const isAdmin =
     session?.role === "admin" ||
@@ -152,7 +160,21 @@ function DashboardInner() {
           />
         }
       />
-      <main className="flex-1 min-w-0 overflow-x-hidden will-change-[opacity]">
+      {/*
+        margin-left is set explicitly via inline style so it always works,
+        even when Tailwind purges the peer/group-data classes from sidebar.tsx.
+        On mobile the sidebar becomes a Sheet overlay — no margin needed.
+      */}
+      <main
+        className="flex-1 min-w-0 overflow-x-hidden will-change-[opacity] transition-[margin-left] duration-200 ease-linear"
+        style={{
+          marginLeft: isMobile
+            ? 0
+            : sidebarCollapsed
+            ? SIDEBAR_WIDTH_ICON
+            : SIDEBAR_WIDTH,
+        }}
+      >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
