@@ -40,16 +40,16 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.05 }}
       onClick={() => onClick?.(project)}
-      className={`group relative cursor-pointer overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl ${
-        isMine ? "border-[hsl(262_83%_58%/0.3)] hover:border-[hsl(262_83%_58%/0.5)]" : "border-white/[0.06] hover:border-white/[0.10]"
+      className={`group relative cursor-pointer rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 ${
+        isMine ? "border-[hsl(262_83%_58%/0.3)] hover:border-[hsl(262_83%_58%/0.5)]" : "border-white/[0.06] hover:border-white/[0.12]"
       }`}
       style={{
-        background: "linear-gradient(145deg, hsl(270 50% 14% / 0.8), hsl(234 45% 10% / 0.6))",
+        background: "linear-gradient(145deg, hsl(270 50% 14% / 0.9), hsl(234 45% 10% / 0.7))",
       }}
     >
       {/* Top accent */}
       <div
-        className="absolute inset-x-0 top-0 h-[2px] opacity-50 transition-opacity group-hover:opacity-100"
+        className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl opacity-50 transition-opacity group-hover:opacity-100"
         style={{ background: `linear-gradient(to right, ${perf.accent}, hsl(262 83% 58%))` }}
       />
 

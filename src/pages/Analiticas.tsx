@@ -252,6 +252,7 @@ export default function AnaliticasPage() {
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
   const [hoursModalProject, setHoursModalProject] = useState<ProjectAnalytics | null>(null);
+  const [hoursModalClientProjects, setHoursModalClientProjects] = useState<ProjectAnalytics[] | undefined>(undefined);
 
   // Contracted hours — loaded dynamically to avoid crashing if table is missing
   const [contractedHoursData, setContractedHoursData] = useState<Map<number, { contracted_hours: number; notes?: string | null }>>(new Map());
@@ -331,10 +332,23 @@ export default function AnaliticasPage() {
 
   const handleEditHours = useCallback((project: ProjectAnalytics) => {
     setHoursModalProject(project);
+    setHoursModalClientProjects(undefined);
+  }, []);
+
+  const handleEditClientHours = useCallback((_clientName: string, projects: ProjectAnalytics[]) => {
+    setHoursModalProject(projects[0]);
+    setHoursModalClientProjects(projects);
   }, []);
 
   const handleSaveHours = useCallback(async (projectId: number, hours: number, notes: string): Promise<boolean> => {
     return upsertContractedHours(projectId, hours, session?.name ?? "admin", notes);
+  }, [upsertContractedHours, session?.name]);
+
+  const handleSaveAllClientHours = useCallback(async (projectIds: number[], hours: number, notes: string): Promise<boolean> => {
+    const results = await Promise.all(
+      projectIds.map((id) => upsertContractedHours(id, hours, session?.name ?? "admin", notes))
+    );
+    return results.every(Boolean);
   }, [upsertContractedHours, session?.name]);
 
   if (initialLoading) {
@@ -471,13 +485,14 @@ export default function AnaliticasPage() {
           onToggleFavorite={toggleFavorite}
           onProjectClick={handleProjectClick}
           onEditHours={isAdmin ? handleEditHours : undefined}
+          onEditClientHours={isAdmin ? handleEditClientHours : undefined}
           selectedProject={selectedProject}
           myProjectIds={myProjectIds}
           isAdmin={isAdmin}
         />
       </div>
 
-      {/* Project drill-down drawer — scoped to accessible tasks only */}
+      {/* Project drill-down drawer */}
       <AnalyticsProjectDrawer
         project={drawerProject}
         tasks={accessFilteredTasks}
@@ -485,14 +500,20 @@ export default function AnaliticasPage() {
         onClose={() => setDrawerProject(null)}
       />
 
-      {/* Admin: Contracted Hours Modal — lazy loaded to avoid crash if table missing */}
+      {/* Admin: Contracted Hours Modal */}
       {isAdmin && hoursModalProject && (
         <Suspense fallback={null}>
           <ContractedHoursModal
             project={hoursModalProject}
-            currentHours={contractedHoursData.get(hoursModalProject.projectId)?.contracted_hours ?? 0}
-            onClose={() => setHoursModalProject(null)}
+            clientProjects={hoursModalClientProjects}
+            currentHours={
+              hoursModalClientProjects
+                ? (contractedHoursData.get(hoursModalClientProjects[0]?.projectId)?.contracted_hours ?? 0)
+                : (contractedHoursData.get(hoursModalProject.projectId)?.contracted_hours ?? 0)
+            }
+            onClose={() => { setHoursModalProject(null); setHoursModalClientProjects(undefined); }}
             onSave={handleSaveHours}
+            onSaveAll={handleSaveAllClientHours}
           />
         </Suspense>
       )}
