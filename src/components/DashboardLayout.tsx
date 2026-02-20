@@ -33,7 +33,6 @@ function toNotifTask(task: Record<string, any>) {
   const project = String(
     task.projects?.name ?? task.project_name ?? task.project ?? task.projeto ?? ""
   );
-  // IXC usa "responsible_name" como campo do responsável da tarefa
   const consultant = String(
     task.responsible_name ?? task.consultant ?? task.consultor ?? task.responsavel ?? task.responsible ?? ""
   );
@@ -83,15 +82,12 @@ function DashboardInner() {
     period: "30d",
   });
 
-  // Filter raw tasks by project access before passing to notifications.
-  // Consultores/clientes must only see notifications from their own projects.
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return tasks;
 
     const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
     const hasCompanyName = !!companyName;
 
-    // Segurança: sem config de acesso → retorna vazio (não vaza dados de outros projetos)
     if (!hasExplicitNames && !hasCompanyName) return [];
 
     const allowedNames = hasExplicitNames ? accessibleProjectNames!.map(norm) : null;
@@ -143,8 +139,8 @@ function DashboardInner() {
     return <Navigate to="/" replace />;
   }
 
-  // Spacer width: pushes <main> to the right, matching the fixed sidebar width.
-  // Using inline style (never Tailwind) so it works in both dev and production builds.
+  // Spacer width: reserves space for the fixed sidebar in the flex layout.
+  // Uses inline styles to avoid Tailwind purging in production builds.
   const spacerWidth = isMobile
     ? "0px"
     : sidebarState === "collapsed"
@@ -152,23 +148,10 @@ function DashboardInner() {
     : SIDEBAR_WIDTH;
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <>
       <SyncIndicator syncing={loading} />
 
-      {/*
-       * Spacer: reserves the horizontal space occupied by the fixed sidebar.
-       * Lives in DashboardLayout (not inside Sidebar) to avoid containing-block
-       * issues caused by overflow:hidden / will-change on ancestor elements.
-       */}
-      <div
-        aria-hidden
-        style={{
-          width: spacerWidth,
-          flexShrink: 0,
-          transition: "width 200ms linear",
-        }}
-      />
-
+      {/* Fixed visual sidebar panel */}
       <AppSidebar
         notificationBell={
           <NotificationBell
@@ -180,9 +163,22 @@ function DashboardInner() {
         }
       />
 
+      {/*
+       * Spacer: a plain flex item that occupies the same horizontal width as the
+       * fixed sidebar. This pushes <main> to the right without creating a
+       * containing-block that would interfere with the fixed panel.
+       */}
+      <div
+        aria-hidden
+        style={{
+          width: spacerWidth,
+          flexShrink: 0,
+          transition: "width 200ms linear",
+        }}
+      />
+
       <main
-        className="flex-1 min-w-0 overflow-x-hidden"
-        style={{ minWidth: 0 }}
+        style={{ flex: 1, minWidth: 0, overflowX: "hidden" }}
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -191,20 +187,24 @@ function DashboardInner() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-            className="min-h-screen"
+            style={{ minHeight: "100vh" }}
           >
             <Outlet />
           </motion.div>
         </AnimatePresence>
       </main>
-    </div>
+    </>
   );
 }
 
 export default function DashboardLayout() {
   return (
+    // SidebarProvider already renders a flex w-full min-h-svh container.
+    // DashboardInner renders its children directly into that flex container
+    // (AppSidebar fixed panel + spacer div + main).
     <SidebarProvider>
       <DashboardInner />
     </SidebarProvider>
   );
 }
+
