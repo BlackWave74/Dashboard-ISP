@@ -141,7 +141,8 @@ const Sidebar = React.forwardRef<
   if (collapsible === "none") {
     return (
       <div
-        className={cn("flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground", className)}
+        className={cn("flex h-full flex-col bg-sidebar text-sidebar-foreground", className)}
+        style={{ width: SIDEBAR_WIDTH }}
         ref={ref}
         {...props}
       >
@@ -156,12 +157,8 @@ const Sidebar = React.forwardRef<
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-          style={
-            {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-            } as React.CSSProperties
-          }
+          className="bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          style={{ width: SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
           side={side}
         >
           <div className="flex h-full w-full flex-col">{children}</div>
@@ -170,13 +167,17 @@ const Sidebar = React.forwardRef<
     );
   }
 
-  // All sizing via JS — never affected by Tailwind purging in production.
   const isCollapsed = state === "collapsed";
   const isIconCollapsible = collapsible === "icon";
   const isOffcanvasCollapsible = collapsible === "offcanvas";
 
+  // Width of the fixed visual panel
   const panelWidth =
-    isCollapsed && isIconCollapsible ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH;
+    isCollapsed && isIconCollapsible
+      ? SIDEBAR_WIDTH_ICON
+      : isCollapsed && isOffcanvasCollapsible
+      ? "0px"
+      : SIDEBAR_WIDTH;
 
   const panelLeft =
     side === "left"
@@ -191,13 +192,6 @@ const Sidebar = React.forwardRef<
         : "0px"
       : undefined;
 
-  /*
-   * The sidebar renders ONLY as a fixed visual panel.
-   * It does NOT participate in the flex layout of the parent container.
-   * The parent layout (DashboardLayout) is responsible for reserving the sidebar space
-   * via a dedicated spacer div — this avoids any containing-block issues with
-   * overflow-x:hidden or will-change ancestors.
-   */
   return (
     <div
       ref={ref}
@@ -205,12 +199,7 @@ const Sidebar = React.forwardRef<
       data-collapsible={isCollapsed ? collapsible : ""}
       data-variant={variant}
       data-side={side}
-      className={cn(
-        "text-sidebar-foreground",
-        variant === "floating" || variant === "inset" ? "p-2" : "",
-        side === "left" ? "border-r border-border/30" : "border-l border-border/30",
-        className,
-      )}
+      className={cn("text-sidebar-foreground", className)}
       style={{
         position: "fixed",
         top: 0,
@@ -228,10 +217,7 @@ const Sidebar = React.forwardRef<
     >
       <div
         data-sidebar="sidebar"
-        className={cn(
-          "flex h-full w-full flex-col bg-transparent",
-          variant === "floating" ? "rounded-lg border border-sidebar-border shadow" : "",
-        )}
+        className="flex h-full w-full flex-col bg-transparent"
       >
         {children}
       </div>
