@@ -154,6 +154,14 @@ export function useAnalyticsData(
       };
     });
 
+    // Build a lookup: clientId → clientName from projects that DO have a clientName
+    const clientNameById = new Map<number, string>();
+    fromHours.forEach((p) => {
+      if (p.clientId && p.clientName) {
+        clientNameById.set(p.clientId, p.clientName);
+      }
+    });
+
     const existingIds = new Set(fromHours.map((p) => p.projectId));
     const fromTasks: ProjectAnalytics[] = [];
     tasksByProject.forEach((stats, pid) => {
@@ -161,6 +169,8 @@ export function useAnalyticsData(
       const task = tasks.find((t) => Number(t.project_id) === pid);
       const projectName = task?.projects?.name ?? task?.project_name ?? task?.project ?? task?.projeto ?? `Projeto ${pid}`;
       const clientId = Number(task?.projects?.cliente_id ?? 0);
+      // Try to resolve clientName from clientId lookup
+      const clientName = clientId ? (clientNameById.get(clientId) ?? "") : "";
       const totalTasks = stats.done + stats.pending + stats.overdue;
       const completionRate = totalTasks > 0 ? stats.done / totalTasks : 0;
       const overdueRate = totalTasks > 0 ? stats.overdue / totalTasks : 0;
@@ -171,7 +181,7 @@ export function useAnalyticsData(
         projectId: pid,
         projectName: String(projectName),
         clientId,
-        clientName: "",
+        clientName,
         hoursUsed: 0,
         hoursContracted: 0,
         isActive: stats.pending > 0 || stats.overdue > 0,
