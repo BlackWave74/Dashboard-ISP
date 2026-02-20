@@ -139,16 +139,16 @@ function DashboardInner() {
     return <Navigate to="/" replace />;
   }
 
-  // Spacer width: reserves space for the fixed sidebar in the flex layout.
-  // Uses inline styles to avoid Tailwind purging in production builds.
-  const spacerWidth = isMobile
+  // marginLeft drives the main content offset — avoids the flex+fixed+overflow-hidden
+  // containing-block trap that breaks position:fixed on some browsers/builds.
+  const marginLeft = isMobile
     ? "0px"
     : sidebarState === "collapsed"
     ? SIDEBAR_WIDTH_ICON
     : SIDEBAR_WIDTH;
 
   return (
-    <>
+    <div style={{ minHeight: "100vh", background: "hsl(222 47% 5%)" }}>
       <SyncIndicator syncing={loading} />
 
       {/* Fixed visual sidebar panel */}
@@ -164,21 +164,17 @@ function DashboardInner() {
       />
 
       {/*
-       * Spacer: a plain flex item that occupies the same horizontal width as the
-       * fixed sidebar. This pushes <main> to the right without creating a
-       * containing-block that would interfere with the fixed panel.
+       * margin-left approach: pushes main content away from the fixed sidebar
+       * without using a flex spacer div. This avoids the containing-block issue
+       * caused by overflow-x:hidden on html/body in index.css.
        */}
-      <div
-        aria-hidden
-        style={{
-          width: spacerWidth,
-          flexShrink: 0,
-          transition: "width 200ms linear",
-        }}
-      />
-
       <main
-        style={{ flex: 1, minWidth: 0, overflowX: "hidden" }}
+        style={{
+          marginLeft,
+          minHeight: "100vh",
+          transition: "margin-left 200ms linear",
+          overflowX: "hidden",
+        }}
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -187,21 +183,17 @@ function DashboardInner() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-            style={{ minHeight: "100vh" }}
           >
             <Outlet />
           </motion.div>
         </AnimatePresence>
       </main>
-    </>
+    </div>
   );
 }
 
 export default function DashboardLayout() {
   return (
-    // SidebarProvider already renders a flex w-full min-h-svh container.
-    // DashboardInner renders its children directly into that flex container
-    // (AppSidebar fixed panel + spacer div + main).
     <SidebarProvider>
       <DashboardInner />
     </SidebarProvider>
