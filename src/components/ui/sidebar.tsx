@@ -170,71 +170,76 @@ const Sidebar = React.forwardRef<
     );
   }
 
-  // Compute widths via JS so they are NEVER affected by Tailwind CSS purging in production.
+  // Compute sidebar width via JS — NEVER depends on Tailwind classes, production-safe.
   const isCollapsed = state === "collapsed";
   const isIconCollapsible = collapsible === "icon";
   const isOffcanvasCollapsible = collapsible === "offcanvas";
 
-  const gapWidth = isCollapsed
-    ? isOffcanvasCollapsible
-      ? "0px"
-      : isIconCollapsible
-        ? SIDEBAR_WIDTH_ICON
-        : SIDEBAR_WIDTH
-    : SIDEBAR_WIDTH;
+  // Width reserved in the flex layout (the "gap" that pushes main content)
+  const spacerWidth =
+    isCollapsed && isIconCollapsible
+      ? SIDEBAR_WIDTH_ICON
+      : isCollapsed && isOffcanvasCollapsible
+        ? "0px"
+        : SIDEBAR_WIDTH;
 
-  const fixedWidth = isCollapsed && isIconCollapsible
-    ? SIDEBAR_WIDTH_ICON
-    : SIDEBAR_WIDTH;
+  // Width of the visual fixed panel
+  const panelWidth =
+    isCollapsed && isIconCollapsible ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH;
 
-  const fixedLeft = side === "left"
-    ? isCollapsed && isOffcanvasCollapsible
-      ? `calc(${SIDEBAR_WIDTH} * -1)`
-      : "0px"
-    : undefined;
-
-  const fixedRight = side === "right"
-    ? isCollapsed && isOffcanvasCollapsible
-      ? `calc(${SIDEBAR_WIDTH} * -1)`
-      : "0px"
-    : undefined;
+  // Left/right offset for offcanvas slide-out
+  const panelLeft =
+    side === "left"
+      ? isCollapsed && isOffcanvasCollapsible
+        ? `calc(-1 * ${SIDEBAR_WIDTH})`
+        : "0px"
+      : undefined;
+  const panelRight =
+    side === "right"
+      ? isCollapsed && isOffcanvasCollapsible
+        ? `calc(-1 * ${SIDEBAR_WIDTH})`
+        : "0px"
+      : undefined;
 
   return (
-    <div
-      ref={ref}
-      className="text-sidebar-foreground"
-      style={{ display: "block" }}
-      data-state={state}
-      data-collapsible={isCollapsed ? collapsible : ""}
-      data-variant={variant}
-      data-side={side}
-    >
-      {/* Gap div: reserves space in the flex layout — width driven by JS, never purged */}
+    <>
+      {/*
+       * Spacer: a plain flex item that reserves horizontal space for the fixed sidebar.
+       * Width is driven by JS (inline style) — NEVER purged by Tailwind in production.
+       */}
       <div
+        aria-hidden
         style={{
-          width: gapWidth,
-          height: "100svh",
+          width: spacerWidth,
           flexShrink: 0,
           transition: "width 200ms linear",
-          position: "relative",
-          background: "transparent",
         }}
       />
-      {/* Fixed sidebar: visual layer, always on top */}
+
+      {/*
+       * Fixed visual panel: the actual sidebar, out of the normal flow.
+       * All layout-critical properties use inline styles.
+       */}
       <div
+        ref={ref}
+        data-state={state}
+        data-collapsible={isCollapsed ? collapsible : ""}
+        data-variant={variant}
+        data-side={side}
         className={cn(
+          "text-sidebar-foreground",
           variant === "floating" || variant === "inset" ? "p-2" : "",
-          side === "left" ? "border-r" : "border-l",
+          side === "left" ? "border-r border-border/30" : "border-l border-border/30",
           className,
         )}
         style={{
           position: "fixed",
-          insetBlock: 0,
-          left: fixedLeft,
-          right: fixedRight,
-          zIndex: 10,
-          height: "100svh",
-          width: fixedWidth,
+          top: 0,
+          bottom: 0,
+          left: panelLeft,
+          right: panelRight,
+          zIndex: 20,
+          width: panelWidth,
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -252,7 +257,7 @@ const Sidebar = React.forwardRef<
           {children}
         </div>
       </div>
-    </div>
+    </>
   );
 });
 Sidebar.displayName = "Sidebar";
