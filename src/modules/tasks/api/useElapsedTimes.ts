@@ -21,8 +21,8 @@ type UseElapsedTimesParams = {
 };
 
 const CACHE_KEY = "cache:elapsed_times:v2";
-const CACHE_TTL_MS = 15 * 60 * 1000;
-const RELOAD_COOLDOWN_MS = 4000;
+const RELOAD_COOLDOWN_MS = 12_000; // 5 reloads per minute → 60s / 5 = 12s
+const MAX_RELOADS_PER_MINUTE = 5;
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_TASKS_TIMEOUT_MS ?? "25000");
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 10;
@@ -56,6 +56,7 @@ const buildEndpoint = (period?: string, dateFrom?: string, dateTo?: string) => {
   if (!url || !key) {
     return {
       endpoint: null,
+      latestEndpoint: null,
       key: null,
       error: "Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.",
     };
@@ -110,6 +111,7 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
   const [lastUpdated, setLastUpdated] = useState<number | null>(initialCache?.timestamp ?? null);
   const [noChanges, setNoChanges] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
+  const reloadTimestampsRef = useRef<number[]>([]);
   const lastReloadRef = useRef(0);
   const inFlightKeyRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -119,15 +121,35 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
   const reload = useCallback(() => {
     const now = Date.now();
     if (now - lastReloadRef.current < RELOAD_COOLDOWN_MS) return;
+
+    // Rate limit: max 5 per minute
+    const oneMinuteAgo = now - 60_000;
+    const recentReloads = reloadTimestampsRef.current.filter((t) => t > oneMinuteAgo);
+    if (recentReloads.length >= MAX_RELOADS_PER_MINUTE) return;
+
     lastReloadRef.current = now;
+    reloadTimestampsRef.current = [...recentReloads, now];
+
+    // Clear latestUpdatedAtMs so next fetch always goes to server
+    const periodKey = period === "custom" ? `custom:${dateFrom ?? ""}:${dateTo ?? ""}` : period;
+    const cacheKey = `${CACHE_KEY}:${periodKey}`;
+    const cached = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(cacheKey, null);
+    if (cached) {
+      storage.set(cacheKey, { ...cached, latestUpdatedAtMs: null });
+    }
+
+    setNoChanges(false);
     setRefreshToken((prev) => prev + 1);
-  }, []);
+  }, [period, dateFrom, dateTo]);
 
   useEffect(() => {
     const tick = () => {
       const now = Date.now();
       const left = Math.max(0, RELOAD_COOLDOWN_MS - (now - lastReloadRef.current));
       setReloadCooldownMsLeft(left);
+      // prune old entries
+      const oneMinuteAgo = now - 60_000;
+      reloadTimestampsRef.current = reloadTimestampsRef.current.filter((t) => t > oneMinuteAgo);
     };
     tick();
     const id = window.setInterval(tick, 250);
@@ -158,29 +180,28 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
     const controller = new AbortController();
     abortRef.current = controller;
     inFlightKeyRef.current = requestKey;
-    let timeoutFired = false;
     const timeoutId = window.setTimeout(() => {
-      timeoutFired = true;
       abortReasonRef.current = "timeout";
       controller.abort();
     }, REQUEST_TIMEOUT_MS);
 
-    const startedAt = Date.now();
-
     const fetchTimes = async () => {
-      // Only show loading shimmer if we have no cached data to display
-      const hasCachedData = Boolean(cached?.data?.length);
-      if (!hasCachedData) setLoading(true);
+      // Show loading (but don't hide cached data)
+      setLoading(true);
       setError(null);
       setNoChanges(false);
       try {
         const bearer = params.accessToken || key;
+
+        // Read fresh cache state (might have been cleared by reload())
         const cachedForCheck = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
           cacheKey,
           null
         );
         const cachedLatestMs = cachedForCheck?.latestUpdatedAtMs ?? null;
-        if (typeof cachedLatestMs === "number" && refreshToken > 0) {
+
+        // Only skip fetch if we have latestUpdatedAtMs AND this is auto-refresh (not manual)
+        if (typeof cachedLatestMs === "number" && refreshToken === 0) {
           const latestResponse = await fetch(latestEndpoint, {
             headers: {
               apikey: key,
@@ -208,6 +229,7 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
             }
           }
         }
+
         const fetchPage = async (offset: number) => {
           const separator = endpoint.includes("?") ? "&" : "?";
           const url = `${endpoint}${separator}limit=${PAGE_SIZE}&offset=${offset}`;
@@ -258,8 +280,8 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
             offset += PAGE_SIZE;
           }
         }
-        setTimes(data);
 
+        setTimes(data);
         const timestamp = Date.now();
         const latestUpdatedAtMs = data.reduce<number | null>((max, row) => {
           const rawUpdated = row?.updated_at ? String(row.updated_at) : null;
@@ -282,7 +304,10 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
           controller.signal.aborted ||
           (err instanceof DOMException && err.name === "AbortError") ||
           message.toLowerCase().includes("aborted");
-        if (abortLike) return;
+        if (abortLike) {
+          setLoading(false);
+          return;
+        }
         const messageSafe = message || "Nao foi possivel carregar os tempos.";
         console.error("[elapsed_times] fetch error", { endpoint, message });
         setError(messageSafe);
@@ -298,14 +323,6 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
-          const refreshedCache = storage.get<{ data: ElapsedTimeRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
-            cacheKey,
-            null
-          );
-          const stale = !refreshedCache?.timestamp || Date.now() - refreshedCache.timestamp > CACHE_TTL_MS;
-          if (stale) {
-            setLastUpdated(refreshedCache?.timestamp ?? null);
-          }
         }
         inFlightKeyRef.current = null;
         clearTimeout(timeoutId);

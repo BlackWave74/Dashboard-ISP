@@ -10,6 +10,8 @@ type UseTasksResult = {
   reload: () => void;
   lastUpdated: number | null;
   reloadCooldownMsLeft: number;
+  /** How many manual reloads remain this minute (out of MAX_RELOADS_PER_MINUTE) */
+  reloadsRemainingThisMinute: number;
   noChanges: boolean;
   totalCount: number | null;
 };
@@ -22,8 +24,8 @@ type UseTasksParams = {
 };
 
 const CACHE_KEY = "cache:tasks:v3";
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const RELOAD_COOLDOWN_MS = 4000;
+const RELOAD_COOLDOWN_MS = 12_000; // 5 reloads per minute → 60s / 5 = 12s between
+const MAX_RELOADS_PER_MINUTE = 5;
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_TASKS_TIMEOUT_MS ?? "25000");
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 10;
@@ -104,31 +106,63 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
   const [noChanges, setNoChanges] = useState(false);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+
+  // Rate limiting: track timestamps of last N manual reloads
+  const reloadTimestampsRef = useRef<number[]>([]);
   const lastReloadRef = useRef(0);
   const inFlightKeyRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const abortReasonRef = useRef<"cleanup" | "new-request" | "unmount" | "timeout">("cleanup");
   const [reloadCooldownMsLeft, setReloadCooldownMsLeft] = useState(0);
+  const [reloadsRemainingThisMinute, setReloadsRemainingThisMinute] = useState(MAX_RELOADS_PER_MINUTE);
   const countCacheRef = useRef<{ timestamp: number; value: number } | null>(null);
 
   const reload = useCallback(() => {
     const now = Date.now();
-    if (now - lastReloadRef.current < RELOAD_COOLDOWN_MS) return;
-    lastReloadRef.current = now;
-    setRefreshToken((prev) => prev + 1);
-  }, []);
 
+    // Enforce per-reload cooldown (prevent double-clicks)
+    if (now - lastReloadRef.current < RELOAD_COOLDOWN_MS) return;
+
+    // Enforce rate limit: max 5 per minute
+    const oneMinuteAgo = now - 60_000;
+    const recentReloads = reloadTimestampsRef.current.filter((t) => t > oneMinuteAgo);
+    if (recentReloads.length >= MAX_RELOADS_PER_MINUTE) return;
+
+    // Record this reload
+    lastReloadRef.current = now;
+    reloadTimestampsRef.current = [...recentReloads, now];
+
+    // Force a new fetch (bypass noChanges check by clearing latestUpdatedAtMs in cache)
+    const periodKey = period === "custom" ? `custom:${dateFrom ?? ""}:${dateTo ?? ""}` : period;
+    const cacheKey = `${CACHE_KEY}:${periodKey}`;
+    const cached = storage.get<{ data: TaskRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(cacheKey, null);
+    if (cached) {
+      // Clear latestUpdatedAtMs so the next fetch always goes to the server
+      storage.set(cacheKey, { ...cached, latestUpdatedAtMs: null });
+    }
+
+    setNoChanges(false);
+    setRefreshToken((prev) => prev + 1);
+  }, [period, dateFrom, dateTo]);
+
+  // Update cooldown + remaining count every 250ms
   useEffect(() => {
     const tick = () => {
       const now = Date.now();
       const left = Math.max(0, RELOAD_COOLDOWN_MS - (now - lastReloadRef.current));
       setReloadCooldownMsLeft(left);
+
+      const oneMinuteAgo = now - 60_000;
+      const recentReloads = reloadTimestampsRef.current.filter((t) => t > oneMinuteAgo);
+      reloadTimestampsRef.current = recentReloads; // prune old entries
+      setReloadsRemainingThisMinute(MAX_RELOADS_PER_MINUTE - recentReloads.length);
     };
     tick();
     const id = window.setInterval(tick, 250);
     return () => window.clearInterval(id);
   }, []);
 
+  // Total count query
   useEffect(() => {
     if (envError) return;
     if (!countEndpoint || !key) return;
@@ -168,6 +202,7 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
     return () => controller.abort();
   }, [countEndpoint, key, envError, params.accessToken]);
 
+  // Main fetch effect
   useEffect(() => {
     if (envError) return;
     if (!endpoint || !latestEndpoint || !key) return;
@@ -183,6 +218,7 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
       setLastUpdated(cached.timestamp ?? null);
     }
 
+    // Build a unique key that changes with refreshToken so each manual reload triggers a new fetch
     const requestKey = `${endpoint}|${params.accessToken || key}|${refreshToken}`;
     if (inFlightKeyRef.current === requestKey) return;
     if (abortRef.current) {
@@ -201,16 +237,22 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
       // Only show loading shimmer if we have no cached data to display
       const hasCachedData = Boolean(cached?.data?.length);
       if (!hasCachedData) setLoading(true);
+      else setLoading(true); // always set loading=true so spinner shows on button
       setError(null);
       setNoChanges(false);
       try {
         const bearer = params.accessToken || key;
+
+        // Read fresh cache state (might have been cleared by reload())
         const cachedForCheck = storage.get<{ data: TaskRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
           cacheKey,
           null
         );
         const cachedLatestMs = cachedForCheck?.latestUpdatedAtMs ?? null;
-        if (typeof cachedLatestMs === "number" && refreshToken > 0) {
+
+        // Only skip fetch if we have a valid latestUpdatedAtMs AND this is not a manual reload
+        if (typeof cachedLatestMs === "number" && refreshToken === 0) {
+          // auto-fetch on mount: check if anything changed before pulling all rows
           const latestResponse = await fetch(latestEndpoint, {
             headers: {
               apikey: key,
@@ -238,6 +280,7 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
             }
           }
         }
+
         const fetchPage = async (offset: number) => {
           const separator = endpoint.includes("?") ? "&" : "?";
           const url = `${endpoint}${separator}limit=${PAGE_SIZE}&offset=${offset}`;
@@ -288,6 +331,7 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
             offset += PAGE_SIZE;
           }
         }
+
         const timestamp = Date.now();
         const latestUpdatedAtMs = data.reduce<number | null>((max, row) => {
           const rawUpdated = row?.updated_at ? String(row.updated_at) : null;
@@ -319,7 +363,6 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
           (err instanceof DOMException && err.name === "AbortError") ||
           message.toLowerCase().includes("aborted");
         if (abortLike) {
-          // Safety: ensure loading is cleared even on abort
           setLoading(false);
           return;
         }
@@ -357,5 +400,5 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
     };
   }, [endpoint, latestEndpoint, key, envError, refreshToken, params.accessToken, period, dateFrom, dateTo]);
 
-  return { tasks, loading, error, reload, lastUpdated, reloadCooldownMsLeft, noChanges, totalCount };
+  return { tasks, loading, error, reload, lastUpdated, reloadCooldownMsLeft, reloadsRemainingThisMinute, noChanges, totalCount };
 }
