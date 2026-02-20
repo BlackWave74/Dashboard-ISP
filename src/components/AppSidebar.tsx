@@ -15,6 +15,7 @@ import {
   CalendarDays,
   Trophy,
   Cog,
+  Bug,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -183,7 +184,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
     const p = location.pathname;
     if (["/tarefas", "/analiticas", "/gamificacao", "/calendario"].some((r) => p.startsWith(r))) return "gestao";
     if (["/comodato"].some((r) => p.startsWith(r))) return "automacao";
-    if (["/usuarios", "/integracoes"].some((r) => p.startsWith(r))) return "admin";
+    if (["/usuarios", "/integracoes", "/admin"].some((r) => p.startsWith(r))) return "admin";
     return null;
   };
 
@@ -361,6 +362,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                 <>
                   <SidebarNavItem to="/usuarios" icon={Users} label="Usuários" iconColor="hsl(280 70% 65%)" />
                   <SidebarNavItem to="/integracoes" icon={Plug} label="Integrações" iconColor="hsl(38 92% 50%)" />
+                  <SidebarNavItem to="/admin/diagnostico" icon={Bug} label="Diagnóstico" iconColor="hsl(38 92% 50%)" />
                 </>
               ) : (
                 <>
@@ -383,6 +385,9 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                       </NavLink>
                       <NavLink to="/integracoes" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
                         <Plug className="h-4 w-4" style={{ color: "hsl(38 92% 50%)" }} /><span>Integrações</span>
+                      </NavLink>
+                      <NavLink to="/admin/diagnostico" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                        <Bug className="h-4 w-4" style={{ color: "hsl(38 92% 50%)" }} /><span>Diagnóstico</span>
                       </NavLink>
                     </div>
                   )}
