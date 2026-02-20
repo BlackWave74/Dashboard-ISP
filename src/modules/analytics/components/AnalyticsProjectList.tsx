@@ -1,14 +1,10 @@
 import { useState, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  UserCircle,
   Building2,
   ChevronDown,
   ChevronUp,
   Clock,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Star,
   Pencil,
   CheckCircle2,
@@ -16,6 +12,7 @@ import {
   Search,
   X,
   Timer,
+  FolderOpen,
 } from "lucide-react";
 import type { ProjectAnalytics } from "../types";
 
@@ -32,19 +29,7 @@ type Props = {
 
 type Filter = "all" | "mine" | "active" | "favorites";
 
-const perfConfig = {
-  good:    { label: "Bom",     icon: TrendingUp,   color: "text-emerald-400", bg: "bg-emerald-500/10",  border: "border-emerald-500/25"  },
-  neutral: { label: "Regular", icon: Minus,         color: "text-amber-400",   bg: "bg-amber-500/10",    border: "border-amber-500/25"    },
-  bad:     { label: "Crítico", icon: TrendingDown,  color: "text-red-400",     bg: "bg-red-500/10",      border: "border-red-500/25"      },
-};
-
-/**
- * Normalizes a client name for grouping purposes:
- * lowercase, remove accents, keep only alphanumeric.
- * "DS Tech", "DS TECH", "DS-Tech" → "dstech"
- * "Provedor 2000", "Provedor2000" → "provedor2000"
- * "Cobra Ai", "COBRA.AI" → "cobraai"
- */
+/** Normaliza string para chave de agrupamento: minúsculas, sem acento, só alfanumérico */
 function normalizeKey(str: string): string {
   return str
     .toLowerCase()
@@ -54,20 +39,22 @@ function normalizeKey(str: string): string {
 }
 
 /**
- * Extracts a "display client" from the project.
- * Priority:
- *  1. If `clientName` is a real non-empty string (not a placeholder) → use it.
- *  2. If project name contains " - " or " <> " → split and use left part as client.
- *  3. Fallback → use the project name itself as the label.
+ * Extrai o nome do cliente a partir do nome do projeto.
+ * Prioridade:
+ *  1. clientName real (não placeholder como [NOME DO CLIENTE])
+ *  2. Parte antes de " - " ou " <> " no nome do projeto
+ *  3. Nome do projeto inteiro como label do cliente
  */
 function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; projectLabel: string } {
   const clientRaw = p.clientName?.trim();
-  // Skip placeholder values like "[NOME DO CLIENTE]"
-  const hasClient = clientRaw && !/^\[.*\]$/.test(clientRaw);
-  if (hasClient) {
-    return { clientLabel: clientRaw, projectLabel: p.projectName };
+  // Ignora placeholders como [NOME DO CLIENTE], [CLIENT], etc.
+  const isPlaceholder = !clientRaw || /^\[.*\]$/.test(clientRaw) || clientRaw.length < 2;
+
+  if (!isPlaceholder) {
+    return { clientLabel: clientRaw!, projectLabel: p.projectName };
   }
 
+  // Tenta separar por " - " ou " <> "
   const SEPARATORS = [" - ", " <> "];
   for (const sep of SEPARATORS) {
     const idx = p.projectName.indexOf(sep);
@@ -79,16 +66,17 @@ function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; proje
     }
   }
 
-  // No separator → use project name directly
+  // Sem separador — usa o nome do projeto como cliente
   return { clientLabel: p.projectName, projectLabel: p.projectName };
 }
 
-/** Group projects by resolved client label, merging variants of the same name. */
-function groupByResolvedClient(
-  projects: ProjectAnalytics[]
-): Map<string, { displayLabel: string; projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }> {
-  // normalized key → { displayLabel (first seen / best), projects, labels }
-  const map = new Map<string, { displayLabel: string; projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }>();
+/** Agrupa projetos por cliente, mesclando variantes do mesmo nome */
+function groupByClient(projects: ProjectAnalytics[]) {
+  const map = new Map<string, {
+    displayLabel: string;
+    projects: ProjectAnalytics[];
+    labelsByProject: Map<number, string>;
+  }>();
 
   projects.forEach((p) => {
     const { clientLabel, projectLabel } = resolveDisplayClient(p);
@@ -99,31 +87,34 @@ function groupByResolvedClient(
     }
     const entry = map.get(key)!;
 
-    // Prefer the display label that looks best:
-    // longer name (more information) or title-cased version wins
+    // Prefere label mais descritiva (mais longa ou em Title Case)
     if (
       clientLabel.length > entry.displayLabel.length ||
-      (clientLabel.length === entry.displayLabel.length && clientLabel !== clientLabel.toUpperCase() && entry.displayLabel === entry.displayLabel.toUpperCase())
+      (
+        clientLabel.length === entry.displayLabel.length &&
+        clientLabel !== clientLabel.toUpperCase() &&
+        entry.displayLabel === entry.displayLabel.toUpperCase()
+      )
     ) {
       entry.displayLabel = clientLabel;
     }
 
-    // Avoid duplicates within the same group
+    // Evita duplicatas dentro do mesmo grupo
     if (!entry.projects.find((ep) => ep.projectId === p.projectId)) {
       entry.projects.push(p);
       entry.labelsByProject.set(p.projectId, projectLabel);
     }
   });
 
-  // Sort alphabetically by display label
   return new Map(
-    [...map.entries()]
-      .sort(([, a], [, b]) => a.displayLabel.localeCompare(b.displayLabel, "pt-BR"))
+    [...map.entries()].sort(([, a], [, b]) =>
+      a.displayLabel.localeCompare(b.displayLabel, "pt-BR")
+    )
   );
 }
 
-/** Compact project row inside a client accordion */
-function ProjectRow({
+/** Card de projeto dentro do accordion */
+function ProjectCard({
   project,
   projectLabel,
   onToggleFavorite,
@@ -140,8 +131,6 @@ function ProjectRow({
   isMine?: boolean;
   isAdmin?: boolean;
 }) {
-  const perf = perfConfig[project.performance];
-  const PerfIcon = perf.icon;
   const total = project.tasksDone + project.tasksPending + project.tasksOverdue;
   const pct = total > 0 ? Math.round((project.tasksDone / total) * 100) : 0;
   const hasHours = project.hoursContracted > 0;
@@ -150,156 +139,60 @@ function ProjectRow({
     hoursPct >= 90 ? "hsl(0 84% 60%)" :
     hoursPct >= 70 ? "hsl(43 97% 52%)" :
     "hsl(160 84% 39%)";
-  const hoursRemaining = hasHours ? project.hoursContracted - project.hoursUsed : null;
+  const hoursRemaining = hasHours ? Math.round(project.hoursContracted - project.hoursUsed) : null;
+
+  const statusColor =
+    project.performance === "good" ? "hsl(160 84% 39%)" :
+    project.performance === "bad"  ? "hsl(0 84% 60%)"   :
+                                     "hsl(43 97% 52%)";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 4 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`group relative rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/25 ${
-        isMine
-          ? "border-[hsl(262_83%_58%/0.3)] bg-[hsl(262_83%_58%/0.04)]"
-          : "border-white/[0.06] bg-white/[0.025] hover:border-white/[0.1] hover:bg-white/[0.035]"
-      }`}
+      className="group relative flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4 transition-all hover:border-white/[0.12] hover:bg-white/[0.04] cursor-pointer"
+      onClick={() => onClick?.(project)}
     >
-      {/* Performance accent bar */}
+      {/* Barra de status lateral */}
       <div
-        className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl opacity-50 transition-opacity group-hover:opacity-90"
-        style={{
-          background:
-            project.performance === "good"  ? "hsl(160 84% 39%)" :
-            project.performance === "bad"   ? "hsl(0 84% 60%)"   :
-                                              "hsl(43 97% 52%)",
-        }}
+        className="absolute left-0 inset-y-3 w-[3px] rounded-full"
+        style={{ background: statusColor }}
       />
 
-      <div className="flex items-center gap-4 px-4 py-3.5">
-        {/* Left: name + badges */}
-        <div
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => onClick?.(project)}
-        >
-          <div className="flex flex-wrap items-center gap-1.5 mb-1">
-            {isMine && (
-              <span className="rounded-full bg-[hsl(262_83%_58%/0.18)] border border-[hsl(262_83%_58%/0.35)] px-2 py-0.5 text-[10px] font-bold text-[hsl(262_83%_58%)]">
-                Meu
-              </span>
-            )}
+      <div className="flex items-start justify-between gap-2 pl-2">
+        {/* Nome do projeto */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white/85 leading-snug group-hover:text-white transition-colors truncate">
+            {projectLabel}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {project.isActive && (
-              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
                 Ativo
               </span>
             )}
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${perf.bg} ${perf.border} ${perf.color}`}>
-              <PerfIcon className="h-3 w-3" />
-              {perf.label}
-            </span>
-          </div>
-          <p className="truncate text-sm font-semibold text-white/80 group-hover:text-white transition-colors leading-snug">
-            {projectLabel}
-          </p>
-        </div>
-
-        {/* Center: stats */}
-        <div className="hidden md:flex items-center gap-4 shrink-0">
-          {/* Task counts */}
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-sm font-bold text-emerald-400">{project.tasksDone}</span>
-              </div>
-              <span className="text-[9px] text-white/30 font-medium">Concluídas</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="flex items-center gap-1">
-                <Timer className="h-3.5 w-3.5 text-[hsl(262_83%_68%)]" />
-                <span className="text-sm font-bold text-[hsl(262_83%_68%)]">{project.tasksPending}</span>
-              </div>
-              <span className="text-[9px] text-white/30 font-medium">Em andamento</span>
-            </div>
-            {project.tasksOverdue > 0 && (
-              <div className="flex flex-col items-center gap-0.5">
-                <div className="flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5 text-red-400" />
-                  <span className="text-sm font-bold text-red-400">{project.tasksOverdue}</span>
-                </div>
-                <span className="text-[9px] text-white/30 font-medium">Atrasadas</span>
-              </div>
+            {isMine && (
+              <span className="rounded-full bg-[hsl(262_83%_58%/0.15)] border border-[hsl(262_83%_58%/0.3)] px-2 py-0.5 text-[10px] font-bold text-[hsl(262_83%_75%)]">
+                Meu
+              </span>
             )}
           </div>
-
-          <div className="h-8 w-px bg-white/[0.06]" />
-
-          {/* Completion bar */}
-          <div className="flex flex-col gap-1.5 w-28">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-white/35 font-medium">Progresso</span>
-              <span className="text-[11px] font-bold text-white/60">{pct}%</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: `${pct}%`,
-                  background: "linear-gradient(to right, hsl(262 83% 58%), hsl(234 89% 64%))",
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="h-8 w-px bg-white/[0.06]" />
-
-          {/* Hours */}
-          <div className="flex flex-col gap-1 min-w-[100px]">
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-white/30 shrink-0" />
-              <span className="text-sm font-bold text-white/70">
-                {Math.round(project.hoursUsed)}h
-              </span>
-              {hasHours && (
-                <span className="text-[11px] text-white/30">/ {project.hoursContracted}h</span>
-              )}
-            </div>
-            {hasHours ? (
-              <div className="flex items-center gap-1.5">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${hoursPct}%`, background: hoursBarColor }}
-                  />
-                </div>
-                {hoursRemaining !== null && (
-                  <span className={`text-[9px] font-bold shrink-0 ${hoursRemaining < 0 ? "text-red-400" : "text-white/30"}`}>
-                    {hoursRemaining < 0 ? `+${Math.abs(Math.round(hoursRemaining))}h` : `${Math.round(hoursRemaining)}h`}
-                  </span>
-                )}
-              </div>
-            ) : isAdmin ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); onEditHours?.(project); }}
-                className="text-[10px] text-white/25 hover:text-[hsl(262_83%_58%)] transition-colors text-left"
-              >
-                + definir horas
-              </button>
-            ) : null}
-          </div>
         </div>
 
-        {/* Right: actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        {/* Ações */}
+        <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
           {isAdmin && (
             <button
-              onClick={(e) => { e.stopPropagation(); onEditHours?.(project); }}
-              className="rounded-lg p-2 text-white/20 transition hover:text-[hsl(262_83%_58%)] hover:bg-[hsl(262_83%_58%/0.1)]"
+              onClick={() => onEditHours?.(project)}
+              className="rounded-lg p-1.5 text-white/20 hover:text-[hsl(262_83%_68%)] hover:bg-[hsl(262_83%_58%/0.1)] transition"
               title="Editar horas contratadas"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
           )}
           <button
-            onClick={(e) => { e.stopPropagation(); onToggleFavorite(project.projectId); }}
-            className="rounded-lg p-2 transition hover:scale-110"
+            onClick={() => onToggleFavorite(project.projectId)}
+            className="rounded-lg p-1.5 transition hover:scale-110"
           >
             <Star
               className={`h-4 w-4 transition ${
@@ -308,6 +201,74 @@ function ProjectRow({
             />
           </button>
         </div>
+      </div>
+
+      {/* Stats */}
+      <div className="flex flex-wrap items-center gap-3 pl-2">
+        {/* Tarefas */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="text-sm font-bold text-emerald-400">{project.tasksDone}</span>
+            <span className="text-[10px] text-white/30">concluídas</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Timer className="h-3.5 w-3.5 text-[hsl(262_83%_68%)]" />
+            <span className="text-sm font-bold text-[hsl(262_83%_68%)]">{project.tasksPending}</span>
+            <span className="text-[10px] text-white/30">andamento</span>
+          </div>
+          {project.tasksOverdue > 0 && (
+            <div className="flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-400" />
+              <span className="text-sm font-bold text-red-400">{project.tasksOverdue}</span>
+              <span className="text-[10px] text-white/30">atrasadas</span>
+            </div>
+          )}
+        </div>
+
+        {/* Progresso */}
+        <div className="flex items-center gap-2 flex-1 min-w-[100px]">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${pct}%`,
+                background: "linear-gradient(to right, hsl(262 83% 58%), hsl(234 89% 64%))",
+              }}
+            />
+          </div>
+          <span className="text-[11px] font-bold text-white/45 shrink-0">{pct}%</span>
+        </div>
+      </div>
+
+      {/* Horas */}
+      <div className="flex items-center gap-2 pl-2" onClick={(e) => e.stopPropagation()}>
+        <Clock className="h-3.5 w-3.5 text-white/25 shrink-0" />
+        <span className="text-sm font-semibold text-white/60">{Math.round(project.hoursUsed)}h</span>
+        {hasHours && (
+          <>
+            <span className="text-xs text-white/25">/ {project.hoursContracted}h contratadas</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07] max-w-[100px]">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${hoursPct}%`, background: hoursBarColor }}
+              />
+            </div>
+            {hoursRemaining !== null && (
+              <span className={`text-[10px] font-bold shrink-0 ${hoursRemaining < 0 ? "text-red-400" : "text-white/30"}`}>
+                {hoursRemaining < 0 ? `+${Math.abs(hoursRemaining)}h excedido` : `${hoursRemaining}h restam`}
+              </span>
+            )}
+          </>
+        )}
+        {!hasHours && isAdmin && (
+          <button
+            onClick={() => onEditHours?.(project)}
+            className="text-[10px] text-white/25 hover:text-[hsl(262_83%_68%)] transition"
+          >
+            + definir horas
+          </button>
+        )}
       </div>
     </motion.div>
   );
@@ -324,7 +285,6 @@ export default function AnalyticsProjectList({
   isAdmin,
 }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
-  // Tracks which clients are EXPANDED (default = all collapsed)
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
@@ -351,34 +311,34 @@ export default function AnalyticsProjectList({
     });
   }, [projects, filter, selectedProject, myProjectIds]);
 
-  const grouped = useMemo(() => groupByResolvedClient(filtered), [filtered]);
+  const grouped = useMemo(() => groupByClient(filtered), [filtered]);
 
-  // Apply client name search filter
+  // Filtra grupos pelo campo de busca (cliente ou projeto)
   const groupedFiltered = useMemo(() => {
     if (!search.trim()) return grouped;
     const q = search.toLowerCase().trim();
-    const result = new Map<string, { displayLabel: string; projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }>();
+    const qNorm = normalizeKey(q);
+    const result = new Map<string, typeof grouped extends Map<string, infer V> ? V : never>();
     grouped.forEach((val, key) => {
-      if (
-        val.displayLabel.toLowerCase().includes(q) ||
-        key.includes(q.replace(/[^a-z0-9]/g, "")) ||
-        val.projects.some((p) =>
-          (val.labelsByProject.get(p.projectId) ?? p.projectName).toLowerCase().includes(q)
-        )
-      ) {
+      const matchClient =
+        val.displayLabel.toLowerCase().includes(q) || key.includes(qNorm);
+      const matchProject = val.projects.some((p) =>
+        (val.labelsByProject.get(p.projectId) ?? p.projectName).toLowerCase().includes(q)
+      );
+      if (matchClient || matchProject) {
         result.set(key, val);
       }
     });
     return result;
   }, [grouped, search]);
 
-  const filtersConfig: { key: Filter; label: string; count: number; icon?: React.ReactNode }[] = [
-    { key: "all",       label: "Todos",    count: projects.length },
+  const filtersConfig: { key: Filter; label: string; count: number }[] = [
+    { key: "all",       label: "Todos",     count: projects.length },
     ...(myProjectIds && myCount > 0
-      ? [{ key: "mine" as Filter, label: "Meus", count: myCount, icon: <UserCircle className="h-3.5 w-3.5" /> }]
+      ? [{ key: "mine" as Filter, label: "Meus", count: myCount }]
       : []),
-    { key: "active",    label: "Ativos",   count: projects.filter((p) => p.isActive).length },
-    { key: "favorites", label: "Favoritos",count: projects.filter((p) => p.isFavorite).length },
+    { key: "active",    label: "Ativos",    count: projects.filter((p) => p.isActive).length },
+    { key: "favorites", label: "Favoritos", count: projects.filter((p) => p.isFavorite).length },
   ];
 
   const toggleExpand = (clientKey: string) =>
@@ -388,37 +348,39 @@ export default function AnalyticsProjectList({
       return next;
     });
 
+  const totalGroups = groupedFiltered.size;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4 }}
-      className="space-y-5"
+      className="space-y-4"
     >
-      {/* Header */}
+      {/* ── Cabeçalho ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h3 className="text-xl font-bold text-white/90">Projetos por Cliente</h3>
-          <span className="rounded-full bg-white/[0.06] border border-white/[0.07] px-2.5 py-0.5 text-xs text-white/45 font-bold">
+          <span className="rounded-full border border-white/[0.08] bg-white/[0.05] px-2.5 py-0.5 text-xs font-bold text-white/45">
             {filtered.length}
           </span>
-          <span className="rounded-full bg-white/[0.04] border border-white/[0.05] px-2.5 py-0.5 text-xs text-white/30">
-            {groupedFiltered.size} cliente{groupedFiltered.size !== 1 ? "s" : ""}
+          <span className="rounded-full border border-white/[0.05] bg-white/[0.03] px-2.5 py-0.5 text-xs text-white/30">
+            {totalGroups} cliente{totalGroups !== 1 ? "s" : ""}
           </span>
         </div>
 
+        {/* Filtros rápidos */}
         <div className="flex gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
           {filtersConfig.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
                 filter === f.key
-                  ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg shadow-[hsl(262_83%_58%/0.3)]"
+                  ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg shadow-[hsl(262_83%_58%/0.25)]"
                   : "text-white/30 hover:text-white/55"
               }`}
             >
-              {f.icon}
               {f.label}
               <span className="opacity-50">{f.count}</span>
             </button>
@@ -426,128 +388,155 @@ export default function AnalyticsProjectList({
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/25 pointer-events-none" />
+      {/* ── Barra de busca ── */}
+      <div className="relative flex items-center">
+        {/* Ícone lupa — absolutamente posicionado, não interativo */}
+        <Search
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30"
+          aria-hidden
+        />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por cliente ou projeto..."
-          className="w-full rounded-xl border border-white/[0.07] bg-white/[0.03] py-2.5 pl-10 pr-10 text-sm text-white/80 placeholder-white/25 outline-none transition focus:border-[hsl(262_83%_58%/0.4)] focus:bg-white/[0.05]"
+          className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-10 text-sm text-white/80 placeholder-white/25 outline-none transition focus:border-[hsl(262_83%_58%/0.45)] focus:bg-white/[0.06] focus:ring-2 focus:ring-[hsl(262_83%_58%/0.1)]"
         />
         {search && (
           <button
             onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/30 hover:text-white/60 transition"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/30 transition hover:text-white/60"
+            aria-label="Limpar busca"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
+      {/* ── Lista de clientes ── */}
       {groupedFiltered.size === 0 ? (
-        <p className="py-16 text-center text-sm text-white/25">
-          {search ? `Nenhum resultado para "${search}".` : "Nenhum projeto encontrado."}
-        </p>
+        <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+          <FolderOpen className="h-10 w-10 text-white/15" />
+          <p className="text-sm text-white/30">
+            {search ? `Nenhum resultado para "${search}"` : "Nenhum projeto encontrado."}
+          </p>
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="text-xs text-[hsl(262_83%_68%)] hover:text-white transition"
+            >
+              Limpar busca
+            </button>
+          )}
+        </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {[...groupedFiltered.entries()].map(([groupKey, { displayLabel, projects: clientProjects, labelsByProject }]) => {
             const isExpanded = expandedClients.has(groupKey);
+
+            // Métricas agregadas do cliente
             const totalHours      = clientProjects.reduce((s, p) => s + p.hoursUsed, 0);
             const totalContracted = clientProjects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
             const activeCount     = clientProjects.filter((p) => p.isActive).length;
             const overdueCount    = clientProjects.reduce((s, p) => s + p.tasksOverdue, 0);
             const doneCount       = clientProjects.reduce((s, p) => s + p.tasksDone, 0);
-            const pendingCount    = clientProjects.reduce((s, p) => s + p.tasksPending, 0);
+            const totalTasks      = clientProjects.reduce((s, p) => s + p.tasksDone + p.tasksPending + p.tasksOverdue, 0);
             const hoursPct        = totalContracted > 0 ? Math.min(100, Math.round((totalHours / totalContracted) * 100)) : 0;
             const hoursBarColor   =
               hoursPct >= 90 ? "hsl(0 84% 60%)" :
               hoursPct >= 70 ? "hsl(43 97% 52%)" :
               "hsl(160 84% 39%)";
 
-            // Single-project group where client == project name → no sub-label needed
+            // Projeto único cujo clientLabel == projectLabel → não repetir sub-label
             const isSingleSelf =
               clientProjects.length === 1 &&
               labelsByProject.get(clientProjects[0].projectId) === displayLabel;
 
+            // Saúde do cliente: verde, amarelo ou vermelho
+            const overdueRatio = totalTasks > 0 ? overdueCount / totalTasks : 0;
+            const healthColor =
+              overdueRatio > 0.3 ? "hsl(0 84% 60%)" :
+              overdueRatio > 0.1 ? "hsl(43 97% 52%)" :
+              "hsl(160 84% 39%)";
+
             return (
               <div
                 key={groupKey}
-                className="overflow-hidden rounded-2xl border border-white/[0.07] transition-shadow hover:shadow-lg hover:shadow-black/20"
-                style={{ background: "linear-gradient(160deg, hsl(270 50% 10% / 0.85), hsl(234 45% 7% / 0.7))" }}
+                className="overflow-hidden rounded-2xl border border-white/[0.07] transition-shadow hover:shadow-md hover:shadow-black/20"
+                style={{ background: "linear-gradient(160deg, hsl(270 50% 10% / 0.8), hsl(234 45% 7% / 0.65))" }}
               >
-                {/* ── Client accordion header ── */}
+                {/* ── Cabeçalho do accordion ── */}
                 <button
                   onClick={() => toggleExpand(groupKey)}
-                  className="group flex w-full items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.02]"
+                  className="group flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-white/[0.02]"
                 >
-                  {/* Icon */}
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[hsl(262_83%_58%/0.25)] bg-[hsl(262_83%_58%/0.1)]">
-                    <Building2 className="h-5 w-5 text-[hsl(262_83%_68%)]" />
+                  {/* Ícone + indicador de saúde */}
+                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[hsl(262_83%_58%/0.22)] bg-[hsl(262_83%_58%/0.08)]">
+                    <Building2 className="h-5 w-5 text-[hsl(262_83%_65%)]" />
+                    {/* Bolinha de saúde */}
+                    <span
+                      className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[hsl(234_45%_8%)]"
+                      style={{ background: healthColor }}
+                    />
                   </div>
 
-                  {/* Client name + meta */}
-                  <div className="flex flex-1 flex-col items-start gap-2 min-w-0">
+                  {/* Conteúdo principal */}
+                  <div className="flex flex-1 flex-col gap-2 min-w-0">
+                    {/* Nome + badges */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-base font-bold text-white/90 truncate max-w-[280px]">
+                      <span className="truncate text-base font-bold text-white/90 max-w-[260px]">
                         {displayLabel}
                       </span>
-                      <span className="rounded-full bg-white/[0.07] border border-white/[0.06] px-2.5 py-0.5 text-xs text-white/40 font-bold">
+                      <span className="rounded-full border border-white/[0.07] bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-bold text-white/40">
                         {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
                       </span>
                       {activeCount > 0 && (
-                        <span className="rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2.5 py-0.5 text-xs text-emerald-400 font-bold">
+                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
                           {activeCount} ativo{activeCount !== 1 ? "s" : ""}
                         </span>
                       )}
                       {overdueCount > 0 && (
-                        <span className="rounded-full bg-red-500/12 border border-red-500/25 px-2.5 py-0.5 text-xs text-red-400 font-bold">
+                        <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-0.5 text-[11px] font-bold text-red-400">
                           {overdueCount} atrasada{overdueCount !== 1 ? "s" : ""}
                         </span>
                       )}
                     </div>
 
-                    {/* Stats row */}
-                    <div className="flex flex-wrap items-center gap-4 w-full">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400/70" />
-                          <span className="text-xs font-bold text-emerald-400/70">{doneCount}</span>
-                          <span className="text-[10px] text-white/25">concluídas</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Timer className="h-3.5 w-3.5 text-[hsl(262_83%_58%/0.7)]" />
-                          <span className="text-xs font-bold text-[hsl(262_83%_68%/0.7)]">{pendingCount}</span>
-                          <span className="text-[10px] text-white/25">em andamento</span>
-                        </div>
-                        {overdueCount > 0 && (
-                          <div className="flex items-center gap-1">
-                            <AlertTriangle className="h-3.5 w-3.5 text-red-400/70" />
-                            <span className="text-xs font-bold text-red-400/70">{overdueCount}</span>
-                            <span className="text-[10px] text-white/25">atrasadas</span>
-                          </div>
-                        )}
+                    {/* Linha de stats */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400/60" />
+                        <span className="text-xs font-bold text-emerald-400/70">{doneCount}</span>
+                        <span className="text-[10px] text-white/25">concluídas</span>
                       </div>
-
-                      <div className="flex items-center gap-2 max-w-[240px] flex-1">
-                        <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-                          {totalContracted > 0 && (
-                            <div
-                              className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
-                              style={{ width: `${hoursPct}%`, background: hoursBarColor }}
-                            />
-                          )}
+                      {overdueCount > 0 && (
+                        <div className="flex items-center gap-1">
+                          <AlertTriangle className="h-3.5 w-3.5 text-red-400/60" />
+                          <span className="text-xs font-bold text-red-400/70">{overdueCount}</span>
+                          <span className="text-[10px] text-white/25">atrasadas</span>
                         </div>
-                        <span className="shrink-0 text-xs font-bold text-white/35">
-                          {Math.round(totalHours)}h
-                          {totalContracted > 0 && <span className="font-normal text-white/20"> / {Math.round(totalContracted)}h</span>}
-                        </span>
+                      )}
+
+                      {/* Barra de horas */}
+                      <div className="flex items-center gap-2 min-w-[140px] flex-1 max-w-[220px]">
+                        <Clock className="h-3 w-3 shrink-0 text-white/20" />
+                        <span className="text-xs font-bold text-white/40 shrink-0">{Math.round(totalHours)}h</span>
+                        {totalContracted > 0 && (
+                          <>
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{ width: `${hoursPct}%`, background: hoursBarColor }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-bold text-white/30 shrink-0">/{Math.round(totalContracted)}h</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: hours button + chevron */}
+                  {/* Direita: botão horas + chevron */}
                   <div className="flex shrink-0 items-center gap-2">
                     {isAdmin && onEditClientHours && !isSingleSelf && (
                       <button
@@ -555,8 +544,8 @@ export default function AnalyticsProjectList({
                           e.stopPropagation();
                           onEditClientHours(displayLabel, clientProjects);
                         }}
-                        className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-xs font-bold text-white/35 transition hover:border-[hsl(262_83%_58%/0.35)] hover:text-[hsl(262_83%_68%)] hover:bg-[hsl(262_83%_58%/0.07)]"
-                        title="Definir horas para todos os projetos do cliente"
+                        className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/35 transition hover:border-[hsl(262_83%_58%/0.35)] hover:bg-[hsl(262_83%_58%/0.07)] hover:text-[hsl(262_83%_68%)]"
+                        title="Definir horas para todos os projetos deste cliente"
                       >
                         <Clock className="h-3.5 w-3.5" />
                         Horas
@@ -564,26 +553,32 @@ export default function AnalyticsProjectList({
                     )}
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] transition group-hover:border-white/[0.1]">
                       {isExpanded
-                        ? <ChevronUp   className="h-4 w-4 text-white/35 transition group-hover:text-white/60" />
-                        : <ChevronDown className="h-4 w-4 text-white/35 transition group-hover:text-white/60" />
+                        ? <ChevronUp   className="h-4 w-4 text-white/40 transition group-hover:text-white/65" />
+                        : <ChevronDown className="h-4 w-4 text-white/40 transition group-hover:text-white/65" />
                       }
                     </div>
                   </div>
                 </button>
 
-                {/* ── Project rows (collapsible) ── */}
+                {/* ── Projetos (colapsável) ── */}
                 <AnimatePresence initial={false}>
                   {isExpanded && (
                     <motion.div
+                      key="content"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.22, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="space-y-2 border-t border-white/[0.05] p-3">
+                      <div
+                        className="grid gap-3 border-t border-white/[0.05] p-4"
+                        style={{
+                          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))",
+                        }}
+                      >
                         {clientProjects.map((p) => (
-                          <ProjectRow
+                          <ProjectCard
                             key={p.projectId}
                             project={p}
                             projectLabel={
