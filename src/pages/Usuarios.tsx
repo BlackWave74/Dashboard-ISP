@@ -180,6 +180,12 @@ export default function UsuariosPage() {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [showEditPanel, setShowEditPanel] = useState(false);
 
+  // Reset password state
+  const [editNewPassword, setEditNewPassword] = useState("");
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [copiedEditPw, setCopiedEditPw] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   // Create state
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", email: "", user_profile: "Consultor" as Perfil, password: "", cliente_id: null as number | null });
@@ -261,6 +267,47 @@ export default function UsuariosPage() {
     setEditAreas([]);
     setEditProjects([]);
     setShowEditPanel(false);
+    setEditNewPassword("");
+    setShowEditPassword(false);
+  };
+
+  /* ─── Reset password ─── */
+  const handleResetPassword = async () => {
+    if (!editingUser || !token) return;
+    if (!editNewPassword.trim() || editNewPassword.trim().length < 6) {
+      showFeedback("error", "A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      await callManageUser(token, {
+        action: "reset_password",
+        authUserId: editingUser.auth_user_id,
+        newPassword: editNewPassword.trim(),
+      });
+      showFeedback("ok", `Senha de "${editingUser.name}" redefinida com sucesso!`);
+      setEditNewPassword("");
+      setShowEditPassword(false);
+      setCopiedEditPw(false);
+    } catch (err) {
+      showFeedback("error", err instanceof Error ? err.message : "Falha ao redefinir senha.");
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleGenerateEditPassword = () => {
+    const pw = generatePassword();
+    setEditNewPassword(pw);
+    setShowEditPassword(true);
+  };
+
+  const handleCopyEditPassword = async () => {
+    if (editNewPassword) {
+      await navigator.clipboard.writeText(editNewPassword);
+      setCopiedEditPw(true);
+      setTimeout(() => setCopiedEditPw(false), 2000);
+    }
   };
 
   /* ─── Save edit ─── */
@@ -937,6 +984,45 @@ export default function UsuariosPage() {
                         emptyText="Nenhum projeto encontrado."
                         searchable
                       />
+                    </div>
+
+                    {/* Reset Password */}
+                    <div className="pt-2 border-t border-[hsl(var(--task-border))] space-y-2">
+                      <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
+                        <Key className="h-3 w-3" /> Redefinir Senha
+                      </label>
+                      <div className="flex gap-1 h-9">
+                        <div className="relative flex-1 min-w-0">
+                          <input
+                            type={showEditPassword ? "text" : "password"}
+                            value={editNewPassword}
+                            onChange={e => setEditNewPassword(e.target.value)}
+                            placeholder="Nova senha (min. 6 caracteres)"
+                            className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] pl-3 pr-8 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] placeholder:text-[hsl(var(--task-text-muted)/0.4)]"
+                          />
+                          <button type="button" onClick={() => setShowEditPassword(!showEditPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(var(--task-text-muted))] hover:text-[hsl(var(--task-text))]">
+                            {showEditPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          </button>
+                        </div>
+                        <button type="button" onClick={handleGenerateEditPassword} title="Gerar senha"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-[hsl(var(--task-purple)/0.4)] hover:text-[hsl(var(--task-purple))] transition">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        </button>
+                        {editNewPassword && (
+                          <button type="button" onClick={handleCopyEditPassword} title="Copiar senha"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] text-[hsl(var(--task-text-muted))] hover:border-emerald-500/40 hover:text-emerald-400 transition">
+                            {copiedEditPw ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
+                      </div>
+                      {editNewPassword && (
+                        <button onClick={handleResetPassword} disabled={resettingPassword}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition disabled:opacity-50">
+                          {resettingPassword ? <Loader2 className="h-3 w-3 animate-spin" /> : <Key className="h-3 w-3" />}
+                          {resettingPassword ? "Redefinindo..." : "Confirmar Nova Senha"}
+                        </button>
+                      )}
                     </div>
 
                     {/* Actions */}

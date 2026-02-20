@@ -20,7 +20,7 @@ const EXT_ANON =
 /* ═══════════════════════════════════════════════════════════════
  *  Constants & helpers
  * ═══════════════════════════════════════════════════════════════ */
-const VALID_ACTIONS = ["list", "create", "update", "delete", "deactivate", "cleanup_orphans"] as const;
+const VALID_ACTIONS = ["list", "create", "update", "delete", "deactivate", "cleanup_orphans", "reset_password"] as const;
 type Action = (typeof VALID_ACTIONS)[number];
 
 const MANAGER_ROLES = new Set(["admin", "gerente", "coordenador"]);
@@ -557,6 +557,35 @@ serve(async (req: Request) => {
 
       await audit(adminClient, callerUid, targetAuthUserId, "deactivate_user", { userId });
       log("info", "deactivate", "User deactivated", { rid: requestId, userId });
+      return jsonRes({ ok: true });
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* ─── RESET PASSWORD ─── */
+    /* ═══════════════════════════════════════════ */
+    if (action === "reset_password") {
+      const targetAuthUserId = validateString(body.authUserId as string);
+      if (!targetAuthUserId) return errRes("authUserId é obrigatório.");
+
+      const newPassword = validateString(body.newPassword as string, 128);
+      if (!newPassword || newPassword.length < 6) {
+        return errRes("A nova senha deve ter pelo menos 6 caracteres.");
+      }
+
+      const { error: pwError } = await adminClient.auth.admin.updateUserById(targetAuthUserId, {
+        password: newPassword,
+      });
+
+      if (pwError) {
+        log("error", "reset_password", "Failed to update password", { targetAuthUserId, err: pwError.message });
+        return errRes(`Falha ao redefinir senha: ${translateError(pwError.message)}`);
+      }
+
+      await audit(adminClient, callerUid, targetAuthUserId, "reset_password", {
+        targetAuthUserId,
+      });
+
+      log("info", "reset_password", "Password reset", { rid: requestId, targetAuthUserId });
       return jsonRes({ ok: true });
     }
 
