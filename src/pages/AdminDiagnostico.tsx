@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Shield,
+  CheckCircle2,
 } from "lucide-react";
 import {
   parseDateValue,
@@ -27,14 +28,16 @@ export default function AdminDiagnostico() {
     session?.role === "gerente" ||
     session?.role === "coordenador";
 
+  // Only pass accessToken if session exists — avoids auth errors during session loading
   const { tasks, loading, reload } = useTasks({
-    accessToken: session?.accessToken,
-    period: "all",
+    accessToken: session?.accessToken ?? null,
+    period: "30d",
   });
 
   const [page, setPage] = useState(1);
 
   const orphanTasks = useMemo(() => {
+    if (!tasks.length) return [];
     return tasks
       .map((task) => {
         const rawProjectId = String(
@@ -91,12 +94,11 @@ export default function AdminDiagnostico() {
     return orphanTasks.slice(start, start + ORPHAN_PAGE_SIZE);
   }, [orphanTasks, page]);
 
-  // Guard after all hooks
+  // Guard AFTER all hooks
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen relative">
-      {/* Background */}
       <div
         className="pointer-events-none fixed inset-0"
         style={{
@@ -113,7 +115,7 @@ export default function AdminDiagnostico() {
           transition={{ duration: 0.4 }}
           className="mb-8"
         >
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20">
               <Shield className="h-4 w-4 text-amber-400" />
             </div>
@@ -122,7 +124,7 @@ export default function AdminDiagnostico() {
                 Diagnóstico de Tarefas
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Visível apenas para administradores, gerentes e coordenadores
+                Tarefas sem projeto vinculado nos últimos 30 dias · Somente administradores
               </p>
             </div>
             <button
@@ -137,7 +139,7 @@ export default function AdminDiagnostico() {
           </div>
         </motion.div>
 
-        {/* Banner explicativo */}
+        {/* Banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -147,19 +149,15 @@ export default function AdminDiagnostico() {
           <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
           <div className="text-xs text-amber-300/80 leading-relaxed">
             <strong className="text-amber-400">O que são tarefas órfãs?</strong>{" "}
-            São tarefas cujo{" "}
-            <code className="bg-amber-500/10 rounded px-1">project_id</code> no
-            IXC aponta para um projeto sem nome definido (nulo/vazio) ou para um
-            projeto interno genérico como{" "}
-            <code className="bg-amber-500/10 rounded px-1">SP</code>. Isso
-            acontece quando tarefas são criadas no IXC sem vincular a um contrato
-            de projeto real.{" "}
-            <strong className="text-amber-400">Recomendação:</strong> revise no
-            IXC e vincule cada tarefa ao projeto correto.
+            Tarefas cujo <code className="bg-amber-500/10 rounded px-1">project_id</code> no IXC
+            aponta para projeto sem nome (nulo/vazio) ou para alias interno como{" "}
+            <code className="bg-amber-500/10 rounded px-1">SP</code>.{" "}
+            <strong className="text-amber-400">Recomendação:</strong> revise no IXC e vincule cada
+            tarefa ao projeto correto.
           </div>
         </motion.div>
 
-        {/* Counter */}
+        {/* Summary */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -167,11 +165,21 @@ export default function AdminDiagnostico() {
           className="mb-4 flex items-center gap-3"
         >
           <span className="text-sm font-semibold text-muted-foreground">
-            Tarefas sem vínculo de projeto
+            Tarefas sem vínculo
           </span>
-          <span className="rounded-full bg-amber-500/15 border border-amber-500/25 px-2.5 py-0.5 text-xs font-bold text-amber-400">
-            {loading ? "…" : orphanTasks.length}
-          </span>
+          {loading ? (
+            <span className="rounded-full bg-border/20 px-2.5 py-0.5 text-xs text-muted-foreground animate-pulse">
+              …
+            </span>
+          ) : orphanTasks.length === 0 ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-0.5 text-xs font-bold text-emerald-400">
+              <CheckCircle2 className="h-3 w-3" /> Nenhuma encontrada
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-500/15 border border-amber-500/25 px-2.5 py-0.5 text-xs font-bold text-amber-400">
+              {orphanTasks.length}
+            </span>
+          )}
         </motion.div>
 
         {/* Table */}
@@ -181,7 +189,7 @@ export default function AdminDiagnostico() {
           transition={{ duration: 0.4, delay: 0.25 }}
           className="rounded-2xl border border-border/20 bg-card overflow-hidden"
         >
-          <div className="grid grid-cols-[1fr_180px_120px_160px] text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border/20 px-5 py-3 bg-muted/10">
+          <div className="grid grid-cols-[1fr_180px_120px_190px] text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border/20 px-5 py-3 bg-muted/10">
             <span>Tarefa</span>
             <span>Responsável</span>
             <span>Prazo</span>
@@ -200,13 +208,17 @@ export default function AdminDiagnostico() {
           ) : orphanTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <Unlink className="h-5 w-5 text-emerald-400" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Nenhuma tarefa órfã encontrada
+              <p className="text-sm font-medium text-foreground/70">
+                {tasks.length > 0
+                  ? "Nenhuma tarefa órfã nos últimos 30 dias"
+                  : "Aguardando dados…"}
               </p>
               <p className="text-xs text-muted-foreground/50">
-                Todos os projetos estão devidamente vinculados.
+                {tasks.length > 0
+                  ? "Todos os projetos estão devidamente vinculados."
+                  : "Clique em Atualizar para carregar."}
               </p>
             </div>
           ) : (
@@ -218,7 +230,7 @@ export default function AdminDiagnostico() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.04 * idx }}
-                    className="grid grid-cols-[1fr_180px_120px_160px] items-center border-b border-border/10 last:border-0 px-5 py-3 hover:bg-muted/5 transition"
+                    className="grid grid-cols-[1fr_180px_120px_190px] items-center border-b border-border/10 last:border-0 px-5 py-3 hover:bg-muted/5 transition"
                   >
                     <div className="min-w-0 pr-4">
                       <p className="text-sm font-medium text-foreground/80 truncate">
@@ -230,7 +242,7 @@ export default function AdminDiagnostico() {
                         </p>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground truncate pr-2">
                       {ot.consultant}
                     </p>
                     <p
@@ -272,9 +284,7 @@ export default function AdminDiagnostico() {
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
-              <span className="px-2">
-                {page} / {totalPages}
-              </span>
+              <span className="px-2">{page} / {totalPages}</span>
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

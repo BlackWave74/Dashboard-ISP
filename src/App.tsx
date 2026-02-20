@@ -24,6 +24,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const CalendarioPage = lazy(() => import("./pages/Calendario"));
 const GamificacaoPage = lazy(() => import("./pages/Gamificacao"));
 const AdminDiagnosticoPage = lazy(() => import("./pages/AdminDiagnostico"));
+const FerramentasPage = lazy(() => import("./pages/Ferramentas"));
 
 const queryClient = new QueryClient();
 
@@ -51,7 +52,7 @@ const App = () => (
             <Route path="/integracoes" element={<LazyPage><IntegracoesPage /></LazyPage>} />
             <Route path="/comodato" element={<LazyPage><ComodatoPage /></LazyPage>} />
             <Route path="/suporte" element={<LazyPage><SuportePage /></LazyPage>} />
-            
+            <Route path="/ferramentas" element={<LazyPage><FerramentasPage /></LazyPage>} />
             <Route path="/calendario" element={<LazyPage><CalendarioPage /></LazyPage>} />
             <Route path="/gamificacao" element={<LazyPage><GamificacaoPage /></LazyPage>} />
             <Route path="/admin/diagnostico" element={<LazyPage><AdminDiagnosticoPage /></LazyPage>} />
