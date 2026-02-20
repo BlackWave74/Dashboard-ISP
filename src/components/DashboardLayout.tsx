@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth, type AccessArea } from "@/modules/auth/hooks/useAuth";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTasks } from "@/modules/tasks/api/useTasks";
@@ -62,11 +62,14 @@ function toNotifTask(task: Record<string, any>) {
 const norm = (s: string) =>
   s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
+// Sidebar width constants — must match sidebar.tsx
+const SIDEBAR_WIDTH = "15.5rem";
+const SIDEBAR_WIDTH_ICON = "3rem";
+
 function DashboardInner() {
   const { session, isAuthenticated, loadingSession, canAccess } = useAuth();
   const location = useLocation();
-
-
+  const { state: sidebarState, isMobile } = useSidebar();
   const isAdmin =
     session?.role === "admin" ||
     session?.role === "gerente" ||
@@ -140,9 +143,32 @@ function DashboardInner() {
     return <Navigate to="/" replace />;
   }
 
+  // Spacer width: pushes <main> to the right, matching the fixed sidebar width.
+  // Using inline style (never Tailwind) so it works in both dev and production builds.
+  const spacerWidth = isMobile
+    ? "0px"
+    : sidebarState === "collapsed"
+    ? SIDEBAR_WIDTH_ICON
+    : SIDEBAR_WIDTH;
+
   return (
-    <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
+    <div className="flex min-h-screen w-full bg-background">
       <SyncIndicator syncing={loading} />
+
+      {/*
+       * Spacer: reserves the horizontal space occupied by the fixed sidebar.
+       * Lives in DashboardLayout (not inside Sidebar) to avoid containing-block
+       * issues caused by overflow:hidden / will-change on ancestor elements.
+       */}
+      <div
+        aria-hidden
+        style={{
+          width: spacerWidth,
+          flexShrink: 0,
+          transition: "width 200ms linear",
+        }}
+      />
+
       <AppSidebar
         notificationBell={
           <NotificationBell
@@ -153,12 +179,10 @@ function DashboardInner() {
           />
         }
       />
-      {/*
-        The Sidebar with collapsible="icon" already creates an internal gap div
-        that reserves the correct space in the flex layout. No manual marginLeft needed.
-      */}
+
       <main
-        className="flex-1 min-w-0 overflow-x-hidden will-change-[opacity]"
+        className="flex-1 min-w-0 overflow-x-hidden"
+        style={{ minWidth: 0 }}
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
