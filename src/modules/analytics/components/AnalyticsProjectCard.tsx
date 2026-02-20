@@ -1,4 +1,5 @@
-import { Star, TrendingUp, TrendingDown, Minus, Clock } from "lucide-react";
+import { useState } from "react";
+import { Star, TrendingUp, TrendingDown, Minus, Clock, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import type { ProjectAnalytics } from "../types";
 
@@ -6,8 +7,10 @@ type Props = {
   project: ProjectAnalytics;
   onToggleFavorite: (id: number) => void;
   onClick?: (project: ProjectAnalytics) => void;
+  onEditHours?: (project: ProjectAnalytics) => void;
   index?: number;
   isMine?: boolean;
+  isAdmin?: boolean;
 };
 
 const perfConfig = {
@@ -16,11 +19,20 @@ const perfConfig = {
   bad: { label: "Crítico", icon: TrendingDown, color: "from-[hsl(0_84%_60%)] to-amber-500", badge: "bg-[hsl(0_84%_60%/0.15)] text-[hsl(0_84%_60%)]", accent: "hsl(0 84% 60%)" },
 };
 
-export default function AnalyticsProjectCard({ project, onToggleFavorite, onClick, index = 0, isMine }: Props) {
+export default function AnalyticsProjectCard({ project, onToggleFavorite, onClick, onEditHours, index = 0, isMine, isAdmin }: Props) {
   const perf = perfConfig[project.performance];
   const PerfIcon = perf.icon;
   const totalTasks = project.tasksDone + project.tasksPending + project.tasksOverdue;
   const completionPct = totalTasks > 0 ? Math.round((project.tasksDone / totalTasks) * 100) : 0;
+
+  // Hours progress
+  const hasContracted = project.hoursContracted > 0;
+  const hoursPct = hasContracted ? Math.min(100, Math.round((project.hoursUsed / project.hoursContracted) * 100)) : 0;
+  const hoursRemaining = hasContracted ? project.hoursContracted - project.hoursUsed : null;
+  const hoursColor =
+    hoursPct >= 90 ? "hsl(0 84% 60%)" :
+    hoursPct >= 70 ? "hsl(43 97% 52%)" :
+    "hsl(160 84% 39%)";
 
   return (
     <motion.div
@@ -48,15 +60,26 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
         {/* Header */}
         <div className="mb-1 flex items-center justify-between gap-2">
           <p className="text-[10px] uppercase tracking-[0.18em] text-primary/50 font-semibold truncate">{project.clientName || "Cliente"}</p>
-          <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(project.projectId); }} className="shrink-0 transition hover:scale-110">
-            <Star
-              className={`h-4 w-4 transition ${
-                project.isFavorite
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-white/15 hover:text-amber-400/60"
-              }`}
-            />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {isAdmin && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEditHours?.(project); }}
+                className="rounded-lg p-1 text-white/15 transition hover:text-primary/70 hover:bg-primary/10"
+                title="Editar horas contratadas"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+            <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(project.projectId); }} className="transition hover:scale-110">
+              <Star
+                className={`h-4 w-4 transition ${
+                  project.isFavorite
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-white/15 hover:text-amber-400/60"
+                }`}
+              />
+            </button>
+          </div>
         </div>
         <h4 className="truncate text-sm font-bold text-white/90">{project.projectName}</h4>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -90,10 +113,10 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
           ))}
         </div>
 
-        {/* Progress */}
+        {/* Completion progress */}
         <div className="mt-3 space-y-1">
           <div className="flex justify-between text-[10px]">
-            <span className="text-white/35">Conclusão</span>
+            <span className="text-white/35">Conclusão de tarefas</span>
             <span className="font-bold text-white/60">{completionPct}%</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
@@ -106,13 +129,48 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
           </div>
         </div>
 
-        {/* Hours */}
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/[0.03] border border-white/[0.04] px-3 py-2">
-          <Clock className="h-3.5 w-3.5 text-white/25" />
-          <span className="text-xs text-white/35">Horas</span>
-          <span className="ml-auto text-sm font-bold text-white/80">{Math.round(project.hoursUsed)}h</span>
-          {project.hoursContracted > 0 && (
-            <span className="text-xs text-white/25">/ {project.hoursContracted}h</span>
+        {/* Hours block */}
+        <div className="mt-3 rounded-xl border border-white/[0.04] bg-white/[0.03] px-3 py-2.5 space-y-2">
+          <div className="flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5 text-white/25 shrink-0" />
+            <span className="text-xs text-white/35 flex-1">Horas utilizadas</span>
+            <span className="text-sm font-bold text-white/80">{Math.round(project.hoursUsed)}h</span>
+            {hasContracted && (
+              <span className="text-xs text-white/30">/ {project.hoursContracted}h</span>
+            )}
+          </div>
+
+          {hasContracted && (
+            <div className="space-y-1">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${hoursPct}%` }}
+                  transition={{ duration: 0.9, delay: 0.4, ease: "easeOut" }}
+                  className="h-full rounded-full"
+                  style={{ background: `linear-gradient(to right, ${hoursColor}, ${hoursColor}cc)` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-white/25">{hoursPct}% utilizado</span>
+                <span className={`font-semibold ${hoursRemaining !== null && hoursRemaining < 0 ? "text-red-400" : "text-white/40"}`}>
+                  {hoursRemaining !== null
+                    ? hoursRemaining >= 0
+                      ? `${Math.round(hoursRemaining)}h restantes`
+                      : `${Math.abs(Math.round(hoursRemaining))}h excedidas`
+                    : ""}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {!hasContracted && isAdmin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEditHours?.(project); }}
+              className="w-full rounded-lg border border-dashed border-white/[0.08] py-1.5 text-[10px] text-white/25 transition hover:border-primary/30 hover:text-primary/60"
+            >
+              + Definir horas contratadas
+            </button>
           )}
         </div>
       </div>
