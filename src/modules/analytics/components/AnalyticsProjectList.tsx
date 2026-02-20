@@ -94,7 +94,9 @@ function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; proje
 }
 
 /** Agrupa projetos por cliente, mesclando variantes do mesmo nome.
- *  Grupos cujo displayLabel ainda seja um placeholder são descartados. */
+ *  Grupos cujo displayLabel ainda seja um placeholder são descartados.
+ *  Projetos com nomes iguais dentro do mesmo cliente são MESCLADOS (somando métricas),
+ *  pois no IXC um mesmo projeto pode ter IDs distintos mas representar a mesma entidade. */
 function groupByClient(projects: ProjectAnalytics[]) {
   const map = new Map<string, {
     displayLabel: string;
@@ -106,12 +108,12 @@ function groupByClient(projects: ProjectAnalytics[]) {
     const { clientLabel, projectLabel } = resolveDisplayClient(p);
     // Segunda linha de defesa: se depois de tudo o label ainda é placeholder, pula
     if (isClientPlaceholder(clientLabel)) return;
-    const key = normalizeKey(clientLabel);
+    const clientKey = normalizeKey(clientLabel);
 
-    if (!map.has(key)) {
-      map.set(key, { displayLabel: clientLabel, projects: [], labelsByProject: new Map() });
+    if (!map.has(clientKey)) {
+      map.set(clientKey, { displayLabel: clientLabel, projects: [], labelsByProject: new Map() });
     }
-    const entry = map.get(key)!;
+    const entry = map.get(clientKey)!;
 
     // Prefere label mais descritiva (mais longa ou em Title Case)
     if (
@@ -125,11 +127,38 @@ function groupByClient(projects: ProjectAnalytics[]) {
       entry.displayLabel = clientLabel;
     }
 
-    // Evita duplicatas dentro do mesmo grupo
-    if (!entry.projects.find((ep) => ep.projectId === p.projectId)) {
-      entry.projects.push(p);
-      entry.labelsByProject.set(p.projectId, projectLabel);
+    // Se já existe projeto com MESMO projectId → pula (duplicata exata)
+    if (entry.projects.find((ep) => ep.projectId === p.projectId)) return;
+
+    // Se já existe projeto com MESMO NOME normalizado → MESCLA as métricas
+    const projectNameKey = normalizeKey(projectLabel);
+    const existingByName = entry.projects.find(
+      (ep) => normalizeKey(entry.labelsByProject.get(ep.projectId) ?? ep.projectName) === projectNameKey
+    );
+
+    if (existingByName) {
+      // Mescla: soma tarefas e horas, mantém o maior projectId como representativo
+      existingByName.tasksDone    += p.tasksDone;
+      existingByName.tasksPending += p.tasksPending;
+      existingByName.tasksOverdue += p.tasksOverdue;
+      existingByName.hoursUsed    += p.hoursUsed;
+      if (p.hoursContracted > existingByName.hoursContracted) {
+        existingByName.hoursContracted = p.hoursContracted;
+      }
+      existingByName.isActive = existingByName.isActive || p.isActive;
+      existingByName.isFavorite = existingByName.isFavorite || p.isFavorite;
+      // Recalcula performance após merge
+      const total = existingByName.tasksDone + existingByName.tasksPending + existingByName.tasksOverdue;
+      const overdueRate = total > 0 ? existingByName.tasksOverdue / total : 0;
+      const completionRate = total > 0 ? existingByName.tasksDone / total : 0;
+      existingByName.performance =
+        overdueRate > 0.3 ? "bad" : completionRate > 0.6 ? "good" : "neutral";
+      return;
     }
+
+    // Projeto novo dentro do cliente
+    entry.projects.push(p);
+    entry.labelsByProject.set(p.projectId, projectLabel);
   });
 
   return new Map(
