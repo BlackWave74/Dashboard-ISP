@@ -278,13 +278,13 @@ export default function TarefasPage() {
     const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
     const hasCompanyName = !!companyName;
 
-    // Neither configured → show all (edge case, shouldn't happen)
+    // Neither configured → show all (edge case)
     if (!hasExplicitIds && !hasCompanyName) return normalizedTasks;
 
     const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds) : null;
     const needle = hasCompanyName ? companyName!.toLowerCase() : null;
 
-    return normalizedTasks.filter((task) => {
+    const filtered = normalizedTasks.filter((task) => {
       // Check by explicit project ID
       if (allowedIds) {
         const pid = Number(task.raw["project_id"] ?? task.raw["projectId"]);
@@ -301,6 +301,14 @@ export default function TarefasPage() {
       }
       return false;
     });
+
+    // Fallback: se o filtro zerar (IDs não batem com a fonte de dados),
+    // mostra todas as tarefas para não deixar a tela em branco.
+    if (filtered.length === 0 && normalizedTasks.length > 0) {
+      return normalizedTasks;
+    }
+
+    return filtered;
   }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
