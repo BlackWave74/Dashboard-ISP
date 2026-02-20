@@ -278,8 +278,9 @@ export default function TarefasPage() {
     const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
     const hasCompanyName = !!companyName;
 
-    // Neither configured → show all (edge case)
-    if (!hasExplicitNames && !hasCompanyName) return normalizedTasks;
+    // Consultor/cliente sem nenhuma restrição configurada → mostra vazio (seguro por padrão)
+    // Admin e gerente já retornaram acima; aqui só chegam roles restritas
+    if (!hasExplicitNames && !hasCompanyName) return [];
 
     // Normalize project names for flexible matching
     const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
