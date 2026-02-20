@@ -57,16 +57,70 @@ function toNotifTask(task: Record<string, any>) {
   };
 }
 
+/** Normalize a string for flexible comparison */
+const norm = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
 function DashboardInner() {
   const { session, isAuthenticated, loadingSession, canAccess } = useAuth();
   const location = useLocation();
+
+  const isAdmin =
+    session?.role === "admin" ||
+    session?.role === "gerente" ||
+    session?.role === "coordenador";
+
+  const companyName = session?.company?.trim();
+  const accessibleProjectNames = session?.accessibleProjectNames;
 
   const { tasks, loading } = useTasks({
     accessToken: session?.accessToken,
     period: "30d",
   });
 
-  const notifTasks = useMemo(() => tasks.map(toNotifTask), [tasks]);
+  // Filter raw tasks by project access before passing to notifications.
+  // Consultores/clientes must only see notifications from their own projects.
+  const accessFilteredTasks = useMemo(() => {
+    if (isAdmin) return tasks;
+
+    const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
+    const hasCompanyName = !!companyName;
+
+    if (!hasExplicitNames && !hasCompanyName) return tasks;
+
+    const allowedNames = hasExplicitNames ? accessibleProjectNames!.map(norm) : null;
+    const needle = hasCompanyName ? norm(companyName!) : null;
+
+    const filtered = tasks.filter((t) => {
+      const projectNorm = norm(
+        String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? "")
+      );
+
+      if (allowedNames) {
+        const match = allowedNames.some(
+          (name) =>
+            projectNorm === name ||
+            projectNorm.includes(name) ||
+            name.includes(projectNorm)
+        );
+        if (match) return true;
+      }
+
+      if (needle && projectNorm.includes(needle)) return true;
+
+      return false;
+    });
+
+    // Fallback: se não achou nada, usa tudo
+    if (filtered.length === 0 && tasks.length > 0) return tasks;
+
+    return filtered;
+  }, [tasks, isAdmin, accessibleProjectNames, companyName]);
+
+  const notifTasks = useMemo(
+    () => accessFilteredTasks.map(toNotifTask),
+    [accessFilteredTasks]
+  );
 
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications(notifTasks, session?.name, session?.role);
