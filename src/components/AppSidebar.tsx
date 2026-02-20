@@ -342,7 +342,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                 {(openSection === "automacao" || isAutomacaoActive) && (
                   <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
                     <NavLink to="/ferramentas" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                      <Video className="h-4 w-4" style={{ color: "hsl(200 90% 50%)" }} /><span>Gerador de Links</span>
+                      <Video className="h-4 w-4" style={{ color: "hsl(200 90% 50%)" }} /><span>Gerador de Reunião Meet</span>
                     </NavLink>
                     {canAccess("comodato") && (
                       <NavLink to="/comodato" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">

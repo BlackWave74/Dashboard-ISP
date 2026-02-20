@@ -48,8 +48,6 @@ function buildGoogleMeetUrl(form: MeetFormState, guests: string[]): string {
 const DURATION_OPTIONS = [
   { label: "30 min", value: "30", color: "hsl(200 90% 55%)" },
   { label: "1 hora", value: "60", color: "hsl(234 89% 64%)" },
-  { label: "1h 30", value: "90", color: "hsl(270 70% 60%)" },
-  { label: "2 horas", value: "120", color: "hsl(310 70% 60%)" },
 ];
 
 const QUICK_TITLES = [
@@ -231,7 +229,7 @@ export default function FerramentasPage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold" style={{ color: "hsl(210 40% 94%)" }}>
-                    Gerador de Link — Google Meet
+                    Gerador de Reunião Meet
                   </p>
                   <p className="text-[11px] mt-0.5" style={{ color: "hsl(215 20% 48%)" }}>
                     Preencha os dados e gere o link da reunião
@@ -352,6 +350,11 @@ export default function FerramentasPage() {
                   })}
                 </div>
               </div>
+              {/* Nota de duração máxima */}
+              <p className="mt-1.5 flex items-center gap-1.5 text-[10px]" style={{ color: "hsl(38 80% 60% / 0.75)" }}>
+                <span className="inline-block h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ background: "hsl(38 80% 60%)" }} />
+                Duração máxima: <strong style={{ color: "hsl(38 90% 65%)" }}>1 hora</strong> — o Google Meet encerra a sessão automaticamente.
+              </p>
 
               {/* Guests — chip input */}
               <div>
