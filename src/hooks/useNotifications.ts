@@ -90,44 +90,62 @@ export function useNotifications(
       // Skip done tasks
       if (task.statusKey === "done") return;
 
-      // Only show tasks with deadline within 7 days or already overdue
-      if (task.deadlineDate) {
-        const daysRemaining = getDaysRemaining(task.deadlineDate);
-        const dateStr = formatDate(task.deadlineDate);
-        const isWithinWeek = task.deadlineDate.getTime() - now <= ONE_WEEK_MS;
-        const isOverdue = task.statusKey === "overdue" || task.deadlineDate.getTime() < now;
+      const deadlineDate = task.deadlineDate;
+      const dateStr = formatDate(deadlineDate);
+      const daysRemaining = getDaysRemaining(deadlineDate);
+      const isOverdue =
+        task.statusKey === "overdue" ||
+        (deadlineDate !== null && deadlineDate !== undefined && deadlineDate < new Date());
+      const isWithinWeek =
+        deadlineDate !== null &&
+        deadlineDate !== undefined &&
+        deadlineDate.getTime() - now <= ONE_WEEK_MS;
 
-        if (!isOverdue && !isWithinWeek) return;
-
-        if (isOverdue) {
-          const id = makeId("overdue", title);
-          items.push({
-            id,
-            type: "overdue",
-            title: own ? "⚠️ Sua tarefa está atrasada" : "Tarefa atrasada",
-            message: `"${title}" tinha prazo para ${dateStr || "data não definida"}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
-            timestamp: task.deadlineDate?.getTime() ?? now,
-            read: readIds.has(id),
-            projectName: project,
-            daysRemaining,
-            deadlineDateStr: dateStr,
-            isOwnTask: own,
-          });
-        } else {
-          const id = makeId("soon", title);
-          items.push({
-            id,
-            type: "deadline_soon",
-            title: own ? "📅 Prazo se aproximando" : "Prazo se aproximando",
-            message: `Tarefa "${title}" deve ser concluída até o dia ${dateStr}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
-            timestamp: task.deadlineDate?.getTime() ?? now,
-            read: readIds.has(id),
-            projectName: project,
-            daysRemaining,
-            deadlineDateStr: dateStr,
-            isOwnTask: own,
-          });
-        }
+      if (isOverdue) {
+        // Atrasada com prazo definido
+        const id = makeId("overdue", title);
+        items.push({
+          id,
+          type: "overdue",
+          title: own ? "⚠️ Sua tarefa está atrasada" : "Tarefa atrasada",
+          message: `"${title}"${dateStr ? ` — prazo era ${dateStr}` : ""}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
+          timestamp: deadlineDate?.getTime() ?? now,
+          read: readIds.has(id),
+          projectName: project,
+          daysRemaining,
+          deadlineDateStr: dateStr || undefined,
+          isOwnTask: own,
+        });
+      } else if (deadlineDate && isWithinWeek) {
+        // Prazo próximo (dentro de 7 dias)
+        const id = makeId("soon", title);
+        items.push({
+          id,
+          type: "deadline_soon",
+          title: own ? "📅 Prazo se aproximando" : "Prazo se aproximando",
+          message: `Tarefa "${title}" deve ser concluída até ${dateStr}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
+          timestamp: deadlineDate.getTime(),
+          read: readIds.has(id),
+          projectName: project,
+          daysRemaining,
+          deadlineDateStr: dateStr,
+          isOwnTask: own,
+        });
+      } else {
+        // Tarefa aberta sem prazo iminente (em andamento normal)
+        const id = makeId("open", title);
+        items.push({
+          id,
+          type: "new_assignment",
+          title: own ? "📋 Sua tarefa em andamento" : "Tarefa em andamento",
+          message: `"${title}"${dateStr ? ` — prazo: ${dateStr}` : " — sem prazo definido"}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
+          timestamp: now,
+          read: readIds.has(id),
+          projectName: project,
+          daysRemaining,
+          deadlineDateStr: dateStr || undefined,
+          isOwnTask: own,
+        });
       }
     });
 
