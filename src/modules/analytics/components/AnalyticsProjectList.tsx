@@ -6,8 +6,6 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Eye,
-  EyeOff,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -32,31 +30,65 @@ type Props = {
 type Filter = "all" | "mine" | "active" | "favorites";
 
 const perfConfig = {
-  good: { label: "Bom", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  neutral: { label: "Regular", icon: Minus, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-  bad: { label: "Crítico", icon: TrendingDown, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
+  good:    { label: "Bom",     icon: TrendingUp,   color: "text-emerald-400", bg: "bg-emerald-500/10",  border: "border-emerald-500/20"  },
+  neutral: { label: "Regular", icon: Minus,         color: "text-amber-400",   bg: "bg-amber-500/10",    border: "border-amber-500/20"    },
+  bad:     { label: "Crítico", icon: TrendingDown,  color: "text-red-400",     bg: "bg-red-500/10",      border: "border-red-500/20"      },
 };
 
-/** Group projects by client name, always puts no-client last */
-function groupByClient(projects: ProjectAnalytics[]): Map<string, ProjectAnalytics[]> {
-  const map = new Map<string, ProjectAnalytics[]>();
+/**
+ * Extracts a "display client" from the project.
+ *
+ * Priority:
+ *  1. If `clientName` is a real non-empty string → use it.
+ *  2. If project name contains " - " (e.g. "Info Online - Consultoria RH") → use the part before the first " - ".
+ *  3. Fallback → use the full project name as both client and project (single-project group).
+ */
+function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; projectLabel: string } {
+  const hasClient = p.clientName?.trim();
+
+  if (hasClient) {
+    return { clientLabel: hasClient, projectLabel: p.projectName };
+  }
+
+  // Try to split by " - "  (most common IXC naming: "Cliente - Projeto")
+  const sepIdx = p.projectName.indexOf(" - ");
+  if (sepIdx > 0) {
+    return {
+      clientLabel: p.projectName.slice(0, sepIdx).trim(),
+      projectLabel: p.projectName.slice(sepIdx + 3).trim() || p.projectName,
+    };
+  }
+
+  // No separator → treat the whole name as the group label
+  return { clientLabel: p.projectName, projectLabel: p.projectName };
+}
+
+/** Group projects by resolved client label, sorted alphabetically. */
+function groupByResolvedClient(
+  projects: ProjectAnalytics[]
+): Map<string, { projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }> {
+  const map = new Map<string, { projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }>();
+
   projects.forEach((p) => {
-    const key = p.clientName?.trim() || "__no_client__";
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(p);
+    const { clientLabel, projectLabel } = resolveDisplayClient(p);
+    if (!map.has(clientLabel)) {
+      map.set(clientLabel, { projects: [], labelsByProject: new Map() });
+    }
+    const entry = map.get(clientLabel)!;
+    entry.projects.push(p);
+    entry.labelsByProject.set(p.projectId, projectLabel);
   });
+
+  // Sort groups alphabetically
   return new Map(
-    [...map.entries()].sort(([a], [b]) => {
-      if (a === "__no_client__") return 1;
-      if (b === "__no_client__") return -1;
-      return a.localeCompare(b, "pt-BR");
-    })
+    [...map.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
   );
 }
 
 /** Compact project row inside a client accordion */
 function ProjectRow({
   project,
+  projectLabel,
   onToggleFavorite,
   onClick,
   onEditHours,
@@ -64,6 +96,7 @@ function ProjectRow({
   isAdmin,
 }: {
   project: ProjectAnalytics;
+  projectLabel: string;
   onToggleFavorite: (id: number) => void;
   onClick?: (p: ProjectAnalytics) => void;
   onEditHours?: (p: ProjectAnalytics) => void;
@@ -80,105 +113,80 @@ function ProjectRow({
     hoursPct >= 90 ? "hsl(0 84% 60%)" :
     hoursPct >= 70 ? "hsl(43 97% 52%)" :
     "hsl(160 84% 39%)";
+  const hoursRemaining = hasHours ? project.hoursContracted - project.hoursUsed : null;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       className={`group relative rounded-xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30 ${
         isMine
-          ? "border-[hsl(262_83%_58%/0.25)] bg-[hsl(262_83%_58%/0.04)]"
-          : "border-white/[0.05] bg-white/[0.02]"
+          ? "border-[hsl(262_83%_58%/0.25)] bg-[hsl(262_83%_58%/0.03)]"
+          : "border-white/[0.05] bg-white/[0.02] hover:border-white/[0.08]"
       }`}
     >
-      {/* Performance accent line */}
+      {/* Performance accent top bar */}
       <div
-        className="absolute inset-x-0 top-0 h-[1.5px] rounded-t-xl opacity-60 transition-opacity group-hover:opacity-100"
+        className="absolute inset-x-0 top-0 h-[1.5px] rounded-t-xl opacity-40 transition-opacity group-hover:opacity-80"
         style={{
-          background: project.performance === "good"
-            ? "hsl(160 84% 39%)"
-            : project.performance === "bad"
-            ? "hsl(0 84% 60%)"
-            : "hsl(43 97% 52%)",
+          background:
+            project.performance === "good"  ? "hsl(160 84% 39%)" :
+            project.performance === "bad"   ? "hsl(0 84% 60%)"   :
+                                              "hsl(43 97% 52%)",
         }}
       />
 
-      <div className="p-4">
-        {/* Top row: name + badges + actions */}
-        <div className="flex items-start gap-3">
-          <div
-            className="flex-1 min-w-0 cursor-pointer"
-            onClick={() => onClick?.(project)}
-          >
-            <div className="flex flex-wrap items-center gap-1.5 mb-1">
-              {isMine && (
-                <span className="rounded-full bg-[hsl(262_83%_58%/0.2)] border border-[hsl(262_83%_58%/0.3)] px-1.5 py-0.5 text-[9px] font-bold text-[hsl(262_83%_58%)]">
-                  Meu
-                </span>
-              )}
-              {project.isActive && (
-                <span className="rounded-full bg-emerald-500/15 border border-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
-                  Ativo
-                </span>
-              )}
-              <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold border ${perf.bg} ${perf.border} ${perf.color}`}>
-                <PerfIcon className="h-2.5 w-2.5" />
-                {perf.label}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Left: name + badges */}
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          onClick={() => onClick?.(project)}
+        >
+          <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+            {isMine && (
+              <span className="rounded-full bg-[hsl(262_83%_58%/0.2)] border border-[hsl(262_83%_58%/0.3)] px-1.5 py-0.5 text-[9px] font-bold text-[hsl(262_83%_58%)]">
+                Meu
               </span>
-            </div>
-            <h4 className="truncate text-sm font-semibold text-white/85 group-hover:text-white/95 transition-colors">
-              {project.projectName}
-            </h4>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            {isAdmin && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onEditHours?.(project); }}
-                className="rounded-lg p-1.5 text-white/15 transition hover:text-[hsl(262_83%_58%)] hover:bg-[hsl(262_83%_58%/0.1)]"
-                title="Editar horas contratadas"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
             )}
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleFavorite(project.projectId); }}
-              className="rounded-lg p-1.5 transition hover:scale-110"
-            >
-              <Star
-                className={`h-3.5 w-3.5 transition ${
-                  project.isFavorite ? "fill-amber-400 text-amber-400" : "text-white/15 hover:text-amber-400/60"
-                }`}
-              />
-            </button>
+            {project.isActive && (
+              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
+                Ativo
+              </span>
+            )}
+            <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold border ${perf.bg} ${perf.border} ${perf.color}`}>
+              <PerfIcon className="h-2.5 w-2.5" />
+              {perf.label}
+            </span>
           </div>
+          <p className="truncate text-sm font-semibold text-white/85 group-hover:text-white transition-colors">
+            {projectLabel}
+          </p>
         </div>
 
-        {/* Stats + Hours row */}
-        <div className="mt-3 flex items-center gap-3 flex-wrap">
-          {/* Task stats compact */}
+        {/* Center: task stats + completion */}
+        <div className="hidden sm:flex items-center gap-3 shrink-0">
+          {/* Task counts */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
+            <span className="flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-emerald-400" />
               <span className="text-xs font-bold text-emerald-400">{project.tasksDone}</span>
-            </div>
-            <div className="flex items-center gap-1">
+            </span>
+            <span className="flex items-center gap-1">
               <Clock className="h-3 w-3 text-[hsl(262_83%_58%)]" />
               <span className="text-xs font-bold text-[hsl(262_83%_58%)]">{project.tasksPending}</span>
-            </div>
+            </span>
             {project.tasksOverdue > 0 && (
-              <div className="flex items-center gap-1">
+              <span className="flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3 text-red-400" />
                 <span className="text-xs font-bold text-red-400">{project.tasksOverdue}</span>
-              </div>
+              </span>
             )}
           </div>
 
           <div className="h-3 w-px bg-white/[0.08]" />
 
           {/* Completion bar */}
-          <div className="flex flex-1 items-center gap-2 min-w-[100px]">
+          <div className="flex items-center gap-1.5 w-24">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
               <div
                 className="h-full rounded-full transition-all duration-700"
@@ -188,35 +196,64 @@ function ProjectRow({
                 }}
               />
             </div>
-            <span className="text-[10px] font-bold text-white/40 shrink-0">{pct}%</span>
+            <span className="text-[10px] font-bold text-white/35 shrink-0 w-8 text-right">{pct}%</span>
           </div>
 
           <div className="h-3 w-px bg-white/[0.08]" />
 
           {/* Hours */}
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-3 w-3 text-white/25" />
-            <span className="text-xs font-semibold text-white/60">{Math.round(project.hoursUsed)}h</span>
-            {hasHours && (
-              <>
+          <div className="flex items-center gap-1.5 min-w-[80px]">
+            <Clock className="h-3 w-3 text-white/25 shrink-0" />
+            <span className="text-xs font-semibold text-white/55">
+              {Math.round(project.hoursUsed)}h
+            </span>
+            {hasHours ? (
+              <div className="flex items-center gap-1">
                 <span className="text-[10px] text-white/25">/ {project.hoursContracted}h</span>
-                <div className="h-1.5 w-14 overflow-hidden rounded-full bg-white/[0.06]">
+                <div className="h-1.5 w-12 overflow-hidden rounded-full bg-white/[0.06]">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="h-full rounded-full"
                     style={{ width: `${hoursPct}%`, background: hoursBarColor }}
                   />
                 </div>
-              </>
-            )}
-            {!hasHours && isAdmin && (
+                {hoursRemaining !== null && (
+                  <span className={`text-[9px] font-semibold ${hoursRemaining < 0 ? "text-red-400" : "text-white/25"}`}>
+                    {hoursRemaining < 0 ? `+${Math.abs(Math.round(hoursRemaining))}h` : `${Math.round(hoursRemaining)}h`}
+                  </span>
+                )}
+              </div>
+            ) : isAdmin ? (
               <button
                 onClick={(e) => { e.stopPropagation(); onEditHours?.(project); }}
-                className="text-[10px] text-white/20 hover:text-[hsl(262_83%_58%)] transition-colors"
+                className="text-[10px] text-white/20 hover:text-[hsl(262_83%_58%)] transition-colors whitespace-nowrap"
               >
                 + definir
               </button>
-            )}
+            ) : null}
           </div>
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {isAdmin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEditHours?.(project); }}
+              className="rounded-lg p-1.5 text-white/15 transition hover:text-[hsl(262_83%_58%)] hover:bg-[hsl(262_83%_58%/0.1)]"
+              title="Editar horas contratadas"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(project.projectId); }}
+            className="rounded-lg p-1.5 transition hover:scale-110"
+          >
+            <Star
+              className={`h-3.5 w-3.5 transition ${
+                project.isFavorite ? "fill-amber-400 text-amber-400" : "text-white/15 hover:text-amber-400/60"
+              }`}
+            />
+          </button>
         </div>
       </div>
     </motion.div>
@@ -235,7 +272,6 @@ export default function AnalyticsProjectList({
 }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [collapsedClients, setCollapsedClients] = useState<Set<string>>(new Set());
-  const [showNoClient, setShowNoClient] = useState(false);
 
   const myCount = useMemo(
     () => (myProjectIds ? projects.filter((p) => myProjectIds.has(p.projectId)).length : 0),
@@ -246,51 +282,38 @@ export default function AnalyticsProjectList({
     let list = selectedProject
       ? projects.filter((p) => p.projectId === selectedProject.projectId)
       : projects;
-    if (filter === "active") list = list.filter((p) => p.isActive);
+    if (filter === "active")    list = list.filter((p) => p.isActive);
     if (filter === "favorites") list = list.filter((p) => p.isFavorite);
     if (filter === "mine" && myProjectIds) list = list.filter((p) => myProjectIds.has(p.projectId));
+    // Sort: mine first, then favorites, then by used hours desc
     return [...list].sort((a, b) => {
       if (filter === "all" && myProjectIds) {
-        const aIsMine = myProjectIds.has(a.projectId);
-        const bIsMine = myProjectIds.has(b.projectId);
-        if (aIsMine !== bIsMine) return aIsMine ? -1 : 1;
+        const aM = myProjectIds.has(a.projectId);
+        const bM = myProjectIds.has(b.projectId);
+        if (aM !== bM) return aM ? -1 : 1;
       }
       if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
       return b.hoursUsed - a.hoursUsed;
     });
   }, [projects, filter, selectedProject, myProjectIds]);
 
-  const grouped = useMemo(() => groupByClient(filtered), [filtered]);
-
-  // Separate clients with/without name
-  const namedClients = useMemo(() =>
-    [...grouped.entries()].filter(([k]) => k !== "__no_client__"),
-    [grouped]
-  );
-  const noClientProjects = useMemo(() =>
-    grouped.get("__no_client__") ?? [],
-    [grouped]
-  );
-
-  const namedCount = namedClients.reduce((s, [, ps]) => s + ps.length, 0);
+  const grouped = useMemo(() => groupByResolvedClient(filtered), [filtered]);
 
   const filtersConfig: { key: Filter; label: string; count: number; icon?: React.ReactNode }[] = [
-    { key: "all", label: "Todos", count: projects.length },
+    { key: "all",       label: "Todos",         count: projects.length },
     ...(myProjectIds && myCount > 0
-      ? [{ key: "mine" as Filter, label: "Meus Projetos", count: myCount, icon: <UserCircle className="h-3 w-3" /> }]
+      ? [{ key: "mine" as Filter, label: "Meus", count: myCount, icon: <UserCircle className="h-3 w-3" /> }]
       : []),
-    { key: "active", label: "Ativos", count: projects.filter((p) => p.isActive).length },
-    { key: "favorites", label: "Favoritos", count: projects.filter((p) => p.isFavorite).length },
+    { key: "active",    label: "Ativos",         count: projects.filter((p) => p.isActive).length },
+    { key: "favorites", label: "Favoritos",      count: projects.filter((p) => p.isFavorite).length },
   ];
 
-  const toggleCollapse = (clientKey: string) => {
+  const toggleCollapse = (clientKey: string) =>
     setCollapsedClients((prev) => {
       const next = new Set(prev);
-      if (next.has(clientKey)) next.delete(clientKey);
-      else next.add(clientKey);
+      next.has(clientKey) ? next.delete(clientKey) : next.add(clientKey);
       return next;
     });
-  };
 
   return (
     <motion.div
@@ -302,25 +325,15 @@ export default function AnalyticsProjectList({
       {/* Header + filter pills */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-bold text-white/90">Projetos</h3>
+          <h3 className="text-lg font-bold text-white/90">Projetos por Cliente</h3>
           <span className="rounded-full bg-white/[0.05] border border-white/[0.06] px-2 py-0.5 text-[10px] text-white/40 font-semibold">
-            {namedCount}
+            {filtered.length}
           </span>
-          {noClientProjects.length > 0 && (
-            <button
-              onClick={() => setShowNoClient((v) => !v)}
-              className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold transition-all ${
-                showNoClient
-                  ? "border-white/[0.12] bg-white/[0.06] text-white/50"
-                  : "border-white/[0.06] text-white/25 hover:text-white/40"
-              }`}
-              title={showNoClient ? "Ocultar projetos sem cliente" : "Mostrar projetos sem cliente"}
-            >
-              {showNoClient ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              +{noClientProjects.length} sem cliente
-            </button>
-          )}
+          <span className="rounded-full bg-white/[0.04] border border-white/[0.04] px-2 py-0.5 text-[10px] text-white/25">
+            {grouped.size} cliente{grouped.size !== 1 ? "s" : ""}
+          </span>
         </div>
+
         <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1">
           {filtersConfig.map((f) => (
             <button
@@ -340,156 +353,143 @@ export default function AnalyticsProjectList({
         </div>
       </div>
 
-      {/* No projects at all */}
-      {filtered.length === 0 && (
-        <p className="py-12 text-center text-sm text-white/25">
-          Nenhum projeto encontrado.
-        </p>
-      )}
+      {filtered.length === 0 ? (
+        <p className="py-12 text-center text-sm text-white/25">Nenhum projeto encontrado.</p>
+      ) : (
+        <div className="space-y-3">
+          {[...grouped.entries()].map(([clientLabel, { projects: clientProjects, labelsByProject }]) => {
+            const isCollapsed = collapsedClients.has(clientLabel);
+            const totalHours      = clientProjects.reduce((s, p) => s + p.hoursUsed, 0);
+            const totalContracted = clientProjects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
+            const activeCount     = clientProjects.filter((p) => p.isActive).length;
+            const overdueCount    = clientProjects.reduce((s, p) => s + p.tasksOverdue, 0);
+            const doneCount       = clientProjects.reduce((s, p) => s + p.tasksDone, 0);
+            const hoursPct        = totalContracted > 0 ? Math.min(100, Math.round((totalHours / totalContracted) * 100)) : 0;
+            const hoursBarColor   =
+              hoursPct >= 90 ? "hsl(0 84% 60%)" :
+              hoursPct >= 70 ? "hsl(43 97% 52%)" :
+              "hsl(160 84% 39%)";
 
-      {/* Named client accordions */}
-      <div className="space-y-3">
-        {namedClients.map(([clientKey, clientProjects]) => {
-          const isCollapsed = collapsedClients.has(clientKey);
-          const totalHours = clientProjects.reduce((s, p) => s + p.hoursUsed, 0);
-          const totalContracted = clientProjects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
-          const activeCount = clientProjects.filter((p) => p.isActive).length;
-          const overdueCount = clientProjects.reduce((s, p) => s + p.tasksOverdue, 0);
-          const hoursPct = totalContracted > 0 ? Math.min(100, Math.round((totalHours / totalContracted) * 100)) : 0;
-          const hoursBarColor =
-            hoursPct >= 90 ? "hsl(0 84% 60%)" :
-            hoursPct >= 70 ? "hsl(43 97% 52%)" :
-            "hsl(160 84% 39%)";
+            // Single-project group: same name as client → don't show redundant sub-label
+            const isSingleSelf = clientProjects.length === 1 &&
+              labelsByProject.get(clientProjects[0].projectId) === clientLabel;
 
-          return (
-            <div key={clientKey} className="overflow-hidden rounded-2xl border border-white/[0.06]">
-              {/* Client header — clickable accordion toggle */}
-              <button
-                onClick={() => toggleCollapse(clientKey)}
-                className="group flex w-full items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.02]"
-                style={{ background: "linear-gradient(to right, hsl(262 83% 58% / 0.05), transparent)" }}
+            return (
+              <div
+                key={clientLabel}
+                className="overflow-hidden rounded-2xl border border-white/[0.06] transition-shadow hover:shadow-lg hover:shadow-black/20"
+                style={{ background: "linear-gradient(160deg, hsl(270 50% 11% / 0.8), hsl(234 45% 8% / 0.6))" }}
               >
-                {/* Icon */}
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[hsl(262_83%_58%/0.2)] bg-[hsl(262_83%_58%/0.08)]">
-                  <Building2 className="h-4 w-4 text-[hsl(262_83%_58%)]" />
-                </div>
-
-                {/* Client info */}
-                <div className="flex flex-1 flex-col items-start gap-1.5 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-bold text-white/90">{clientKey}</span>
-                    <span className="rounded-full bg-white/[0.06] border border-white/[0.05] px-2 py-0.5 text-[10px] text-white/35 font-semibold">
-                      {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
-                    </span>
-                    {activeCount > 0 && (
-                      <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-400 font-semibold">
-                        {activeCount} ativo{activeCount !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {overdueCount > 0 && (
-                      <span className="rounded-full bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-[10px] text-red-400 font-semibold">
-                        {overdueCount} atrasad{overdueCount !== 1 ? "as" : "a"}
-                      </span>
-                    )}
+                {/* ── Client accordion header ── */}
+                <button
+                  onClick={() => toggleCollapse(clientLabel)}
+                  className="group flex w-full items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.02]"
+                >
+                  {/* Icon */}
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[hsl(262_83%_58%/0.2)] bg-[hsl(262_83%_58%/0.08)]">
+                    <Building2 className="h-4 w-4 text-[hsl(262_83%_58%)]" />
                   </div>
 
-                  {/* Hours progress */}
-                  <div className="flex w-full max-w-[280px] items-center gap-2">
-                    <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-                      {totalContracted > 0 && (
-                        <div
-                          className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
-                          style={{ width: `${hoursPct}%`, background: hoursBarColor }}
-                        />
+                  {/* Client name + meta badges */}
+                  <div className="flex flex-1 flex-col items-start gap-1.5 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-white/90 truncate max-w-[260px]">
+                        {clientLabel}
+                      </span>
+                      <span className="rounded-full bg-white/[0.06] border border-white/[0.05] px-2 py-0.5 text-[10px] text-white/35 font-semibold">
+                        {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
+                      </span>
+                      {activeCount > 0 && (
+                        <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-400 font-semibold">
+                          {activeCount} ativo{activeCount !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                      {overdueCount > 0 && (
+                        <span className="rounded-full bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-[10px] text-red-400 font-semibold">
+                          {overdueCount} atrasad{overdueCount !== 1 ? "as" : "a"}
+                        </span>
+                      )}
+                      {doneCount > 0 && (
+                        <span className="rounded-full bg-emerald-500/8 border border-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-400/70 font-semibold">
+                          {doneCount} concluíd{doneCount !== 1 ? "as" : "a"}
+                        </span>
                       )}
                     </div>
-                    <span className="shrink-0 text-[10px] font-semibold text-white/30">
-                      {Math.round(totalHours)}h
-                      {totalContracted > 0 && ` / ${Math.round(totalContracted)}h`}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Right actions */}
-                <div className="flex shrink-0 items-center gap-2">
-                  {isAdmin && onEditClientHours && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onEditClientHours(clientKey, clientProjects); }}
-                      className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-semibold text-white/30 transition hover:border-[hsl(262_83%_58%/0.3)] hover:text-[hsl(262_83%_58%)] hover:bg-[hsl(262_83%_58%/0.05)]"
-                      title="Definir horas para todos os projetos"
-                    >
-                      <Clock className="h-3 w-3" />
-                      Horas
-                    </button>
-                  )}
-                  {isCollapsed
-                    ? <ChevronDown className="h-4 w-4 text-white/25 transition group-hover:text-white/50" />
-                    : <ChevronUp className="h-4 w-4 text-white/25 transition group-hover:text-white/50" />
-                  }
-                </div>
-              </button>
-
-              {/* Project rows */}
-              <AnimatePresence initial={false}>
-                {!isCollapsed && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-2 border-t border-white/[0.04] p-4">
-                      {clientProjects.map((p) => (
-                        <ProjectRow
-                          key={p.projectId}
-                          project={p}
-                          onToggleFavorite={onToggleFavorite}
-                          onClick={onProjectClick}
-                          onEditHours={onEditHours}
-                          isMine={myProjectIds?.has(p.projectId)}
-                          isAdmin={isAdmin}
-                        />
-                      ))}
+                    {/* Hours progress bar */}
+                    <div className="flex w-full max-w-[300px] items-center gap-2">
+                      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                        {totalContracted > 0 && (
+                          <div
+                            className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
+                            style={{ width: `${hoursPct}%`, background: hoursBarColor }}
+                          />
+                        )}
+                      </div>
+                      <span className="shrink-0 text-[10px] font-semibold text-white/30">
+                        {Math.round(totalHours)}h
+                        {totalContracted > 0 && ` / ${Math.round(totalContracted)}h`}
+                      </span>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
+                  </div>
 
-      {/* No-client section — hidden by default */}
-      {noClientProjects.length > 0 && showNoClient && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden rounded-2xl border border-dashed border-white/[0.08]"
-        >
-          <div className="flex items-center gap-3 border-b border-white/[0.05] px-5 py-3">
-            <Building2 className="h-4 w-4 text-white/25" />
-            <span className="text-sm font-semibold italic text-white/35">
-              Projetos sem cliente associado
-            </span>
-            <span className="rounded-full bg-white/[0.04] border border-white/[0.05] px-2 py-0.5 text-[10px] text-white/25 font-semibold">
-              {noClientProjects.length}
-            </span>
-          </div>
-          <div className="space-y-2 p-4">
-            {noClientProjects.map((p) => (
-              <ProjectRow
-                key={p.projectId}
-                project={p}
-                onToggleFavorite={onToggleFavorite}
-                onClick={onProjectClick}
-                onEditHours={onEditHours}
-                isMine={myProjectIds?.has(p.projectId)}
-                isAdmin={isAdmin}
-              />
-            ))}
-          </div>
-        </motion.div>
+                  {/* Right: set-hours button + chevron */}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {isAdmin && onEditClientHours && !isSingleSelf && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditClientHours(clientLabel, clientProjects);
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-semibold text-white/30 transition hover:border-[hsl(262_83%_58%/0.3)] hover:text-[hsl(262_83%_58%)] hover:bg-[hsl(262_83%_58%/0.05)]"
+                        title="Definir horas para todos os projetos do cliente"
+                      >
+                        <Clock className="h-3 w-3" />
+                        Horas
+                      </button>
+                    )}
+                    {isCollapsed
+                      ? <ChevronDown className="h-4 w-4 text-white/25 transition group-hover:text-white/50" />
+                      : <ChevronUp   className="h-4 w-4 text-white/25 transition group-hover:text-white/50" />
+                    }
+                  </div>
+                </button>
+
+                {/* ── Project rows (collapsible) ── */}
+                <AnimatePresence initial={false}>
+                  {!isCollapsed && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.22 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-1.5 border-t border-white/[0.04] p-3">
+                        {clientProjects.map((p) => (
+                          <ProjectRow
+                            key={p.projectId}
+                            project={p}
+                            projectLabel={
+                              isSingleSelf
+                                ? p.projectName
+                                : (labelsByProject.get(p.projectId) ?? p.projectName)
+                            }
+                            onToggleFavorite={onToggleFavorite}
+                            onClick={onProjectClick}
+                            onEditHours={onEditHours}
+                            isMine={myProjectIds?.has(p.projectId)}
+                            isAdmin={isAdmin}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
       )}
     </motion.div>
   );
