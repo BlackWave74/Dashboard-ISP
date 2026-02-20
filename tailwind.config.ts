@@ -2,7 +2,40 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+    "./index.html",
+  ],
+  // Safelist critical layout & sidebar classes so they are never purged in production
+  safelist: [
+    "flex",
+    "flex-1",
+    "flex-col",
+    "flex-row",
+    "min-h-screen",
+    "min-h-svh",
+    "w-full",
+    "overflow-x-hidden",
+    "overflow-hidden",
+    "hidden",
+    "block",
+    "md:block",
+    "md:flex",
+    "relative",
+    "fixed",
+    "inset-y-0",
+    "border-r",
+    "border-l",
+    "bg-background",
+    "bg-transparent",
+    // sidebar group-data selectors
+    { pattern: /group-data-\[.+\]:.+/ },
+    { pattern: /peer-data-\[.+\]:.+/ },
+    { pattern: /data-\[.+\]:.+/ },
+  ],
   prefix: "",
   theme: {
     container: {

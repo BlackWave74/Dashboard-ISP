@@ -170,43 +170,84 @@ const Sidebar = React.forwardRef<
     );
   }
 
+  // Compute widths via JS so they are NEVER affected by Tailwind CSS purging in production.
+  const isCollapsed = state === "collapsed";
+  const isIconCollapsible = collapsible === "icon";
+  const isOffcanvasCollapsible = collapsible === "offcanvas";
+
+  const gapWidth = isCollapsed
+    ? isOffcanvasCollapsible
+      ? "0px"
+      : isIconCollapsible
+        ? SIDEBAR_WIDTH_ICON
+        : SIDEBAR_WIDTH
+    : SIDEBAR_WIDTH;
+
+  const fixedWidth = isCollapsed && isIconCollapsible
+    ? SIDEBAR_WIDTH_ICON
+    : SIDEBAR_WIDTH;
+
+  const fixedLeft = side === "left"
+    ? isCollapsed && isOffcanvasCollapsible
+      ? `calc(${SIDEBAR_WIDTH} * -1)`
+      : "0px"
+    : undefined;
+
+  const fixedRight = side === "right"
+    ? isCollapsed && isOffcanvasCollapsible
+      ? `calc(${SIDEBAR_WIDTH} * -1)`
+      : "0px"
+    : undefined;
+
   return (
     <div
       ref={ref}
-      className="group peer hidden text-sidebar-foreground md:block"
+      className="text-sidebar-foreground"
+      style={{ display: "block" }}
       data-state={state}
-      data-collapsible={state === "collapsed" ? collapsible : ""}
+      data-collapsible={isCollapsed ? collapsible : ""}
       data-variant={variant}
       data-side={side}
     >
-      {/* This is what handles the sidebar gap on desktop */}
+      {/* Gap div: reserves space in the flex layout — width driven by JS, never purged */}
       <div
-        className={cn(
-          "relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
-          "group-data-[collapsible=offcanvas]:w-0",
-          "group-data-[side=right]:rotate-180",
-          variant === "floating" || variant === "inset"
-            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
-        )}
+        style={{
+          width: gapWidth,
+          height: "100svh",
+          flexShrink: 0,
+          transition: "width 200ms linear",
+          position: "relative",
+          background: "transparent",
+        }}
       />
+      {/* Fixed sidebar: visual layer, always on top */}
       <div
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] overflow-hidden transition-[left,right,width] duration-200 ease-linear md:flex",
-          side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-          // Adjust the padding for floating and inset variants.
-          variant === "floating" || variant === "inset"
-            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+          variant === "floating" || variant === "inset" ? "p-2" : "",
+          side === "left" ? "border-r" : "border-l",
           className,
         )}
+        style={{
+          position: "fixed",
+          insetBlock: 0,
+          left: fixedLeft,
+          right: fixedRight,
+          zIndex: 10,
+          height: "100svh",
+          width: fixedWidth,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          transition: "left 200ms linear, right 200ms linear, width 200ms linear",
+        }}
         {...props}
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-transparent [&]:rounded-[inherit] group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+          className={cn(
+            "flex h-full w-full flex-col bg-transparent",
+            variant === "floating" ? "rounded-lg border border-sidebar-border shadow" : "",
+          )}
         >
           {children}
         </div>
