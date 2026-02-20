@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import SyncIndicator from "@/components/SyncIndicator";
+import { useTrackPresence } from "@/hooks/useUserPresence";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/NotificationBell";
 import {
@@ -76,6 +77,14 @@ function DashboardInner() {
 
   const companyName = session?.company?.trim();
   const accessibleProjectNames = session?.accessibleProjectNames;
+
+  // Track presence for the logged-in user so admins can see who's online
+  // We use email as the presence key since it's always available in the session
+  useTrackPresence(
+    session?.email,
+    session?.name,
+    session?.email,
+  );
 
   const { tasks, loading, reload } = useTasks({
     accessToken: session?.accessToken,

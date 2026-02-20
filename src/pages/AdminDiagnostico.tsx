@@ -90,7 +90,7 @@ export default function AdminDiagnostico() {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen" style={{ background: "hsl(222 47% 5%)" }}>
+    <div className="w-full">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
@@ -99,7 +99,7 @@ export default function AdminDiagnostico() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <div className="relative z-10 w-full px-4 py-10 sm:px-6">
         {/* ── Header ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
