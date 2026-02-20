@@ -111,7 +111,7 @@ function SidebarNavItem({ to, icon: Icon, label, end, iconColor }: NavItemProps)
     <NavLink
       to={to}
       end={end}
-      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap ${collapsed ? "justify-center !px-0" : ""}`}
+      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white hover:translate-x-0.5 hover:shadow-md hover:shadow-[hsl(234_89%_50%/0.1)] whitespace-nowrap ${collapsed ? "justify-center !px-0" : ""}`}
       activeClassName="!bg-white/[0.15] !text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)] !rounded-xl hover:!bg-white/[0.15] hover:!text-white"
     >
       <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={iconColor ? { color: iconColor } : undefined} />
@@ -220,6 +220,10 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
         zIndex: 20,
         borderRadius: 0,
         background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
+        height: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Logo + notifications + toggle */}
@@ -237,7 +241,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
         </div>
       </div>
 
-      <SidebarContent className={`${collapsed ? "px-1" : "px-3"} pt-5 overflow-x-hidden`}>
+      <SidebarContent className={`${collapsed ? "px-1" : "px-3"} pt-5 overflow-x-hidden flex-1`}>
         {/* PRINCIPAL */}
         <div className="mb-5">
           {!collapsed && (
@@ -404,20 +408,20 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
         </div>
       </SidebarContent>
 
-      <SidebarFooter className={`!border-t-0 ${collapsed ? "px-1" : "px-3"} pb-4 pt-2 space-y-2`}>
+      <SidebarFooter className={`!border-t-0 flex-none ${collapsed ? "px-1" : "px-3"} pb-4 pt-2 space-y-2`}>
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <UserAvatar name={session?.name} email={session?.email} collapsed={collapsed} avatarUrl={avatarUrl} />
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-xl py-2 text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400">
+              <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-xl py-2 transition-all duration-200 hover:bg-white/[0.06]" style={{ color: "hsl(0 0% 60%)" }}>
                 <LogOut className="h-[18px] w-[18px]" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Sair</TooltipContent>
           </Tooltip>
         ) : (
-          <button onClick={handleLogout} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/40 transition-all duration-200 hover:bg-white/[0.06] hover:text-rose-400">
+          <button onClick={handleLogout} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 hover:bg-white/[0.06] hover:translate-x-0.5" style={{ color: "hsl(0 0% 50%)" }}>
             <LogOut className="h-[18px] w-[18px]" />
             Sair
           </button>
