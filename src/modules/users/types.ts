@@ -23,9 +23,11 @@ export const ALL_AREAS = [
   { value: "analiticas", label: "Analíticas" },
   { value: "calendario", label: "Calendário" },
   { value: "gamificacao", label: "Ranking" },
+  { value: "ferramentas", label: "Ferramentas" },
   { value: "comodato", label: "Comodato" },
   { value: "integracoes", label: "Integrações" },
   { value: "usuarios", label: "Usuários" },
+  { value: "suporte", label: "Suporte" },
 ] as const;
 
 export type UserRow = {
