@@ -22,7 +22,7 @@ const INTERNAL_PROJECT_ALIASES = ["sp", "isp", "interno", "internal"];
 const ORPHAN_PAGE_SIZE = 12;
 
 export default function AdminDiagnostico() {
-  const { session } = useAuth();
+  const { session, loadingSession } = useAuth();
   const isAdmin =
     session?.role === "admin" ||
     session?.role === "gerente" ||
@@ -94,7 +94,8 @@ export default function AdminDiagnostico() {
     return orphanTasks.slice(start, start + ORPHAN_PAGE_SIZE);
   }, [orphanTasks, page]);
 
-  // Guard AFTER all hooks
+  // Guard AFTER all hooks — aguarda carregamento da sessão antes de redirecionar
+  if (loadingSession) return null;
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
