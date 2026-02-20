@@ -133,15 +133,6 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
                 )}
               </div>
               <div className="flex items-center gap-1">
-                {unreadCount > 0 && (
-                  <button
-                    onClick={onMarkAllAsRead}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
-                  >
-                    <CheckCheck className="h-3 w-3" />
-                    Ler todas
-                  </button>
-                )}
                 <button
                   onClick={() => setOpen(false)}
                   className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 transition hover:bg-white/[0.06] hover:text-white/60"
