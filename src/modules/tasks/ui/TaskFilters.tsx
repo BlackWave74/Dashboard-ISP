@@ -119,12 +119,12 @@ function CustomSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 top-full z-[100] mt-1 max-h-60 min-w-[220px] overflow-auto rounded-2xl border border-white/[0.08] p-1.5 shadow-xl shadow-black/40"
-            style={{ background: "hsl(260 30% 12%)" }}
+            className="absolute right-0 top-full z-[200] mt-1 min-w-[220px] rounded-2xl border border-white/[0.08] shadow-xl shadow-black/50 overflow-hidden flex flex-col"
+            style={{ background: "hsl(260 30% 12%)", maxHeight: "260px" }}
           >
-            {/* Search input */}
+            {/* Search input — always visible, not scrollable */}
             {options.length > 5 && (
-              <div className="sticky top-0 pb-1.5 mb-1 border-b border-white/[0.06]" style={{ background: "hsl(260 30% 12%)" }}>
+              <div className="shrink-0 px-1.5 pt-1.5 pb-1 border-b border-white/[0.06]" style={{ background: "hsl(260 30% 12%)" }}>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-white/30" />
                   <input
@@ -137,73 +137,75 @@ function CustomSelect({
                 </div>
               </div>
             )}
-
-            <button
-              onClick={() => { onChange("all"); setOpen(false); setSearch(""); }}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
-                value === "all" || !value ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
-              }`}
-            >
-              {placeholder}
-            </button>
-
-            {/* Mine first if provided */}
-            {mineSet && sortedOptions.length > 0 && (
-              <>
-                {sortedOptions.some(o => mineSet.has(o.value)) && (
-                  <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(var(--task-purple)/0.6)]">Projetos que faço parte</div>
-                )}
-                {sortedOptions.filter(o => mineSet.has(o.value)).map((o) => (
-                  <button
-                    key={o.value}
-                    onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
-                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
-                      value === o.value
-                        ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
-                        : "text-white/50 hover:bg-white/[0.05] hover:text-white/70"
-                    }`}
-                  >
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--task-purple))]" />
-                    <span className="truncate">{o.label}</span>
-                  </button>
-                ))}
-                {sortedOptions.some(o => !mineSet.has(o.value)) && (
-                  <div className="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-white/20">Outros</div>
-                )}
-                {sortedOptions.filter(o => !mineSet.has(o.value)).map((o) => (
-                  <button
-                    key={o.value}
-                    onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
-                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
-                      value === o.value
-                        ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
-                        : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
-                    }`}
-                  >
-                    <span className="truncate">{o.label}</span>
-                  </button>
-                ))}
-              </>
-            )}
-
-            {/* Normal list when no mineSet */}
-            {!mineSet && sortedOptions.map((o) => (
+            {/* Scrollable list area */}
+            <div className="overflow-y-auto flex-1 p-1.5">
               <button
-                key={o.value}
-                onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
+                onClick={() => { onChange("all"); setOpen(false); setSearch(""); }}
                 className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
-                  value === o.value
-                    ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
-                    : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                  value === "all" || !value ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
                 }`}
               >
-                <span className="truncate">{o.label}</span>
+                {placeholder}
               </button>
-            ))}
 
-            {sortedOptions.length === 0 && search.trim() && (
-              <p className="px-3 py-4 text-center text-[11px] text-white/30">Nenhum resultado</p>
-            )}
+              {/* Mine first if provided */}
+              {mineSet && sortedOptions.length > 0 && (
+                <>
+                  {sortedOptions.some(o => mineSet.has(o.value)) && (
+                    <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(var(--task-purple)/0.6)]">Projetos que faço parte</div>
+                  )}
+                  {sortedOptions.filter(o => mineSet.has(o.value)).map((o) => (
+                    <button
+                      key={o.value}
+                      onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
+                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
+                        value === o.value
+                          ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
+                          : "text-white/50 hover:bg-white/[0.05] hover:text-white/70"
+                      }`}
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--task-purple))]" />
+                      <span className="truncate">{o.label}</span>
+                    </button>
+                  ))}
+                  {sortedOptions.some(o => !mineSet.has(o.value)) && (
+                    <div className="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-white/20">Outros</div>
+                  )}
+                  {sortedOptions.filter(o => !mineSet.has(o.value)).map((o) => (
+                    <button
+                      key={o.value}
+                      onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
+                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
+                        value === o.value
+                          ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
+                          : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                      }`}
+                    >
+                      <span className="truncate">{o.label}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+
+              {/* Normal list when no mineSet */}
+              {!mineSet && sortedOptions.map((o) => (
+                <button
+                  key={o.value}
+                  onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
+                    value === o.value
+                      ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
+                      : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                  }`}
+                >
+                  <span className="truncate">{o.label}</span>
+                </button>
+              ))}
+
+              {sortedOptions.length === 0 && search.trim() && (
+                <p className="px-3 py-4 text-center text-[11px] text-white/30">Nenhum resultado</p>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
