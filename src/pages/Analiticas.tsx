@@ -5,6 +5,7 @@ import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
+import { useContractedHours } from "@/modules/analytics/hooks/useContractedHours";
 import { RefreshCw, FileDown } from "lucide-react";
 import { motion } from "framer-motion";
 import PageSkeleton from "@/components/ui/PageSkeleton";
@@ -16,6 +17,7 @@ import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjec
 import AnalyticsFilters from "@/modules/analytics/components/AnalyticsFilters";
 import AnalyticsPendingTasks from "@/modules/analytics/components/AnalyticsPendingTasks";
 import AnalyticsProjectDrawer from "@/modules/analytics/components/AnalyticsProjectDrawer";
+import ContractedHoursModal from "@/modules/analytics/components/ContractedHoursModal";
 import type { AnalyticsFilterState } from "@/modules/analytics/components/AnalyticsFilters";
 import type { ProjectAnalytics } from "@/modules/analytics/types";
 import { usePageSEO } from "@/hooks/usePageSEO";
@@ -235,10 +237,30 @@ export default function AnaliticasPage() {
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
+  const [hoursModalProject, setHoursModalProject] = useState<ProjectAnalytics | null>(null);
+
+  // Contracted hours (persisted in DB)
+  const { data: contractedHoursData, upsert: upsertContractedHours } = useContractedHours();
+
+  // Merge contracted hours into projects list
+  const projectsWithContracted = useMemo(() => {
+    return projects.map((p) => {
+      const record = contractedHoursData.get(p.projectId);
+      return record ? { ...p, hoursContracted: record.contracted_hours } : p;
+    });
+  }, [projects, contractedHoursData]);
 
   const handleProjectClick = useCallback((project: ProjectAnalytics) => {
     setDrawerProject(project);
   }, []);
+
+  const handleEditHours = useCallback((project: ProjectAnalytics) => {
+    setHoursModalProject(project);
+  }, []);
+
+  const handleSaveHours = useCallback(async (projectId: number, hours: number, notes: string): Promise<boolean> => {
+    return upsertContractedHours(projectId, hours, session?.name ?? "admin", notes);
+  }, [upsertContractedHours, session?.name]);
 
   if (initialLoading) {
     return <PageSkeleton variant="analiticas" />;
@@ -368,13 +390,15 @@ export default function AnaliticasPage() {
           classifyTask={classifyTask}
         />
 
-        {/* Projects list */}
+        {/* Projects list — grouped by client */}
         <AnalyticsProjectList
-          projects={projects}
+          projects={projectsWithContracted}
           onToggleFavorite={toggleFavorite}
           onProjectClick={handleProjectClick}
+          onEditHours={isAdmin ? handleEditHours : undefined}
           selectedProject={selectedProject}
           myProjectIds={myProjectIds}
+          isAdmin={isAdmin}
         />
       </div>
 
@@ -385,6 +409,16 @@ export default function AnaliticasPage() {
         classifyTask={classifyTask}
         onClose={() => setDrawerProject(null)}
       />
+
+      {/* Admin: Contracted Hours Modal */}
+      {isAdmin && hoursModalProject && (
+        <ContractedHoursModal
+          project={hoursModalProject}
+          currentHours={contractedHoursData.get(hoursModalProject.projectId)?.contracted_hours ?? 0}
+          onClose={() => setHoursModalProject(null)}
+          onSave={handleSaveHours}
+        />
+      )}
     </div>
   );
 }
