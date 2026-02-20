@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Building2,
@@ -13,8 +13,10 @@ import {
   X,
   Timer,
   FolderOpen,
+  FileDown,
 } from "lucide-react";
 import type { ProjectAnalytics } from "../types";
+import { exportClientPDF } from "@/lib/exportPdf";
 
 type Props = {
   projects: ProjectAnalytics[];
@@ -91,7 +93,8 @@ function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; proje
   return { clientLabel: p.projectName, projectLabel: p.projectName };
 }
 
-/** Agrupa projetos por cliente, mesclando variantes do mesmo nome */
+/** Agrupa projetos por cliente, mesclando variantes do mesmo nome.
+ *  Grupos cujo displayLabel ainda seja um placeholder são descartados. */
 function groupByClient(projects: ProjectAnalytics[]) {
   const map = new Map<string, {
     displayLabel: string;
@@ -101,6 +104,8 @@ function groupByClient(projects: ProjectAnalytics[]) {
 
   projects.forEach((p) => {
     const { clientLabel, projectLabel } = resolveDisplayClient(p);
+    // Segunda linha de defesa: se depois de tudo o label ainda é placeholder, pula
+    if (isClientPlaceholder(clientLabel)) return;
     const key = normalizeKey(clientLabel);
 
     if (!map.has(key)) {
@@ -521,6 +526,19 @@ export default function AnalyticsProjectList({
                           {overdueCount} atrasada{overdueCount !== 1 ? "s" : ""}
                         </span>
                       )}
+                      {/* Alerta de horas: badge laranja quando > 80% consumido */}
+                      {totalContracted > 0 && hoursPct >= 80 && (
+                        <span
+                          className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                            hoursPct >= 100
+                              ? "border-red-500/30 bg-red-500/15 text-red-400"
+                              : "border-amber-500/30 bg-amber-500/15 text-amber-400"
+                          }`}
+                        >
+                          <AlertTriangle className="h-3 w-3" />
+                          {hoursPct >= 100 ? "Horas esgotadas" : `${hoursPct}% das horas`}
+                        </span>
+                      )}
                     </div>
 
                     {/* Linha de stats */}
@@ -557,8 +575,30 @@ export default function AnalyticsProjectList({
                     </div>
                   </div>
 
-                  {/* Direita: botão horas + chevron */}
+                  {/* Direita: botões de ação + chevron */}
                   <div className="flex shrink-0 items-center gap-2">
+                    {/* Exportar PDF do cliente */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void exportClientPDF({
+                          clientName: displayLabel,
+                          generatedBy: undefined,
+                          projects: clientProjects.map((p) => ({
+                            name: labelsByProject.get(p.projectId) ?? p.projectName,
+                            totalTasks: p.tasksDone + p.tasksPending + p.tasksOverdue,
+                            doneTasks: p.tasksDone,
+                            overdueTasks: p.tasksOverdue,
+                            hours: p.hoursUsed,
+                            hoursContracted: p.hoursContracted || 0,
+                          })),
+                        });
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-1.5 text-xs font-bold text-white/30 transition hover:border-emerald-500/30 hover:bg-emerald-500/[0.07] hover:text-emerald-400"
+                      title="Exportar relatório deste cliente em PDF"
+                    >
+                      <FileDown className="h-3.5 w-3.5" />
+                    </button>
                     {isAdmin && onEditClientHours && !isSingleSelf && (
                       <button
                         onClick={(e) => {

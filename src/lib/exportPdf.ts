@@ -135,94 +135,73 @@ function drawDonutChart(
   });
 }
 
-/** Draw a performance area chart (smooth filled area) */
-function drawPerformanceChart(
+/** Draw a horizontal bar chart for completion % by project (replaces buggy area chart) */
+function drawHorizontalCompletionChart(
   doc: jsPDF, x: number, y: number, width: number, height: number,
   tasks: TaskRow[], title: string
 ) {
   // Group by project and compute completion rate
-  const projectMap = new Map<string, { total: number; done: number }>();
+  const projectMap = new Map<string, { total: number; done: number; overdue: number }>();
   tasks.forEach((t) => {
     const p = t.project || "Sem projeto";
-    const cur = projectMap.get(p) ?? { total: 0, done: 0 };
+    const cur = projectMap.get(p) ?? { total: 0, done: 0, overdue: 0 };
     cur.total += 1;
     if (t.statusLabel === "Concluída" || t.statusLabel === "Done") cur.done += 1;
+    if (t.statusLabel === "Atrasada" || t.statusLabel === "Overdue") cur.overdue += 1;
     projectMap.set(p, cur);
   });
 
   const data = Array.from(projectMap.entries())
     .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 8)
-    .map(([name, { total, done }]) => ({
-      label: name.length > 12 ? name.slice(0, 11) + "…" : name,
-      value: total > 0 ? Math.round((done / total) * 100) : 0,
+    .map(([name, { total, done, overdue }]) => ({
+      label: name.length > 22 ? name.slice(0, 21) + "…" : name,
+      pct: total > 0 ? Math.round((done / total) * 100) : 0,
+      overdue,
+      total,
     }));
 
-  if (data.length < 2) return;
+  if (data.length === 0) return;
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 27, 75);
   doc.text(title, x, y + 6);
 
-  const chartY = y + 12;
-  const chartH = height - 22;
-  const maxVal = 100;
-  const stepX = width / (data.length - 1);
+  const startY = y + 12;
+  const rowH = Math.min((height - 14) / data.length, 8);
+  const labelW = 52;
+  const barMaxW = width - labelW - 20;
 
-  // Grid lines
-  doc.setDrawColor(220, 220, 230);
-  doc.setLineWidth(0.1);
-  for (let i = 0; i <= 4; i++) {
-    const gy = chartY + (i / 4) * chartH;
-    doc.line(x, gy, x + width, gy);
-    doc.setFontSize(5);
-    doc.setTextColor(150, 150, 170);
-    doc.text(`${100 - i * 25}%`, x - 1, gy + 1.5, { align: "right" });
-  }
-
-  // Points
-  const points = data.map((d, i) => ({
-    px: x + i * stepX,
-    py: chartY + chartH - (d.value / maxVal) * chartH,
-  }));
-
-  // Fill area
-  doc.setFillColor(99, 102, 241);
-  doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
-  const areaPoints: number[][] = [];
-  points.forEach((p) => areaPoints.push([p.px, p.py]));
-  areaPoints.push([points[points.length - 1].px, chartY + chartH]);
-  areaPoints.push([points[0].px, chartY + chartH]);
-  // Draw area with triangles
-  for (let i = 0; i < areaPoints.length - 2; i++) {
-    doc.triangle(
-      areaPoints[0][0], areaPoints[0][1],
-      areaPoints[i + 1][0], areaPoints[i + 1][1],
-      areaPoints[i + 2][0], areaPoints[i + 2][1], "F"
-    );
-  }
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-
-  // Line
-  doc.setDrawColor(99, 102, 241);
-  doc.setLineWidth(0.6);
-  for (let i = 0; i < points.length - 1; i++) {
-    doc.line(points[i].px, points[i].py, points[i + 1].px, points[i + 1].py);
-  }
-
-  // Dots + labels
   data.forEach((d, i) => {
-    doc.setFillColor(99, 102, 241);
-    doc.circle(points[i].px, points[i].py, 1.2, "F");
+    const ry = startY + i * rowH;
+
+    // Label
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(50, 50, 70);
+    doc.text(d.label, x, ry + rowH * 0.65);
+
+    // Background track
+    const bx = x + labelW;
+    const bh = rowH * 0.55;
+    const by = ry + rowH * 0.2;
+    doc.setFillColor(230, 230, 240);
+    doc.roundedRect(bx, by, barMaxW, bh, 0.8, 0.8, "F");
+
+    // Completion bar (green)
+    if (d.pct > 0) {
+      const fillW = (d.pct / 100) * barMaxW;
+      const color: [number, number, number] = d.pct >= 80 ? [34, 197, 94] : d.pct >= 50 ? [250, 204, 21] : [239, 68, 68];
+      doc.setFillColor(...color);
+      doc.roundedRect(bx, by, fillW, bh, 0.8, 0.8, "F");
+    }
+
+    // Percentage label
     doc.setFontSize(6);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(99, 102, 241);
-    doc.text(`${d.value}%`, points[i].px, points[i].py - 3, { align: "center" });
-    doc.setFontSize(5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 100, 120);
-    doc.text(d.label, points[i].px, chartY + chartH + 6, { align: "center" });
+    doc.setTextColor(50, 50, 70);
+    doc.text(`${d.pct}%`, bx + barMaxW + 3, ry + rowH * 0.65);
   });
 }
 
@@ -358,8 +337,8 @@ export async function exportTasksPDF({
 
     // Row 2: Performance chart — completion % by project
     if (tasks.length >= 2) {
-      drawPerformanceChart(doc, 14, yPos, pageW - 28, 40, tasks, "Performance por Projeto — Taxa de Conclusão (%)");
-      yPos += 46;
+      drawHorizontalCompletionChart(doc, 14, yPos, pageW - 28, 48, tasks, "Conclusão por Projeto (%)");
+      yPos += 54;
     }
   }
 
@@ -400,6 +379,7 @@ type AnalyticsExportOptions = {
     doneTasks: number;
     overdueTasks: number;
     hours: number;
+    hoursContracted?: number;
   }>;
   totals: {
     projects: number;
@@ -409,6 +389,192 @@ type AnalyticsExportOptions = {
     hours: number;
   };
 };
+
+type ClientExportOptions = {
+  clientName: string;
+  generatedBy?: string;
+  period?: string;
+  fileName?: string;
+  projects: Array<{
+    name: string;
+    totalTasks: number;
+    doneTasks: number;
+    overdueTasks: number;
+    hours: number;
+    hoursContracted: number;
+  }>;
+};
+
+/** Draws a horizontal hours bar for contracted vs used */
+function drawClientHoursBar(
+  doc: jsPDF, x: number, y: number, width: number,
+  used: number, contracted: number, label: string
+) {
+  const pct = contracted > 0 ? Math.min(100, Math.round((used / contracted) * 100)) : 0;
+  const color: [number, number, number] =
+    pct >= 90 ? [239, 68, 68] : pct >= 70 ? [250, 204, 21] : [34, 197, 94];
+
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(50, 50, 70);
+  doc.text(label, x, y + 4);
+
+  const bx = x + 48;
+  const bw = width - 48 - 28;
+  doc.setFillColor(220, 220, 235);
+  doc.roundedRect(bx, y, bw, 4, 0.8, 0.8, "F");
+  if (pct > 0) {
+    doc.setFillColor(...color);
+    doc.roundedRect(bx, y, (pct / 100) * bw, 4, 0.8, 0.8, "F");
+  }
+
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(color[0], color[1], color[2]);
+  const hoursText = contracted > 0
+    ? `${Math.round(used)}h / ${Math.round(contracted)}h (${pct}%)`
+    : `${Math.round(used)}h`;
+  doc.text(hoursText, bx + bw + 3, y + 3.5);
+}
+
+export async function exportClientPDF({
+  clientName,
+  period,
+  generatedBy,
+  fileName,
+  projects,
+}: ClientExportOptions) {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const now = new Date().toLocaleDateString("pt-BR", {
+    day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+
+  const logo = await loadLogoBase64();
+  const safeFileName = fileName ?? `relatorio-${clientName.toLowerCase().replace(/[^a-z0-9]/g, "-")}.pdf`;
+
+  // Header
+  doc.setFillColor(30, 27, 75);
+  doc.rect(0, 0, pageW, 28, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Relatório — ${clientName}`, 14, 12);
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  const subLine = [generatedBy ? `Gerado por ${generatedBy}` : null, period, now]
+    .filter(Boolean).join(" · ");
+  doc.text(subLine, 14, 21);
+  if (logo) drawLogo(doc, logo, pageW);
+
+  let yPos = 34;
+
+  // Totals
+  const totalTasks = projects.reduce((s, p) => s + p.totalTasks, 0);
+  const totalDone  = projects.reduce((s, p) => s + p.doneTasks, 0);
+  const totalOver  = projects.reduce((s, p) => s + p.overdueTasks, 0);
+  const totalHours = projects.reduce((s, p) => s + p.hours, 0);
+  const totalContr = projects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
+
+  const cards = [
+    { label: "Projetos",    value: String(projects.length),       color: [99, 102, 241]  as [number,number,number] },
+    { label: "Tarefas",     value: String(totalTasks),            color: [59, 130, 246]  as [number,number,number] },
+    { label: "Concluídas",  value: String(totalDone),             color: [34, 197, 94]   as [number,number,number] },
+    { label: "Atrasadas",   value: String(totalOver),             color: [239, 68, 68]   as [number,number,number] },
+    { label: "Horas usadas",value: `${Math.round(totalHours)}h`,  color: [139, 92, 246]  as [number,number,number] },
+  ];
+
+  const cardW = (pageW - 28 - 4 * 4) / 5;
+  cards.forEach((card, i) => {
+    const x = 14 + i * (cardW + 4);
+    doc.setFillColor(...card.color);
+    doc.roundedRect(x, yPos, cardW, 16, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text(card.value, x + cardW / 2, yPos + 8, { align: "center" });
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "normal");
+    doc.text(card.label, x + cardW / 2, yPos + 13, { align: "center" });
+  });
+  yPos += 22;
+
+  // Completion donut
+  const completionData = [
+    { label: "Concluídas", value: totalDone,                          color: [34, 197, 94]  },
+    { label: "Andamento",  value: totalTasks - totalDone - totalOver, color: [250, 204, 21] },
+    { label: "Atrasadas",  value: totalOver,                          color: [239, 68, 68]  },
+  ];
+  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+  doc.text("Status das Tarefas", 14, yPos + 4);
+  drawDonutChart(doc, 50, yPos + 26, 16, completionData);
+
+  // Hours bar chart by project (right side)
+  const hoursData = [...projects]
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 6)
+    .map((p, i) => ({
+      label: p.name,
+      value: Math.round(p.hours),
+      color: [[99,102,241],[34,197,94],[250,204,21],[139,92,246],[239,68,68],[59,130,246]][i % 6] as number[],
+    }));
+  if (hoursData.length > 0) {
+    drawBarChart(doc, 110, yPos, pageW - 124, 44, hoursData, "Horas por Projeto");
+  }
+  yPos += 52;
+
+  // Hours progress bars per project
+  if (totalContr > 0) {
+    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+    doc.text("Consumo de Horas Contratadas", 14, yPos);
+    yPos += 6;
+    projects.forEach((p) => {
+      drawClientHoursBar(doc, 14, yPos, pageW - 28, p.hours, p.hoursContracted, p.name);
+      yPos += 8;
+    });
+    yPos += 4;
+  }
+
+  // Projects table
+  const tableBody = projects.map((p) => {
+    const completion = p.totalTasks > 0 ? Math.round((p.doneTasks / p.totalTasks) * 100) : 0;
+    const hoursLeft  = p.hoursContracted > 0 ? Math.round(p.hoursContracted - p.hours) : "—";
+    return [
+      p.name,
+      String(p.totalTasks),
+      String(p.doneTasks),
+      String(p.overdueTasks),
+      `${Math.round(p.hours)}h`,
+      p.hoursContracted > 0 ? `${p.hoursContracted}h` : "—",
+      typeof hoursLeft === "number" ? `${hoursLeft}h` : "—",
+      `${completion}%`,
+    ];
+  });
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [["Projeto", "Tarefas", "Concluídas", "Atrasadas", "Horas Usadas", "Contratadas", "Restam", "Conclusão"]],
+    body: tableBody,
+    theme: "grid",
+    styles: { fontSize: 7.5, cellPadding: 2.5, textColor: [30, 27, 75], lineColor: [200, 200, 220], lineWidth: 0.2 },
+    headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5 },
+    alternateRowStyles: { fillColor: [245, 245, 255] },
+    columnStyles: {
+      0: { cellWidth: "auto", fontStyle: "bold" },
+      1: { halign: "center", cellWidth: 18 },
+      2: { halign: "center", cellWidth: 22 },
+      3: { halign: "center", cellWidth: 20 },
+      4: { halign: "center", cellWidth: 22 },
+      5: { halign: "center", cellWidth: 22 },
+      6: { halign: "center", cellWidth: 18 },
+      7: { halign: "center", cellWidth: 20 },
+    },
+    margin: { left: 14, right: 14 },
+    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
+  });
+
+  doc.save(safeFileName);
+}
 
 export async function exportAnalyticsPDF({
   userName,
