@@ -39,16 +39,33 @@ const perfConfig = {
 };
 
 /**
+ * Normalizes a client name for grouping purposes:
+ * lowercase, remove accents, keep only alphanumeric.
+ * "DS Tech", "DS TECH", "DS-Tech" → "dstech"
+ * "Provedor 2000", "Provedor2000" → "provedor2000"
+ * "Cobra Ai", "COBRA.AI" → "cobraai"
+ */
+function normalizeKey(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/**
  * Extracts a "display client" from the project.
  * Priority:
- *  1. If `clientName` is a real non-empty string → use it as group key.
- *  2. If project name contains " - " or " <> " → split and use left part.
- *  3. Fallback → use the project name itself as the label (no generic "Projeto").
+ *  1. If `clientName` is a real non-empty string (not a placeholder) → use it.
+ *  2. If project name contains " - " or " <> " → split and use left part as client.
+ *  3. Fallback → use the project name itself as the label.
  */
 function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; projectLabel: string } {
-  const hasClient = p.clientName?.trim();
+  const clientRaw = p.clientName?.trim();
+  // Skip placeholder values like "[NOME DO CLIENTE]"
+  const hasClient = clientRaw && !/^\[.*\]$/.test(clientRaw);
   if (hasClient) {
-    return { clientLabel: hasClient, projectLabel: p.projectName };
+    return { clientLabel: clientRaw, projectLabel: p.projectName };
   }
 
   const SEPARATORS = [" - ", " <> "];
@@ -62,31 +79,46 @@ function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; proje
     }
   }
 
-  // No separator — use the project name directly as the group label
+  // No separator → use project name directly
   return { clientLabel: p.projectName, projectLabel: p.projectName };
 }
 
-/** Group projects by resolved client label, sorted alphabetically. */
+/** Group projects by resolved client label, merging variants of the same name. */
 function groupByResolvedClient(
   projects: ProjectAnalytics[]
-): Map<string, { projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }> {
-  const map = new Map<string, { projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }>();
+): Map<string, { displayLabel: string; projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }> {
+  // normalized key → { displayLabel (first seen / best), projects, labels }
+  const map = new Map<string, { displayLabel: string; projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }>();
 
   projects.forEach((p) => {
     const { clientLabel, projectLabel } = resolveDisplayClient(p);
-    if (!map.has(clientLabel)) {
-      map.set(clientLabel, { projects: [], labelsByProject: new Map() });
+    const key = normalizeKey(clientLabel);
+
+    if (!map.has(key)) {
+      map.set(key, { displayLabel: clientLabel, projects: [], labelsByProject: new Map() });
     }
-    const entry = map.get(clientLabel)!;
-    // Avoid duplicates within the same client group
+    const entry = map.get(key)!;
+
+    // Prefer the display label that looks best:
+    // longer name (more information) or title-cased version wins
+    if (
+      clientLabel.length > entry.displayLabel.length ||
+      (clientLabel.length === entry.displayLabel.length && clientLabel !== clientLabel.toUpperCase() && entry.displayLabel === entry.displayLabel.toUpperCase())
+    ) {
+      entry.displayLabel = clientLabel;
+    }
+
+    // Avoid duplicates within the same group
     if (!entry.projects.find((ep) => ep.projectId === p.projectId)) {
       entry.projects.push(p);
       entry.labelsByProject.set(p.projectId, projectLabel);
     }
   });
 
+  // Sort alphabetically by display label
   return new Map(
-    [...map.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
+    [...map.entries()]
+      .sort(([, a], [, b]) => a.displayLabel.localeCompare(b.displayLabel, "pt-BR"))
   );
 }
 
@@ -325,10 +357,11 @@ export default function AnalyticsProjectList({
   const groupedFiltered = useMemo(() => {
     if (!search.trim()) return grouped;
     const q = search.toLowerCase().trim();
-    const result = new Map<string, typeof grouped extends Map<string, infer V> ? V : never>();
+    const result = new Map<string, { displayLabel: string; projects: ProjectAnalytics[]; labelsByProject: Map<number, string> }>();
     grouped.forEach((val, key) => {
       if (
-        key.toLowerCase().includes(q) ||
+        val.displayLabel.toLowerCase().includes(q) ||
+        key.includes(q.replace(/[^a-z0-9]/g, "")) ||
         val.projects.some((p) =>
           (val.labelsByProject.get(p.projectId) ?? p.projectName).toLowerCase().includes(q)
         )
@@ -419,8 +452,8 @@ export default function AnalyticsProjectList({
         </p>
       ) : (
         <div className="space-y-2.5">
-          {[...groupedFiltered.entries()].map(([clientLabel, { projects: clientProjects, labelsByProject }]) => {
-            const isExpanded = expandedClients.has(clientLabel);
+          {[...groupedFiltered.entries()].map(([groupKey, { displayLabel, projects: clientProjects, labelsByProject }]) => {
+            const isExpanded = expandedClients.has(groupKey);
             const totalHours      = clientProjects.reduce((s, p) => s + p.hoursUsed, 0);
             const totalContracted = clientProjects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
             const activeCount     = clientProjects.filter((p) => p.isActive).length;
@@ -436,17 +469,17 @@ export default function AnalyticsProjectList({
             // Single-project group where client == project name → no sub-label needed
             const isSingleSelf =
               clientProjects.length === 1 &&
-              labelsByProject.get(clientProjects[0].projectId) === clientLabel;
+              labelsByProject.get(clientProjects[0].projectId) === displayLabel;
 
             return (
               <div
-                key={clientLabel}
+                key={groupKey}
                 className="overflow-hidden rounded-2xl border border-white/[0.07] transition-shadow hover:shadow-lg hover:shadow-black/20"
                 style={{ background: "linear-gradient(160deg, hsl(270 50% 10% / 0.85), hsl(234 45% 7% / 0.7))" }}
               >
                 {/* ── Client accordion header ── */}
                 <button
-                  onClick={() => toggleExpand(clientLabel)}
+                  onClick={() => toggleExpand(groupKey)}
                   className="group flex w-full items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.02]"
                 >
                   {/* Icon */}
@@ -458,7 +491,7 @@ export default function AnalyticsProjectList({
                   <div className="flex flex-1 flex-col items-start gap-2 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-base font-bold text-white/90 truncate max-w-[280px]">
-                        {clientLabel}
+                        {displayLabel}
                       </span>
                       <span className="rounded-full bg-white/[0.07] border border-white/[0.06] px-2.5 py-0.5 text-xs text-white/40 font-bold">
                         {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
@@ -520,7 +553,7 @@ export default function AnalyticsProjectList({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onEditClientHours(clientLabel, clientProjects);
+                          onEditClientHours(displayLabel, clientProjects);
                         }}
                         className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-xs font-bold text-white/35 transition hover:border-[hsl(262_83%_58%/0.35)] hover:text-[hsl(262_83%_68%)] hover:bg-[hsl(262_83%_58%/0.07)]"
                         title="Definir horas para todos os projetos do cliente"
