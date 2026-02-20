@@ -44,7 +44,7 @@ export default function AnaliticasPage() {
 
   const periodDays = PERIOD_DAYS[filters.period];
 
-  const { tasks: allTasks, loading: loadingTasks, error: errorTasks, reload: reloadTasks, lastUpdated } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
+  const { tasks: allTasks, loading: loadingTasks, error: errorTasks, reload: reloadTasks, lastUpdated, reloadCooldownMsLeft, reloadsRemainingThisMinute } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
   const { times, loading: loadingTimes, reload: reloadTimes, lastUpdated: lastUpdatedTimes } = useElapsedTimes({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
 
   const refreshing = loadingTasks || loadingTimes;
@@ -311,11 +311,25 @@ export default function AnaliticasPage() {
             <button
               type="button"
               onClick={() => { reloadTasks(); reloadTimes(); }}
-              disabled={refreshing}
+              disabled={refreshing || reloadCooldownMsLeft > 0 || reloadsRemainingThisMinute <= 0}
+              title={
+                reloadsRemainingThisMinute <= 0
+                  ? "Limite de 5 atualizações por minuto atingido"
+                  : reloadCooldownMsLeft > 0
+                  ? `Aguarde ${Math.ceil(reloadCooldownMsLeft / 1000)}s`
+                  : `Atualizar dados (${reloadsRemainingThisMinute} restantes)`
+              }
               className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              Atualizar
+              {refreshing
+                ? "Atualizando..."
+                : reloadsRemainingThisMinute <= 0
+                ? "Limite atingido"
+                : "Atualizar"}
+              {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
+                <span className="opacity-50">({reloadsRemainingThisMinute})</span>
+              )}
             </button>
           </div>
         </motion.div>

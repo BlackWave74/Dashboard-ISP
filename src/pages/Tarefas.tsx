@@ -195,7 +195,7 @@ export default function TarefasPage() {
   const filtersBoxRef = useRef<HTMLDivElement>(null);
 
   // Data hooks
-  const { tasks, loading, error, reload, lastUpdated, totalCount } = useTasks({
+  const { tasks, loading, error, reload, lastUpdated, totalCount, reloadCooldownMsLeft, reloadsRemainingThisMinute } = useTasks({
     accessToken: session?.accessToken,
     period,
     dateFrom,
@@ -646,11 +646,25 @@ export default function TarefasPage() {
               <button
                 type="button"
                 onClick={() => { reload(); reloadTimes(); }}
-                disabled={refreshing}
+                disabled={refreshing || reloadCooldownMsLeft > 0 || reloadsRemainingThisMinute <= 0}
+                title={
+                  reloadsRemainingThisMinute <= 0
+                    ? "Limite de 5 atualizações por minuto atingido"
+                    : reloadCooldownMsLeft > 0
+                    ? `Aguarde ${Math.ceil(reloadCooldownMsLeft / 1000)}s`
+                    : `Atualizar dados (${reloadsRemainingThisMinute} restantes)`
+                }
                 className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-40 whitespace-nowrap"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-                Atualizar
+                {refreshing
+                  ? "Atualizando..."
+                  : reloadsRemainingThisMinute <= 0
+                  ? "Limite atingido"
+                  : "Atualizar"}
+                {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
+                  <span className="opacity-50">({reloadsRemainingThisMinute})</span>
+                )}
               </button>
             </div>
           </div>
