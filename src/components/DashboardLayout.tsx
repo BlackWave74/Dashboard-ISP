@@ -87,12 +87,13 @@ function DashboardInner() {
     const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
     const hasCompanyName = !!companyName;
 
-    if (!hasExplicitNames && !hasCompanyName) return tasks;
+    // Segurança: sem config de acesso → retorna vazio (não vaza dados de outros projetos)
+    if (!hasExplicitNames && !hasCompanyName) return [];
 
     const allowedNames = hasExplicitNames ? accessibleProjectNames!.map(norm) : null;
     const needle = hasCompanyName ? norm(companyName!) : null;
 
-    const filtered = tasks.filter((t) => {
+    return tasks.filter((t) => {
       const projectNorm = norm(
         String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? "")
       );
@@ -111,13 +112,6 @@ function DashboardInner() {
 
       return false;
     });
-
-    // Para notificações: não usar fallback "show all" — melhor silencioso
-    // do que notificar de projetos não autorizados
-    if (filtered.length === 0) return [];
-
-
-    return filtered;
   }, [tasks, isAdmin, accessibleProjectNames, companyName]);
 
   const notifTasks = useMemo(
