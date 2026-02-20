@@ -1,8 +1,8 @@
+@import "tailwindcss";
+
 #lovable-badge {
   display: none !important;
 }
-
-@import "tailwindcss";
 
 /* Prevent horizontal overflow globally */
 html, body {
