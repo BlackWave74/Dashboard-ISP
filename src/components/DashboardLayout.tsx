@@ -146,32 +146,44 @@ function DashboardInner() {
     : SIDEBAR_WIDTH;
 
   return (
-    /* Outer wrapper: full viewport height minimum, grid controls sidebar vs content columns */
     <div
       style={{
         display: "grid",
         gridTemplateColumns: `${sidebarWidth} 1fr`,
-        gridTemplateRows: "1fr",
         minHeight: "100vh",
         transition: "grid-template-columns 200ms linear",
         background: "hsl(222 47% 5%)",
+        alignItems: "stretch",
       }}
     >
       <SyncIndicator syncing={loading} />
 
-      {/* Sidebar column: stretches to match the grid row height (= tallest column) */}
+      {/*
+        Sidebar column — two-layer approach:
+        - OUTER div: stretches to 100% of the grid row height (= content height).
+          This is where the background gradient lives, so it always fills the full column.
+        - INNER div: position:sticky + height:100vh, keeps the nav visible while scrolling.
+      */}
       <div
         style={{
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          overflowY: "auto",
-          overflowX: "hidden",
+          background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
+          boxShadow: "4px 0 30px -4px rgba(0,0,0,0.7)",
           zIndex: 20,
-          scrollbarWidth: "none",
+          position: "relative",
         }}
       >
-        <div style={{ minHeight: "100%", display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            height: "100vh",
+            overflowY: "auto",
+            overflowX: "hidden",
+            scrollbarWidth: "none",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <AppSidebar
             notificationBell={
               <NotificationBell
