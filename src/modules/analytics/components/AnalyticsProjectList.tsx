@@ -39,9 +39,12 @@ const perfConfig = {
  * Extracts a "display client" from the project.
  *
  * Priority:
- *  1. If `clientName` is a real non-empty string → use it.
- *  2. If project name contains " - " (e.g. "Info Online - Consultoria RH") → use the part before the first " - ".
- *  3. Fallback → use the full project name as both client and project (single-project group).
+ *  1. If `clientName` is a real non-empty string → use it as group key.
+ *  2. If project name contains " - " or " <> " → split and use left part as client label.
+ *  3. Fallback → use "Projeto" as client label (not the full project name).
+ *
+ * This prevents names like "Info Online <> Consultoria Comercial" from
+ * being treated as a standalone client instead of a sub-project of "Info Online".
  */
 function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; projectLabel: string } {
   const hasClient = p.clientName?.trim();
@@ -50,17 +53,20 @@ function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; proje
     return { clientLabel: hasClient, projectLabel: p.projectName };
   }
 
-  // Try to split by " - "  (most common IXC naming: "Cliente - Projeto")
-  const sepIdx = p.projectName.indexOf(" - ");
-  if (sepIdx > 0) {
-    return {
-      clientLabel: p.projectName.slice(0, sepIdx).trim(),
-      projectLabel: p.projectName.slice(sepIdx + 3).trim() || p.projectName,
-    };
+  // Try separators in priority order: " - " then " <> "
+  const SEPARATORS = [" - ", " <> ", " <> "];
+  for (const sep of SEPARATORS) {
+    const idx = p.projectName.indexOf(sep);
+    if (idx > 0) {
+      return {
+        clientLabel: p.projectName.slice(0, idx).trim(),
+        projectLabel: p.projectName.slice(idx + sep.length).trim() || p.projectName,
+      };
+    }
   }
 
-  // No separator → treat the whole name as the group label
-  return { clientLabel: p.projectName, projectLabel: p.projectName };
+  // No separator and no clientName → group under "Projeto" instead of using full name
+  return { clientLabel: "Projeto", projectLabel: p.projectName };
 }
 
 /** Group projects by resolved client label, sorted alphabetically. */
@@ -79,9 +85,13 @@ function groupByResolvedClient(
     entry.labelsByProject.set(p.projectId, projectLabel);
   });
 
-  // Sort groups alphabetically
+  // Sort groups: named clients alphabetically first, "Projeto" fallback group last
   return new Map(
-    [...map.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
+    [...map.entries()].sort(([a], [b]) => {
+      if (a === "Projeto") return 1;
+      if (b === "Projeto") return -1;
+      return a.localeCompare(b, "pt-BR");
+    })
   );
 }
 
@@ -371,8 +381,11 @@ export default function AnalyticsProjectList({
               "hsl(160 84% 39%)";
 
             // Single-project group: same name as client → don't show redundant sub-label
-            const isSingleSelf = clientProjects.length === 1 &&
-              labelsByProject.get(clientProjects[0].projectId) === clientLabel;
+            // Also applies when clientLabel is "Projeto" (fallback) - always show project name
+            const isSingleSelf = clientLabel === "Projeto"
+              ? false
+              : (clientProjects.length === 1 &&
+                  labelsByProject.get(clientProjects[0].projectId) === clientLabel);
 
             return (
               <div
