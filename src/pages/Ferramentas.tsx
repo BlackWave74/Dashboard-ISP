@@ -153,7 +153,7 @@ export default function FerramentasPage() {
   const activeDuration = DURATION_OPTIONS.find(o => o.value === form.duration);
 
   return (
-    <div className="min-h-screen">
+    <div className="w-full">
       {/* Ambient glows */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <div
@@ -166,7 +166,7 @@ export default function FerramentasPage() {
         />
       </div>
 
-      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-10">
+      <div className="relative z-10 w-full px-4 py-8 sm:px-6 lg:px-10">
 
         {/* ── Page Header ── */}
         <motion.div

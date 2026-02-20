@@ -5,11 +5,12 @@ import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useUsersApi } from "@/modules/users/api/useUsersApi";
 import { callManageUser } from "@/modules/users/api/manageUserApi";
 import { PERFIS, ALL_AREAS, PERFIL_TO_ROLE, type Perfil, type UserRow } from "@/modules/users/types";
+import { useOnlineUsers } from "@/hooks/useUserPresence";
 import {
   Users, Search, RefreshCw, Pencil, Trash2, Save, X, Shield,
   Loader2, AlertCircle, CheckCircle2, UserPlus, Mail, User,
   Eye, EyeOff, FolderOpen, Clock, ChevronDown,
-  MapPin, Key, Copy, Power, Check, Building2,
+  MapPin, Key, Copy, Power, Check, Building2, Wifi,
 } from "lucide-react";
 import { usePageSEO } from "@/hooks/usePageSEO";
 
@@ -160,6 +161,7 @@ export default function UsuariosPage() {
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const token = session?.accessToken;
   const api = useUsersApi(token);
+  const onlineUsers = useOnlineUsers();
 
   useEffect(() => {
     if (!loadingSession && !session) { navigate("/login"); return; }
@@ -442,7 +444,17 @@ export default function UsuariosPage() {
     admins: api.users.filter(u => u.user_profile === "Administrador").length,
     consultors: api.users.filter(u => u.user_profile === "Consultor").length,
     active: api.users.filter(u => u.active !== false).length,
-  }), [api.users]);
+    online: onlineUsers.size,
+  }), [api.users, onlineUsers]);
+
+  const formatLoginTime = (isoString: string): string => {
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return "";
+    }
+  };
 
   /* ─── Dropdown helpers ─── */
   const areaOptions = ALL_AREAS.map(a => ({ value: a.value, label: a.label }));
@@ -692,22 +704,24 @@ export default function UsuariosPage() {
 
             {/* ═══ STATS ═══ */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-              className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-5"
             >
               {[
                 { label: "Total", value: stats.total, icon: Users, color: "purple" },
-                { label: "Administradores", value: stats.admins, icon: Shield, color: "yellow" },
+                { label: "Admins", value: stats.admins, icon: Shield, color: "yellow" },
                 { label: "Consultores", value: stats.consultors, icon: User, color: "blue" },
                 { label: "Ativos", value: stats.active, icon: CheckCircle2, color: "green" },
+                { label: "Online agora", value: stats.online, icon: Wifi, color: "teal" },
               ].map(s => (
                 <div key={s.label} className="task-card flex items-center gap-3 p-3 sm:p-4 min-w-0 overflow-hidden">
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                     s.color === "purple" ? "bg-[hsl(var(--task-purple)/0.15)] text-[hsl(var(--task-purple))]" :
                     s.color === "yellow" ? "bg-[hsl(var(--task-yellow)/0.15)] text-[hsl(var(--task-yellow))]" :
                     s.color === "blue" ? "bg-[hsl(220_90%_56%/0.15)] text-[hsl(220_90%_56%)]" :
+                    s.color === "teal" ? "bg-teal-500/15 text-teal-400" :
                     "bg-emerald-500/15 text-emerald-400"
                   }`}>
-                    <s.icon className="h-4 w-4" />
+                    <s.icon className={`h-4 w-4 ${s.color === "teal" && s.value > 0 ? "animate-pulse" : ""}`} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--task-text-muted))] truncate">{s.label}</p>
@@ -716,6 +730,7 @@ export default function UsuariosPage() {
                 </div>
               ))}
             </motion.div>
+
 
             {/* ═══ MAIN CONTENT ═══ */}
             <div className={`grid gap-5 ${showEditPanel ? "grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]" : "grid-cols-1"}`}>
@@ -810,7 +825,10 @@ export default function UsuariosPage() {
                     {filteredUsers.map((user, idx) => {
                       const initials = (user.name || user.email || "U")
                         .split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-                      const isSelected = editingUser?.id === user.id;
+                          const isSelected = editingUser?.id === user.id;
+                      const presenceEntry = onlineUsers.get(user.email);
+                      const isOnline = Boolean(presenceEntry);
+                      const loginTime = presenceEntry ? formatLoginTime(presenceEntry.online_at) : null;
 
                       return (
                         <motion.div
@@ -833,8 +851,13 @@ export default function UsuariosPage() {
                             }`}>
                               {initials}
                             </div>
-                            <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[hsl(var(--task-surface))] ${
-                              user.active !== false ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]" : "bg-rose-400"
+                            {/* Status dot: verde pulsante = online, cinza = offline, vermelho = inativo */}
+                            <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[hsl(var(--task-surface))] transition-all ${
+                              user.active === false
+                                ? "bg-rose-400"
+                                : isOnline
+                                ? "bg-teal-400 shadow-[0_0_6px_rgba(45,212,191,0.6)]"
+                                : "bg-[hsl(var(--task-text-muted)/0.3)]"
                             }`} />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -843,8 +866,17 @@ export default function UsuariosPage() {
                               <span className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${profileColor(user.user_profile)}`}>
                                 {user.user_profile || "Consultor"}
                               </span>
-                              {user.active === false && (
+                              {user.active === false ? (
                                 <span className="inline-flex items-center rounded-lg border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">Inativo</span>
+                              ) : isOnline ? (
+                                <span className="inline-flex items-center gap-1 rounded-lg border border-teal-500/20 bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-400">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+                                  Online{loginTime ? ` · desde ${loginTime}` : ""}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-lg border border-[hsl(var(--task-border)/0.4)] bg-[hsl(var(--task-bg)/0.5)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(var(--task-text-muted)/0.6)]">
+                                  Offline
+                                </span>
                               )}
                             </div>
                             <div className="flex items-center gap-3 mt-1 text-[11px] text-[hsl(var(--task-text-muted)/0.7)]">
