@@ -30,6 +30,8 @@ import {
   BarChart3,
   ChevronDown,
   FileDown,
+  Unlink,
+  Copy,
 } from "lucide-react";
 import {
   deadlineColor,
@@ -191,7 +193,10 @@ export default function TarefasPage() {
   const [showCharts, setShowCharts] = useState(true);
   const [showDashboard, setShowDashboard] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showOrphanPanel, setShowOrphanPanel] = useState(false);
+  const [orphanPage, setOrphanPage] = useState(1);
   const pageSize = 10;
+  const orphanPageSize = 8;
 
   const searchInputRef = useRef<HTMLInputElement>(null!);
   const filtersBoxRef = useRef<HTMLDivElement>(null);
@@ -269,6 +274,44 @@ export default function TarefasPage() {
       return normalizeTask(task, seconds);
     });
   }, [tasks, durationByTaskId]);
+
+  // ── Tarefas órfãs: sem projeto vinculado ou com projeto "SP" (apenas admin) ──
+  const orphanTasks = useMemo(() => {
+    if (!isAdmin) return [];
+    const INTERNAL_PROJECT_ALIASES = ["sp", "isp", "interno", "internal"];
+    return tasks.map((task) => {
+      const rawProjectId = String(task["project_id"] ?? task["projectId"] ?? "").trim();
+      const projectFromJoin =
+        task.projects && typeof task.projects === "object"
+          ? String((task.projects as any)?.name ?? "").trim()
+          : "";
+      const projectName = (
+        (task["project_name"] ?? task["project"] ?? task["group_name"] ?? "").toString()
+      ).trim();
+      const effectiveName = projectFromJoin || projectName;
+      const projectNorm = effectiveName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const hasNoProject = !effectiveName;
+      const isInternalProject = INTERNAL_PROJECT_ALIASES.some(
+        (alias) => projectNorm === alias || projectNorm === alias + " consulte"
+      );
+      if (!hasNoProject && !isInternalProject) return null;
+      return {
+        task_id: String(task["task_id"] ?? task["id"] ?? ""),
+        title: normalizeTaskTitle(String(task["title"] ?? task["nome"] ?? "Sem título")),
+        consultant: String(task["responsible_name"] ?? task["consultant"] ?? "—"),
+        deadline: parseDateValue(task["deadline"] ?? task["due_date"] ?? task["dueDate"]),
+        projectRaw: effectiveName || (rawProjectId ? `#${rawProjectId}` : "—"),
+        reason: hasNoProject ? "Sem projeto vinculado" : `Projeto interno: "${effectiveName}"`,
+      };
+    }).filter(Boolean) as { task_id: string; title: string; consultant: string; deadline: Date | null; projectRaw: string; reason: string }[];
+  }, [tasks, isAdmin]);
+
+  // Pagination for orphan panel
+  const orphanTotalPages = Math.max(1, Math.ceil(orphanTasks.length / orphanPageSize));
+  const orphanPaginated = useMemo(() => {
+    const start = (orphanPage - 1) * orphanPageSize;
+    return orphanTasks.slice(start, start + orphanPageSize);
+  }, [orphanTasks, orphanPage]);
 
   // Filter by accessible projects (non-admin users only see assigned projects)
   const companyName = session?.company?.trim();
@@ -982,6 +1025,115 @@ export default function TarefasPage() {
           </AnimatePresence>
         </motion.div>
 
+
+        {/* ═══ PAINEL DIAGNÓSTICO: Tarefas órfãs (apenas admin) ═══ */}
+        {isAdmin && orphanTasks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.4 }}
+            className="mb-5"
+          >
+            <button
+              type="button"
+              onClick={() => { setShowOrphanPanel((v) => !v); setOrphanPage(1); }}
+              className="flex items-center gap-2 mb-3 text-sm font-semibold text-amber-400/80 hover:text-amber-400 transition"
+            >
+              <Unlink className="h-4 w-4" />
+              Diagnóstico: Tarefas sem Projeto Vinculado
+              <span className="ml-1 rounded-full bg-amber-500/15 border border-amber-500/25 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                {orphanTasks.length}
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showOrphanPanel ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {showOrphanPanel && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  {/* Banner de aviso */}
+                  <div className="mb-3 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+                    <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                    <div className="text-xs text-amber-300/80 leading-relaxed">
+                      <strong className="text-amber-400">O que são tarefas órfãs?</strong>{" "}
+                      São tarefas cujo <code className="bg-amber-500/10 rounded px-1">project_id</code> no IXC aponta para um projeto sem nome
+                      definido (nulo/vazio) ou para um projeto interno genérico como <code className="bg-amber-500/10 rounded px-1">SP</code>.
+                      Isso acontece quando tarefas são criadas no IXC sem vincular a um contrato de projeto real.{" "}
+                      <strong>Recomendação:</strong> revise no IXC e vincule cada tarefa abaixo ao projeto correto.
+                    </div>
+                  </div>
+
+                  {/* Tabela compacta */}
+                  <div className="rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] overflow-hidden">
+                    <div className="grid grid-cols-[1fr_160px_110px_140px] gap-0 text-[10px] uppercase tracking-widest text-[hsl(var(--task-text-muted))] border-b border-[hsl(var(--task-border))] px-4 py-2.5 bg-white/[0.02]">
+                      <span>Tarefa</span>
+                      <span>Responsável</span>
+                      <span>Prazo</span>
+                      <span>Motivo</span>
+                    </div>
+                    {orphanPaginated.map((ot, idx) => (
+                      <motion.div
+                        key={ot.task_id || idx}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.05 * idx }}
+                        className="grid grid-cols-[1fr_160px_110px_140px] gap-0 items-center border-b border-[hsl(var(--task-border)/0.5)] last:border-0 px-4 py-2.5 hover:bg-white/[0.02] transition"
+                      >
+                        <div className="min-w-0 pr-3">
+                          <p className="text-xs font-medium text-[hsl(var(--task-text))] truncate">{ot.title}</p>
+                          {ot.projectRaw !== "—" && (
+                            <p className="text-[10px] text-amber-500/60 mt-0.5 truncate">
+                              proj: {ot.projectRaw}
+                            </p>
+                          )}
+                        </div>
+                        <p className="text-xs text-[hsl(var(--task-text-muted))] truncate">{ot.consultant}</p>
+                        <p className={`text-xs font-medium ${!ot.deadline ? "text-[hsl(var(--task-text-muted))]" : ot.deadline < new Date() ? "text-rose-400" : "text-[hsl(var(--task-text))]"}`}>
+                          {ot.deadline ? formatDatePtBR(ot.deadline) : "Sem prazo"}
+                        </p>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400 truncate">
+                          <Unlink className="h-2.5 w-2.5 shrink-0" />
+                          {ot.reason}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Paginação do painel */}
+                  {orphanTasks.length > orphanPageSize && (
+                    <div className="mt-2 flex items-center justify-between text-xs text-[hsl(var(--task-text-muted))]">
+                      <span>{Math.min((orphanPage - 1) * orphanPageSize + 1, orphanTasks.length)}–{Math.min(orphanPage * orphanPageSize, orphanTasks.length)} de {orphanTasks.length}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setOrphanPage((p) => Math.max(1, p - 1))}
+                          disabled={orphanPage === 1}
+                          className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 hover:border-amber-500/30 disabled:opacity-30 transition"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="px-2">{orphanPage} / {orphanTotalPages}</span>
+                        <button
+                          type="button"
+                          onClick={() => setOrphanPage((p) => Math.min(orphanTotalPages, p + 1))}
+                          disabled={orphanPage === orphanTotalPages}
+                          className="rounded-lg border border-[hsl(var(--task-border))] p-1.5 hover:border-amber-500/30 disabled:opacity-30 transition"
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
 
         {/* ═══ TASK LIST ═══ */}
         <motion.div
