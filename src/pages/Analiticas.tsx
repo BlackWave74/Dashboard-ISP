@@ -95,8 +95,8 @@ export default function AnaliticasPage() {
     const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
     const hasCompanyName = !!companyName;
 
-    // Nenhuma restrição configurada → mostra tudo
-    if (!hasExplicitNames && !hasCompanyName) return allTasks;
+    // Consultor/cliente sem restrições configuradas → vazio por segurança (não expõe tudo)
+    if (!hasExplicitNames && !hasCompanyName) return [];
 
     const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
     const allowedNames = hasExplicitNames ? accessibleProjectNames!.map(norm) : null;

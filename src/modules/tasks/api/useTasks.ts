@@ -192,14 +192,10 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
     const controller = new AbortController();
     abortRef.current = controller;
     inFlightKeyRef.current = requestKey;
-    let timeoutFired = false;
     const timeoutId = window.setTimeout(() => {
-      timeoutFired = true;
       abortReasonRef.current = "timeout";
       controller.abort();
     }, REQUEST_TIMEOUT_MS);
-
-    const startedAt = Date.now();
 
     const fetchTasks = async () => {
       // Only show loading shimmer if we have no cached data to display
