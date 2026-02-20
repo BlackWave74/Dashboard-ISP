@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth, type AccessArea } from "@/modules/auth/hooks/useAuth";
@@ -77,10 +77,18 @@ function DashboardInner() {
   const companyName = session?.company?.trim();
   const accessibleProjectNames = session?.accessibleProjectNames;
 
-  const { tasks, loading } = useTasks({
+  const { tasks, loading, reload } = useTasks({
     accessToken: session?.accessToken,
     period: "30d",
   });
+
+  // Auto-refresh a cada 5 minutos
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+  useEffect(() => {
+    const id = setInterval(() => reloadRef.current(), 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return tasks;
@@ -159,10 +167,11 @@ function DashboardInner() {
       <SyncIndicator syncing={loading} />
 
       {/*
-        Sidebar column — two-layer approach:
-        - OUTER div: stretches to 100% of the grid row height (= content height).
-          This is where the background gradient lives, so it always fills the full column.
-        - INNER div: position:sticky + height:100vh, keeps the nav visible while scrolling.
+        Sidebar column — dois layers:
+        - OUTER: ocupa TODA a altura do conteúdo (altura do grid row). É onde fica o
+          background gradient para que a cor preencha até embaixo mesmo em telas longas.
+        - INNER: position:sticky + height:100vh → mantém a nav visível ao scrollar.
+          overflow:hidden no inner evita que scrollbar apareça na sidebar.
       */}
       <div
         style={{
@@ -170,6 +179,8 @@ function DashboardInner() {
           boxShadow: "4px 0 30px -4px rgba(0,0,0,0.7)",
           zIndex: 20,
           position: "relative",
+          /* Garante que a coluna se estique até o final do conteúdo */
+          alignSelf: "stretch",
         }}
       >
         <div

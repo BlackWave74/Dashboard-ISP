@@ -17,6 +17,28 @@ function getTaskStatusKey(t: Record<string, any>): string {
   return "pending";
 }
 
+/** Returns true if the task was finished on or before the deadline (same day counts) */
+function wasFinishedOnTime(t: Record<string, any>): boolean {
+  const statusRaw = String(t.status ?? t.situacao ?? "").toLowerCase();
+  const isDone = ["5", "done", "concluido", "concluído", "completed", "finalizado"].includes(statusRaw);
+  if (!isDone) return false;
+
+  const deadline = parseDateValue(t.deadline) ?? parseDateValue(t.due_date) ?? parseDateValue(t.dueDate);
+  if (!deadline) return true; // sem prazo = considera no prazo
+
+  // Closed date pode indicar quando foi concluída
+  const closedRaw = t.closed_date ?? t.closedDate ?? t.data_conclusao ?? null;
+  const closedDate = closedRaw ? parseDateValue(String(closedRaw)) : null;
+
+  const checkDate = closedDate ?? new Date();
+
+  // Normaliza para comparar apenas a data (sem hora)
+  const deadlineDay = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+  const closedDay = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+
+  return closedDay <= deadlineDay;
+}
+
 type ConsultantScore = {
   name: string;
   done: number;
@@ -128,8 +150,13 @@ export default function Gamificacao() {
       const entry = byConsultant.get(name)!;
       const status = getTaskStatusKey(t);
       entry.total++;
-      if (status === "done") { entry.done++; entry.onTime++; }
-      else if (status === "overdue") { entry.overdue++; }
+      if (status === "done") {
+        entry.done++;
+        // Conta no prazo apenas se concluída até o dia do vencimento (inclusive)
+        if (wasFinishedOnTime(t)) entry.onTime++;
+      } else if (status === "overdue") {
+        entry.overdue++;
+      }
     });
 
     return Array.from(byConsultant.entries())

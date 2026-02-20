@@ -11,7 +11,7 @@ import {
   Users,
   Filter,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import type { AppNotification } from "@/hooks/useNotifications";
 
 type StatusFilter = "all" | "overdue" | "in_progress";
@@ -81,12 +81,40 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   in_progress: "Em andamento",
 };
 
+/** Bell shake animation — runs every 45 seconds when there are unread notifications */
+const SHAKE_INTERVAL_MS = 45_000;
+
 function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, collapsed }: Props) {
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [onlyMine, setOnlyMine] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const bellControls = useAnimation();
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Periodic bell shake when there are unread notifications
+  useEffect(() => {
+    if (unreadCount === 0) return;
+
+    const shake = async () => {
+      await bellControls.start({
+        rotate: [0, -18, 18, -14, 14, -8, 8, 0],
+        transition: { duration: 0.6, ease: "easeInOut" },
+      });
+    };
+
+    // Shake immediately on mount (first time)
+    shake();
+
+    // Then shake every SHAKE_INTERVAL_MS
+    shakeTimerRef.current = setInterval(shake, SHAKE_INTERVAL_MS);
+
+    return () => {
+      if (shakeTimerRef.current) clearInterval(shakeTimerRef.current);
+      bellControls.stop();
+    };
+  }, [unreadCount, bellControls]);
 
   useEffect(() => {
     if (!open) return;
@@ -124,16 +152,18 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
         }`}
         aria-label="Notificações"
       >
-        <Bell className="h-[18px] w-[18px]" />
+        <motion.div animate={bellControls} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Bell className="h-[18px] w-[18px]" />
+        </motion.div>
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-rose-600 text-[9px] font-bold text-white shadow-lg shadow-rose-500/40"
+              className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-rose-600 px-1 text-[9px] font-bold text-white shadow-lg shadow-rose-500/40 tabular-nums"
             >
-              {unreadCount > 9 ? "9+" : unreadCount}
+              {unreadCount > 99 ? "99+" : unreadCount > 9 ? "9+" : unreadCount}
             </motion.span>
           )}
         </AnimatePresence>
