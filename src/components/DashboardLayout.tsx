@@ -146,7 +146,7 @@ function DashboardInner() {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
       <SyncIndicator syncing={loading} />
       <AppSidebar
         notificationBell={
@@ -158,7 +158,7 @@ function DashboardInner() {
           />
         }
       />
-      <main className="flex-1 min-w-0 will-change-[opacity]">
+      <main className="flex-1 min-w-0 overflow-x-hidden will-change-[opacity]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}

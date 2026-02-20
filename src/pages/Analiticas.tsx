@@ -118,11 +118,6 @@ export default function AnaliticasPage() {
       return false;
     });
 
-    // Fallback: se o filtro resultar em vazio, mostra todas as tarefas
-    if (filtered.length === 0 && allTasks.length > 0) {
-      return allTasks;
-    }
-
     return filtered;
   }, [allTasks, isAdmin, accessibleProjectNames, companyName]);
 

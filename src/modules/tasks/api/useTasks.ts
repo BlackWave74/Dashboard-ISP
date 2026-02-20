@@ -342,14 +342,6 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
-          const refreshedCache = storage.get<{ data: TaskRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
-            cacheKey,
-            null
-          );
-          const stale = !refreshedCache?.timestamp || Date.now() - refreshedCache.timestamp > CACHE_TTL_MS;
-          if (stale) {
-            setLastUpdated(refreshedCache?.timestamp ?? null);
-          }
         }
         inFlightKeyRef.current = null;
         clearTimeout(timeoutId);
