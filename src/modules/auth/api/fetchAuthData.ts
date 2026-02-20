@@ -78,20 +78,27 @@ export const fetchAllowedAreas = async (
   return null;
 };
 
-/** Fetch accessible project IDs from user_project_access table */
+/** Fetch accessible project IDs and names from user_project_access + projects tables */
 export const fetchAccessibleProjects = async (
   accessToken: string,
   authUserId: string
-): Promise<number[] | null> => {
+): Promise<{ ids: number[]; names: string[] } | null> => {
   try {
+    // Join user_project_access with projects to get names
     const res = await fetch(
-      `${base()}/rest/v1/user_project_access?user_id=eq.${authUserId}&select=project_id`,
+      `${base()}/rest/v1/user_project_access?user_id=eq.${authUserId}&select=project_id,projects(id,name)`,
       { headers: headers(accessToken) }
     );
     if (!res.ok) return null;
     const rows = await res.json();
     if (Array.isArray(rows) && rows.length > 0) {
-      return rows.map((r: { project_id: number }) => r.project_id);
+      const ids: number[] = [];
+      const names: string[] = [];
+      rows.forEach((r: { project_id: number; projects?: { id: number; name: string } | null }) => {
+        ids.push(r.project_id);
+        if (r.projects?.name) names.push(r.projects.name);
+      });
+      return { ids, names };
     }
   } catch { /* fallback */ }
   return null;

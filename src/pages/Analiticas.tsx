@@ -84,46 +84,47 @@ export default function AnaliticasPage() {
   const initialLoading = loading && allTasks.length === 0;
 
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
-  const accessibleProjectIds = session?.accessibleProjectIds;
+  const accessibleProjectNames = session?.accessibleProjectNames;
 
   // Filter tasks by project access for non-admin users
-  // IMPORTANT: combine explicit IDs + company name — union, not either/or
+  // IMPORTANT: combine explicit project names + company name — union, not either/or
   const companyName = session?.company?.trim()?.toLowerCase();
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return allTasks;
 
-    const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
+    const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
     const hasCompanyName = !!companyName;
 
     // Nenhuma restrição configurada → mostra tudo
-    if (!hasExplicitIds && !hasCompanyName) return allTasks;
+    if (!hasExplicitNames && !hasCompanyName) return allTasks;
 
-    const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds) : null;
-    const needle = hasCompanyName ? companyName : null;
+    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const allowedNames = hasExplicitNames ? accessibleProjectNames!.map(norm) : null;
+    const needle = hasCompanyName ? norm(companyName!) : null;
 
     const filtered = allTasks.filter((t) => {
-      // Check by explicit project ID
-      if (allowedIds) {
-        const pid = Number(t.project_id);
-        if (pid && allowedIds.has(pid)) return true;
+      const projectNorm = norm(String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? ""));
+
+      // Check by explicit project name (from Lovable Cloud projects table)
+      if (allowedNames) {
+        const match = allowedNames.some(
+          (name) => projectNorm === name || projectNorm.includes(name) || name.includes(projectNorm)
+        );
+        if (match) return true;
       }
       // Check by company name prefix (client-based scoping)
-      if (needle) {
-        const name = String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? "").toLowerCase();
-        if (name.includes(needle)) return true;
-      }
+      if (needle && projectNorm.includes(needle)) return true;
+
       return false;
     });
 
-    // Fallback: se o filtro resultar em vazio mas existem tarefas,
-    // significa que os IDs configurados não batem com a fonte de dados —
-    // neste caso mostra todas as tarefas para não deixar a tela zerada.
+    // Fallback: se o filtro resultar em vazio, mostra todas as tarefas
     if (filtered.length === 0 && allTasks.length > 0) {
       return allTasks;
     }
 
     return filtered;
-  }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
+  }, [allTasks, isAdmin, accessibleProjectNames, companyName]);
 
   // Para admins: filtro por consultor selecionado
   // Para não-admins (consultor/cliente): NÃO filtrar por nome de responsável —

@@ -270,46 +270,55 @@ export default function TarefasPage() {
 
   // Filter by accessible projects (non-admin users only see assigned projects)
   const companyName = session?.company?.trim();
-  const accessibleProjectIds = session?.accessibleProjectIds;
+  const accessibleProjectNames = session?.accessibleProjectNames;
   const projectFilteredTasks = useMemo(() => {
     // Admins, gerentes, coordenadores see everything
     if (isAdmin) return normalizedTasks;
 
-    const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
+    const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
     const hasCompanyName = !!companyName;
 
     // Neither configured → show all (edge case)
-    if (!hasExplicitIds && !hasCompanyName) return normalizedTasks;
+    if (!hasExplicitNames && !hasCompanyName) return normalizedTasks;
 
-    const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds) : null;
-    const needle = hasCompanyName ? companyName!.toLowerCase() : null;
+    // Normalize project names for flexible matching
+    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const allowedNames = hasExplicitNames
+      ? accessibleProjectNames!.map(norm)
+      : null;
+    const needle = hasCompanyName ? norm(companyName!) : null;
+
+    const getProjectName = (task: TaskView): string => {
+      const fromJoin =
+        typeof task.raw.projects === "object" && task.raw.projects !== null
+          ? String((task.raw.projects as TaskRecord)["name"] ?? "")
+          : "";
+      return norm(fromJoin || task.project || "");
+    };
 
     const filtered = normalizedTasks.filter((task) => {
-      // Check by explicit project ID
-      if (allowedIds) {
-        const pid = Number(task.raw["project_id"] ?? task.raw["projectId"]);
-        if (pid && allowedIds.has(pid)) return true;
+      const projectNorm = getProjectName(task);
+
+      // Check by explicit project name (from Lovable Cloud projects table)
+      if (allowedNames) {
+        const match = allowedNames.some(
+          (name) => projectNorm === name || projectNorm.includes(name) || name.includes(projectNorm)
+        );
+        if (match) return true;
       }
       // Check by company name prefix (client-based scoping)
-      if (needle) {
-        const projectName = (task.project || "").toLowerCase();
-        const joinedProject =
-          typeof task.raw.projects === "object" && task.raw.projects !== null
-            ? String((task.raw.projects as TaskRecord)["name"] ?? "").toLowerCase()
-            : "";
-        if (projectName.includes(needle) || joinedProject.includes(needle)) return true;
-      }
+      if (needle && projectNorm.includes(needle)) return true;
+
       return false;
     });
 
-    // Fallback: se o filtro zerar (IDs não batem com a fonte de dados),
-    // mostra todas as tarefas para não deixar a tela em branco.
+    // Fallback: se o filtro zerar, mostra todas as tarefas para não deixar a tela em branco.
     if (filtered.length === 0 && normalizedTasks.length > 0) {
       return normalizedTasks;
     }
 
     return filtered;
-  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
+  }, [normalizedTasks, isAdmin, accessibleProjectNames, companyName]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
   const scopedTasks = projectFilteredTasks;
