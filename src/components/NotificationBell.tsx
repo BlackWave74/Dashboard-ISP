@@ -1,7 +1,20 @@
 import { useState, useRef, useEffect, memo } from "react";
-import { Bell, Check, CheckCheck, AlertTriangle, Clock, X, Sparkles, CalendarClock } from "lucide-react";
+import {
+  Bell,
+  Check,
+  AlertTriangle,
+  Clock,
+  X,
+  Sparkles,
+  CalendarClock,
+  UserCheck,
+  Users,
+  Filter,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AppNotification } from "@/hooks/useNotifications";
+
+type StatusFilter = "all" | "overdue" | "in_progress";
 
 type Props = {
   notifications: AppNotification[];
@@ -61,8 +74,17 @@ function timeAgo(ts: number): string {
   return `${days}d`;
 }
 
+/** Status filter pill label */
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  all: "Todas",
+  overdue: "Atrasadas",
+  in_progress: "Em andamento",
+};
+
 function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMarkAllAsRead, collapsed }: Props) {
   const [open, setOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [onlyMine, setOnlyMine] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -81,6 +103,16 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
+
+  /** Apply client-side filters on top of what the hook already returns */
+  const filtered = notifications.filter((n) => {
+    if (onlyMine && !n.isOwnTask) return false;
+    if (statusFilter === "overdue" && n.type !== "overdue") return false;
+    if (statusFilter === "in_progress" && n.type === "overdue") return false;
+    return true;
+  });
+
+  const filteredUnread = filtered.filter((n) => !n.read).length;
 
   return (
     <div className="relative">
@@ -115,7 +147,7 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed z-[100] w-[360px] max-h-[480px] overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/60"
+            className="fixed z-[100] w-[380px] max-h-[520px] overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/60"
             style={{
               background: "linear-gradient(160deg, hsl(234 50% 13%), hsl(260 45% 10%))",
               top: buttonRef.current ? buttonRef.current.getBoundingClientRect().top : 0,
@@ -126,9 +158,9 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
             <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold text-white">Tarefas Pendentes</h3>
-                {unreadCount > 0 && (
+                {filteredUnread > 0 && (
                   <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-400">
-                    {unreadCount} nova{unreadCount > 1 ? "s" : ""}
+                    {filteredUnread} nova{filteredUnread > 1 ? "s" : ""}
                   </span>
                 )}
               </div>
@@ -142,18 +174,65 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
               </div>
             </div>
 
+            {/* Filter bar */}
+            <div className="flex items-center gap-2 border-b border-white/[0.04] px-3 py-2.5">
+              {/* Status filters */}
+              <div className="flex items-center gap-1 flex-1">
+                <Filter className="h-3 w-3 text-white/25 shrink-0" />
+                {(["all", "overdue", "in_progress"] as StatusFilter[]).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setStatusFilter(f)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all duration-150 ${
+                      statusFilter === f
+                        ? f === "overdue"
+                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          : f === "in_progress"
+                          ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                          : "bg-white/10 text-white border border-white/15"
+                        : "text-white/30 hover:text-white/60 hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    {STATUS_LABELS[f]}
+                  </button>
+                ))}
+              </div>
+
+              {/* Mine-only toggle */}
+              <button
+                onClick={() => setOnlyMine((v) => !v)}
+                title={onlyMine ? "Ver todas as tarefas" : "Ver apenas minhas tarefas"}
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all duration-150 border ${
+                  onlyMine
+                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                    : "text-white/30 border-white/10 hover:text-white/60 hover:bg-white/[0.05]"
+                }`}
+              >
+                {onlyMine ? (
+                  <UserCheck className="h-3 w-3" />
+                ) : (
+                  <Users className="h-3 w-3" />
+                )}
+                <span>{onlyMine ? "Minhas" : "Todos"}</span>
+              </button>
+            </div>
+
             {/* List */}
-            <div className="overflow-y-auto max-h-[400px] divide-y divide-white/[0.04]">
-              {notifications.length === 0 ? (
+            <div className="overflow-y-auto max-h-[390px] divide-y divide-white/[0.04]">
+              {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04]">
                     <Bell className="h-5 w-5 text-white/20" />
                   </div>
-                  <p className="text-sm font-semibold text-white/40">Tudo em dia!</p>
-                  <p className="text-[11px] text-white/20 mt-1">Nenhuma notificação no momento.</p>
+                  <p className="text-sm font-semibold text-white/40">Nenhum resultado</p>
+                  <p className="text-[11px] text-white/20 mt-1">
+                    {statusFilter !== "all" || onlyMine
+                      ? "Tente mudar os filtros."
+                      : "Nenhuma notificação no momento."}
+                  </p>
                 </div>
               ) : (
-                notifications.map((notif, i) => {
+                filtered.map((notif, i) => {
                   const config = typeConfig[notif.type];
                   const Icon = config.icon;
                   const deadlineColors = getDeadlineColor(notif.daysRemaining);
@@ -178,6 +257,13 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
                           <p className="text-[12px] font-semibold text-white/80 truncate">{notif.title}</p>
                           {!notif.read && (
                             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${config.dot}`} />
+                          )}
+                          {/* "Minha tarefa" badge */}
+                          {notif.isOwnTask && (
+                            <span className="shrink-0 flex items-center gap-0.5 rounded-md bg-emerald-500/15 px-1 py-0.5">
+                              <UserCheck className="h-2.5 w-2.5 text-emerald-400" />
+                              <span className="text-[9px] font-bold text-emerald-400">Minha</span>
+                            </span>
                           )}
                         </div>
                         <p className="text-[11px] text-white/40 mt-0.5 line-clamp-2">{notif.message}</p>
