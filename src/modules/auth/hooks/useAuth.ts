@@ -267,6 +267,9 @@ export function useAuth() {
   const canAccess = useCallback(
     (area: AccessArea, roleOverride?: UserRole) => {
       const role = roleOverride ?? session?.role ?? "consultor";
+      // Admin, gerente e coordenador têm acesso irrestrito a tudo,
+      // independente de allowedAreas configurado manualmente no banco.
+      if (role === "admin" || role === "gerente" || role === "coordenador") return true;
       const allowed = session?.allowedAreas;
       if (allowed && allowed.length > 0) return allowed.includes(area);
       const rules = ACCESS_RULES[role] ?? ACCESS_RULES.consultor;

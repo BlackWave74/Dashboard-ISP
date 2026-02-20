@@ -81,9 +81,9 @@ export default function FerramentasPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "hsl(222 47% 5%)" }}>
+    <div className="min-h-screen">
       {/* Ambient glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div
           className="absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full blur-[120px]"
           style={{ background: "hsl(234 89% 64% / 0.06)" }}
@@ -94,7 +94,7 @@ export default function FerramentasPage() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-2xl px-4 py-10 sm:px-6">
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
         {/* ── Page Header ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
