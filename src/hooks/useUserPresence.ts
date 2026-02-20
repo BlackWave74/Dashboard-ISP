@@ -55,12 +55,16 @@ export function useTrackPresence(
 /**
  * Hook para OBSERVAR quem está online — somente para admins.
  * Retorna um Map de email → PresenceEntry com o horário de login.
+ * Usa um canal separado apenas para leitura de presença.
  */
 export function useOnlineUsers(): Map<string, PresenceEntry> {
   const [onlineMap, setOnlineMap] = useState<Map<string, PresenceEntry>>(new Map());
 
   useEffect(() => {
-    const channel = supabase.channel(PRESENCE_CHANNEL);
+    // Canal de leitura — usa chave distinta para não colidir com o tracker
+    const channel = supabase.channel(PRESENCE_CHANNEL, {
+      config: { presence: { key: "__observer__" } },
+    });
 
     const syncState = () => {
       const state = channel.presenceState<PresenceEntry>();
@@ -70,8 +74,10 @@ export function useOnlineUsers(): Map<string, PresenceEntry> {
         const sorted = [...entries].sort(
           (a, b) => new Date(b.online_at).getTime() - new Date(a.online_at).getTime(),
         );
-        if (sorted[0]?.email) {
-          map.set(sorted[0].email, sorted[0]);
+        const entry = sorted[0];
+        // ignora a entrada do próprio observer
+        if (entry?.email && entry.email !== "__observer__") {
+          map.set(entry.email, entry);
         }
       });
       setOnlineMap(map);
@@ -90,3 +96,4 @@ export function useOnlineUsers(): Map<string, PresenceEntry> {
 
   return onlineMap;
 }
+

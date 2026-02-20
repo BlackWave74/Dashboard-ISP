@@ -157,14 +157,14 @@ export default function AdminDiagnostico() {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "hsl(38 92% 60%)" }} />
           <div className="text-xs leading-relaxed" style={{ color: "hsl(38 80% 70% / 0.75)" }}>
             <strong style={{ color: "hsl(38 92% 62%)" }}>O que são tarefas órfãs?</strong>{" "}
-            Tarefas cujo{" "}
+            Tarefas cujo campo{" "}
             <code
               className="rounded px-1.5 py-0.5 font-mono text-[10px]"
               style={{ background: "hsl(38 92% 50% / 0.12)", color: "hsl(38 92% 62%)" }}
             >
               project_id
             </code>{" "}
-            no IXC aponta para projeto sem nome ou alias interno como{" "}
+            no banco de dados não corresponde a nenhum projeto ativo, ou aponta para um alias interno como{" "}
             <code
               className="rounded px-1.5 py-0.5 font-mono text-[10px]"
               style={{ background: "hsl(38 92% 50% / 0.12)", color: "hsl(38 92% 62%)" }}
@@ -172,8 +172,8 @@ export default function AdminDiagnostico() {
               SP
             </code>
             .{" "}
-            <strong style={{ color: "hsl(38 92% 62%)" }}>Ação:</strong> vincule cada tarefa ao
-            projeto correto diretamente no IXC.
+            <strong style={{ color: "hsl(38 92% 62%)" }}>Ação:</strong> corrija o vínculo de cada tarefa diretamente
+            na fonte de dados externa.
           </div>
         </motion.div>
 
