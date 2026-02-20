@@ -39,18 +39,39 @@ function normalizeKey(str: string): string {
 }
 
 /**
+ * Retorna true se o valor parece um placeholder inválido de nome de cliente.
+ * Cobre: strings vazias, entre colchetes ([NOME DO CLIENTE]), strings genéricas, etc.
+ */
+function isClientPlaceholder(raw: string | null | undefined): boolean {
+  if (!raw) return true;
+  const s = raw.trim();
+  if (s.length < 2) return true;
+  // Qualquer coisa entre colchetes: [NOME DO CLIENTE], [CLIENT], [N/A], etc.
+  if (/^\[.*\]$/.test(s)) return true;
+  // Palavras-chave genéricas (case-insensitive)
+  const lower = s.toLowerCase();
+  if (
+    lower.includes("nome do cliente") ||
+    lower.includes("[nome") ||
+    lower === "cliente" ||
+    lower === "sem cliente" ||
+    lower === "n/a" ||
+    lower === "-"
+  ) return true;
+  return false;
+}
+
+/**
  * Extrai o nome do cliente a partir do nome do projeto.
  * Prioridade:
- *  1. clientName real (não placeholder como [NOME DO CLIENTE])
+ *  1. clientName real (não placeholder)
  *  2. Parte antes de " - " ou " <> " no nome do projeto
  *  3. Nome do projeto inteiro como label do cliente
  */
 function resolveDisplayClient(p: ProjectAnalytics): { clientLabel: string; projectLabel: string } {
   const clientRaw = p.clientName?.trim();
-  // Ignora placeholders como [NOME DO CLIENTE], [CLIENT], etc.
-  const isPlaceholder = !clientRaw || /^\[.*\]$/.test(clientRaw) || clientRaw.length < 2;
 
-  if (!isPlaceholder) {
+  if (!isClientPlaceholder(clientRaw)) {
     return { clientLabel: clientRaw!, projectLabel: p.projectName };
   }
 

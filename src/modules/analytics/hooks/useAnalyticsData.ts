@@ -129,9 +129,26 @@ export function useAnalyticsData(
   }, [tasks]);
 
   const projects: ProjectAnalytics[] = useMemo(() => {
+    /** Sanitiza o nome do cliente: remove placeholders como [NOME DO CLIENTE] */
+    const sanitizeClientName = (raw: string | null | undefined): string => {
+      if (!raw) return "";
+      const s = raw.trim();
+      if (s.length < 2) return "";
+      if (/^\[.*\]$/.test(s)) return "";
+      const lower = s.toLowerCase();
+      if (
+        lower.includes("nome do cliente") ||
+        lower.startsWith("[nome") ||
+        lower === "cliente" ||
+        lower === "sem cliente" ||
+        lower === "n/a" ||
+        lower === "-"
+      ) return "";
+      return s;
+    };
+
     const fromHours = filteredProjectHours.map((ph) => {
       const taskStats = tasksByProject.get(ph.projectId) ?? { done: 0, pending: 0, overdue: 0 };
-      // taskStats logged only in dev
       const totalTasks = taskStats.done + taskStats.pending + taskStats.overdue;
       const completionRate = totalTasks > 0 ? taskStats.done / totalTasks : 0;
       const overdueRate = totalTasks > 0 ? taskStats.overdue / totalTasks : 0;
@@ -142,7 +159,7 @@ export function useAnalyticsData(
         projectId: ph.projectId,
         projectName: ph.projectName,
         clientId: ph.clientId,
-        clientName: ph.clientName,
+        clientName: sanitizeClientName(ph.clientName),
         hoursUsed: ph.hours,
         hoursContracted: 0,
         isActive: taskStats.pending > 0 || taskStats.overdue > 0,
@@ -154,7 +171,7 @@ export function useAnalyticsData(
       };
     });
 
-    // Build a lookup: clientId → clientName from projects that DO have a clientName
+    // Build a lookup: clientId → clientName from projects that DO have a real clientName
     const clientNameById = new Map<number, string>();
     fromHours.forEach((p) => {
       if (p.clientId && p.clientName) {
@@ -169,8 +186,7 @@ export function useAnalyticsData(
       const task = tasks.find((t) => Number(t.project_id) === pid);
       const projectName = task?.projects?.name ?? task?.project_name ?? task?.project ?? task?.projeto ?? `Projeto ${pid}`;
       const clientId = Number(task?.projects?.cliente_id ?? 0);
-      // Try to resolve clientName from clientId lookup
-      const clientName = clientId ? (clientNameById.get(clientId) ?? "") : "";
+      const clientName = clientId ? sanitizeClientName(clientNameById.get(clientId) ?? "") : "";
       const totalTasks = stats.done + stats.pending + stats.overdue;
       const completionRate = totalTasks > 0 ? stats.done / totalTasks : 0;
       const overdueRate = totalTasks > 0 ? stats.overdue / totalTasks : 0;
