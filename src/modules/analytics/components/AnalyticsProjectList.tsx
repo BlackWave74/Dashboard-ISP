@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { UserCircle, Building2, ChevronDown, ChevronUp } from "lucide-react";
+import { UserCircle, Building2, ChevronDown, ChevronUp, Clock, Edit3 } from "lucide-react";
 import type { ProjectAnalytics } from "../types";
 import AnalyticsProjectCard from "./AnalyticsProjectCard";
 
@@ -9,6 +9,7 @@ type Props = {
   onToggleFavorite: (id: number) => void;
   onProjectClick?: (project: ProjectAnalytics) => void;
   onEditHours?: (project: ProjectAnalytics) => void;
+  onEditClientHours?: (clientName: string, projects: ProjectAnalytics[]) => void;
   selectedProject: ProjectAnalytics | null;
   myProjectIds?: Set<number>;
   isAdmin?: boolean;
@@ -20,15 +21,16 @@ type Filter = "all" | "mine" | "active" | "favorites";
 function groupByClient(projects: ProjectAnalytics[]): Map<string, ProjectAnalytics[]> {
   const map = new Map<string, ProjectAnalytics[]>();
   projects.forEach((p) => {
-    const key = p.clientName?.trim() || "Sem Cliente";
+    // Only use clientName if it's a real, non-empty string
+    const key = p.clientName?.trim() || "__no_client__";
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(p);
   });
-  // Sort entries: named clients first, "Sem Cliente" last
+  // Sort entries: named clients first (alpha), "no client" last
   const sorted = new Map(
     [...map.entries()].sort(([a], [b]) => {
-      if (a === "Sem Cliente") return 1;
-      if (b === "Sem Cliente") return -1;
+      if (a === "__no_client__") return 1;
+      if (b === "__no_client__") return -1;
       return a.localeCompare(b, "pt-BR");
     })
   );
@@ -40,6 +42,7 @@ export default function AnalyticsProjectList({
   onToggleFavorite,
   onProjectClick,
   onEditHours,
+  onEditClientHours,
   selectedProject,
   myProjectIds,
   isAdmin,
@@ -81,11 +84,11 @@ export default function AnalyticsProjectList({
     { key: "favorites", label: "Favoritos", count: projects.filter((p) => p.isFavorite).length },
   ];
 
-  const toggleCollapse = (clientName: string) => {
+  const toggleCollapse = (clientKey: string) => {
     setCollapsedClients((prev) => {
       const next = new Set(prev);
-      if (next.has(clientName)) next.delete(clientName);
-      else next.add(clientName);
+      if (next.has(clientKey)) next.delete(clientKey);
+      else next.add(clientKey);
       return next;
     });
   };
@@ -130,44 +133,91 @@ export default function AnalyticsProjectList({
           Nenhum projeto encontrado.
         </p>
       ) : (
-        <div className="space-y-6">
-          {[...grouped.entries()].map(([clientName, clientProjects]) => {
-            const isCollapsed = collapsedClients.has(clientName);
+        <div className="space-y-8">
+          {[...grouped.entries()].map(([clientKey, clientProjects]) => {
+            const isNoClient = clientKey === "__no_client__";
+            const clientName = isNoClient ? "Projetos sem cliente associado" : clientKey;
+            const isCollapsed = collapsedClients.has(clientKey);
             const totalHours = clientProjects.reduce((s, p) => s + p.hoursUsed, 0);
+            const totalContracted = clientProjects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
             const activeCount = clientProjects.filter((p) => p.isActive).length;
+            const hoursPct = totalContracted > 0 ? Math.min(100, Math.round((totalHours / totalContracted) * 100)) : 0;
+            const hoursBarColor =
+              hoursPct >= 90 ? "hsl(0 84% 60%)" :
+              hoursPct >= 70 ? "hsl(43 97% 52%)" :
+              "hsl(160 84% 39%)";
 
             return (
-              <div key={clientName}>
+              <div key={clientKey}>
                 {/* Client section header */}
-                <button
-                  onClick={() => toggleCollapse(clientName)}
-                  className="group mb-3 flex w-full items-center gap-3 rounded-xl px-1 py-1 transition hover:bg-white/[0.02]"
-                >
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.04]">
-                    <Building2 className="h-3.5 w-3.5 text-white/40" />
-                  </div>
-                  <div className="flex flex-1 items-center gap-2 min-w-0">
-                    <span className="truncate text-sm font-bold text-white/80">{clientName}</span>
-                    <span className="shrink-0 rounded-full bg-white/[0.06] border border-white/[0.04] px-2 py-0.5 text-[10px] text-white/35 font-semibold">
-                      {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
-                    </span>
-                    {activeCount > 0 && (
-                      <span className="shrink-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-400 font-semibold">
-                        {activeCount} ativo{activeCount !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-[11px] text-white/25 font-semibold">{Math.round(totalHours)}h utilizadas</span>
-                    {isCollapsed
-                      ? <ChevronDown className="h-3.5 w-3.5 text-white/25 transition group-hover:text-white/50" />
-                      : <ChevronUp className="h-3.5 w-3.5 text-white/25 transition group-hover:text-white/50" />
-                    }
-                  </div>
-                </button>
+                <div className="mb-4 overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+                  <button
+                    onClick={() => toggleCollapse(clientKey)}
+                    className="group flex w-full items-center gap-4 px-5 py-4 transition hover:bg-white/[0.02]"
+                  >
+                    {/* Icon */}
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+                      isNoClient
+                        ? "border-white/[0.06] bg-white/[0.04]"
+                        : "border-[hsl(262_83%_58%/0.25)] bg-[hsl(262_83%_58%/0.08)]"
+                    }`}>
+                      <Building2 className={`h-4 w-4 ${isNoClient ? "text-white/30" : "text-[hsl(262_83%_58%)]"}`} />
+                    </div>
 
-                {/* Divider */}
-                <div className="mb-4 h-px bg-white/[0.04]" />
+                    {/* Client info */}
+                    <div className="flex flex-1 flex-col items-start gap-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`text-sm font-bold ${isNoClient ? "text-white/40 italic" : "text-white/85"}`}>
+                          {clientName}
+                        </span>
+                        <span className="rounded-full bg-white/[0.06] border border-white/[0.05] px-2 py-0.5 text-[10px] text-white/35 font-semibold">
+                          {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
+                        </span>
+                        {activeCount > 0 && (
+                          <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-400 font-semibold">
+                            {activeCount} ativo{activeCount !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Hours bar for client */}
+                      {!isNoClient && (
+                        <div className="flex w-full max-w-xs items-center gap-2">
+                          <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                            {totalContracted > 0 && (
+                              <div
+                                className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
+                                style={{ width: `${hoursPct}%`, background: hoursBarColor }}
+                              />
+                            )}
+                          </div>
+                          <span className="shrink-0 text-[10px] font-semibold text-white/30">
+                            {Math.round(totalHours)}h
+                            {totalContracted > 0 && ` / ${Math.round(totalContracted)}h`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right side */}
+                    <div className="flex shrink-0 items-center gap-2">
+                      {isAdmin && !isNoClient && onEditClientHours && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onEditClientHours(clientName, clientProjects); }}
+                          className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-semibold text-white/30 transition hover:border-[hsl(262_83%_58%/0.3)] hover:text-[hsl(262_83%_58%)] hover:bg-[hsl(262_83%_58%/0.05)]"
+                          title="Definir horas contratadas para todos os projetos deste cliente"
+                        >
+                          <Clock className="h-3 w-3" />
+                          Horas
+                        </button>
+                      )}
+                      {isCollapsed
+                        ? <ChevronDown className="h-4 w-4 text-white/25 transition group-hover:text-white/50" />
+                        : <ChevronUp className="h-4 w-4 text-white/25 transition group-hover:text-white/50" />
+                      }
+                    </div>
+                  </button>
+                </div>
 
                 {/* Project cards */}
                 <AnimatePresence initial={false}>
@@ -177,7 +227,7 @@ export default function AnalyticsProjectList({
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.25 }}
-                      className="overflow-hidden"
+                      className="overflow-visible"
                     >
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <AnimatePresence mode="popLayout">
