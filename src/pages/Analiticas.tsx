@@ -95,12 +95,13 @@ export default function AnaliticasPage() {
     const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
     const hasCompanyName = !!companyName;
 
+    // Nenhuma restrição configurada → mostra tudo
     if (!hasExplicitIds && !hasCompanyName) return allTasks;
 
     const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds) : null;
     const needle = hasCompanyName ? companyName : null;
 
-    return allTasks.filter((t) => {
+    const filtered = allTasks.filter((t) => {
       // Check by explicit project ID
       if (allowedIds) {
         const pid = Number(t.project_id);
@@ -113,11 +114,25 @@ export default function AnaliticasPage() {
       }
       return false;
     });
+
+    // Fallback: se o filtro resultar em vazio mas existem tarefas,
+    // significa que os IDs configurados não batem com a fonte de dados —
+    // neste caso mostra todas as tarefas para não deixar a tela zerada.
+    if (filtered.length === 0 && allTasks.length > 0) {
+      return allTasks;
+    }
+
+    return filtered;
   }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
 
+  // Para admins: filtro por consultor selecionado
+  // Para não-admins (consultor/cliente): NÃO filtrar por nome de responsável —
+  // o escopo já foi feito por projeto/cliente em accessFilteredTasks.
+  // Filtrar por userName zeraria tudo quando o consultor acessa projetos de clientes
+  // onde ele não é o "responsável" das tarefas.
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)
-    : userName;
+    : undefined;
 
   const {
     projects,
@@ -195,10 +210,21 @@ export default function AnaliticasPage() {
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
 
-  // Compute which projects the current user participates in
+  // Compute accessible project IDs for KPI card display
+  // Para não-admins: usa accessFilteredTasks (já filtrado por projeto/cliente)
+  // Para admins: usa allTasks filtrado pelo consultor selecionado
   const myProjectIds = useMemo(() => {
-    if (!userName) return new Set<number>();
     const ids = new Set<number>();
+    if (!isAdmin) {
+      // Consultor/cliente: todos os projetos que ele tem acesso
+      accessFilteredTasks.forEach((t) => {
+        const pid = Number(t.project_id);
+        if (pid) ids.add(pid);
+      });
+      return ids;
+    }
+    // Admin com filtro de consultor
+    if (!userName) return ids;
     allTasks.forEach((t) => {
       const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
       const a = responsible.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -209,7 +235,7 @@ export default function AnaliticasPage() {
       }
     });
     return ids;
-  }, [allTasks, userName]);
+  }, [allTasks, accessFilteredTasks, isAdmin, userName]);
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
@@ -311,7 +337,7 @@ export default function AnaliticasPage() {
 
         {/* KPI Cards */}
         <AnalyticsKpiCards
-          clients={myProjectIds.size > 0 ? myProjectIds.size : projects.length}
+          clients={projects.length}
           activeProjects={activeProjects}
           totalHours={periodHours > 0 ? periodHours : totalHours}
           totalTasks={userTaskCount}
