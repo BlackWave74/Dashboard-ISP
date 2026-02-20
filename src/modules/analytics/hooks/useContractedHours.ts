@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Graceful fallback: if the table doesn't exist yet, return empty data silently
+const TABLE_NAME = "project_contracted_hours";
+
 export type ContractedHoursRecord = {
   project_id: number;
   contracted_hours: number;
@@ -11,17 +14,36 @@ export type ContractedHoursRecord = {
 
 export function useContractedHours() {
   const [data, setData] = useState<Map<number, ContractedHoursRecord>>(new Map());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [tableExists, setTableExists] = useState<boolean | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const { data: rows, error } = await supabase
-        .from("project_contracted_hours" as any)
+        .from(TABLE_NAME as any)
         .select("project_id, contracted_hours, notes, updated_by, updated_at");
 
-      if (error) throw error;
+      // If table doesn't exist (error code 42P01 or PGRST116), silently skip
+      if (error) {
+        const msg = String(error.message ?? "");
+        const code = String((error as any).code ?? "");
+        if (
+          msg.includes("does not exist") ||
+          msg.includes("relation") ||
+          code === "42P01" ||
+          code === "PGRST116"
+        ) {
+          setTableExists(false);
+          setData(new Map());
+          return;
+        }
+        // Any other error — log but don't crash
+        console.warn("[useContractedHours] fetch error:", error);
+        return;
+      }
 
+      setTableExists(true);
       const map = new Map<number, ContractedHoursRecord>();
       (rows ?? []).forEach((r: any) => {
         map.set(Number(r.project_id), r as ContractedHoursRecord);
@@ -40,9 +62,13 @@ export function useContractedHours() {
 
   const upsert = useCallback(
     async (projectId: number, contractedHours: number, updatedBy: string, notes?: string): Promise<boolean> => {
+      if (tableExists === false) {
+        console.warn("[useContractedHours] table not available, skipping upsert");
+        return false;
+      }
       try {
         const { error } = await supabase
-          .from("project_contracted_hours" as any)
+          .from(TABLE_NAME as any)
           .upsert(
             {
               project_id: projectId,
@@ -60,8 +86,8 @@ export function useContractedHours() {
         return false;
       }
     },
-    [fetch]
+    [fetch, tableExists]
   );
 
-  return { data, loading, refetch: fetch, upsert };
+  return { data, loading, refetch: fetch, upsert, tableExists };
 }

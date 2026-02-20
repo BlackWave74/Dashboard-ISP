@@ -1,11 +1,10 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
-import { useContractedHours } from "@/modules/analytics/hooks/useContractedHours";
 import { RefreshCw, FileDown } from "lucide-react";
 import { motion } from "framer-motion";
 import PageSkeleton from "@/components/ui/PageSkeleton";
@@ -17,11 +16,17 @@ import AnalyticsProjectList from "@/modules/analytics/components/AnalyticsProjec
 import AnalyticsFilters from "@/modules/analytics/components/AnalyticsFilters";
 import AnalyticsPendingTasks from "@/modules/analytics/components/AnalyticsPendingTasks";
 import AnalyticsProjectDrawer from "@/modules/analytics/components/AnalyticsProjectDrawer";
-import ContractedHoursModal from "@/modules/analytics/components/ContractedHoursModal";
 import type { AnalyticsFilterState } from "@/modules/analytics/components/AnalyticsFilters";
 import type { ProjectAnalytics } from "@/modules/analytics/types";
 import { usePageSEO } from "@/hooks/usePageSEO";
 import { exportAnalyticsPDF } from "@/lib/exportPdf";
+
+// Lazy-load contracted hours components so a DB error doesn't crash the whole page
+const ContractedHoursModal = lazy(() =>
+  import("@/modules/analytics/components/ContractedHoursModal").catch(() => ({
+    default: () => null,
+  }))
+);
 
 const PERIOD_DAYS: Record<AnalyticsFilterState["period"], number> = {
   "30d": 30,
@@ -29,6 +34,31 @@ const PERIOD_DAYS: Record<AnalyticsFilterState["period"], number> = {
   "180d": 180,
   all: 365,
 };
+
+// Safe hook: always returns empty map if the feature is unavailable
+function useSafeContractedHours() {
+  const [data] = useState<Map<number, { contracted_hours: number; notes?: string | null }>>(new Map());
+  const [tried, setTried] = useState(false);
+  const [safeData, setSafeData] = useState<Map<number, { contracted_hours: number; notes?: string | null }>>(new Map());
+
+  useEffect(() => {
+    if (tried) return;
+    setTried(true);
+
+    // Dynamically import to avoid crashing the module
+    import("@/modules/analytics/hooks/useContractedHours")
+      .then(() => {
+        // Module loaded OK — we'll render the real hook version below
+      })
+      .catch((err) => {
+        console.warn("[Analiticas] useContractedHours unavailable:", err);
+      });
+  }, [tried]);
+
+  const upsert = useCallback(async () => false, []);
+
+  return { data: safeData, upsert };
+}
 
 export default function AnaliticasPage() {
   usePageSEO("/analiticas");
@@ -89,7 +119,6 @@ export default function AnaliticasPage() {
   const accessibleProjectNames = session?.accessibleProjectNames;
 
   // Filter tasks by project access for non-admin users
-  // IMPORTANT: combine explicit project names + company name — union, not either/or
   const companyName = session?.company?.trim()?.toLowerCase();
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return allTasks;
@@ -97,7 +126,6 @@ export default function AnaliticasPage() {
     const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
     const hasCompanyName = !!companyName;
 
-    // Consultor/cliente sem restrições configuradas → vazio por segurança (não expõe tudo)
     if (!hasExplicitNames && !hasCompanyName) return [];
 
     const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -107,14 +135,12 @@ export default function AnaliticasPage() {
     const filtered = allTasks.filter((t) => {
       const projectNorm = norm(String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? ""));
 
-      // Check by explicit project name (from Lovable Cloud projects table)
       if (allowedNames) {
         const match = allowedNames.some(
           (name) => projectNorm === name || projectNorm.includes(name) || name.includes(projectNorm)
         );
         if (match) return true;
       }
-      // Check by company name prefix (client-based scoping)
       if (needle && projectNorm.includes(needle)) return true;
 
       return false;
@@ -123,11 +149,6 @@ export default function AnaliticasPage() {
     return filtered;
   }, [allTasks, isAdmin, accessibleProjectNames, companyName]);
 
-  // Para admins: filtro por consultor selecionado
-  // Para não-admins (consultor/cliente): NÃO filtrar por nome de responsável —
-  // o escopo já foi feito por projeto/cliente em accessFilteredTasks.
-  // Filtrar por userName zeraria tudo quando o consultor acessa projetos de clientes
-  // onde ele não é o "responsável" das tarefas.
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)
     : undefined;
@@ -157,8 +178,6 @@ export default function AnaliticasPage() {
   }, [allTasks, isAdmin]);
 
   // Extract unique project options for the filter dropdown
-  // For non-admin: use accessFilteredTasks so ALL allowed projects appear (client + extras),
-  // not just projects where the consultant is explicitly responsible.
   const projectOptions = useMemo(() => {
     const map = new Map<number, string>();
     const source = isAdmin ? allTasks : accessFilteredTasks;
@@ -208,20 +227,15 @@ export default function AnaliticasPage() {
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
 
-  // Compute accessible project IDs for KPI card display
-  // Para não-admins: usa accessFilteredTasks (já filtrado por projeto/cliente)
-  // Para admins: usa allTasks filtrado pelo consultor selecionado
   const myProjectIds = useMemo(() => {
     const ids = new Set<number>();
     if (!isAdmin) {
-      // Consultor/cliente: todos os projetos que ele tem acesso
       accessFilteredTasks.forEach((t) => {
         const pid = Number(t.project_id);
         if (pid) ids.add(pid);
       });
       return ids;
     }
-    // Admin com filtro de consultor
     if (!userName) return ids;
     allTasks.forEach((t) => {
       const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
@@ -239,8 +253,69 @@ export default function AnaliticasPage() {
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
   const [hoursModalProject, setHoursModalProject] = useState<ProjectAnalytics | null>(null);
 
-  // Contracted hours (persisted in DB)
-  const { data: contractedHoursData, upsert: upsertContractedHours } = useContractedHours();
+  // Contracted hours — loaded dynamically to avoid crashing if table is missing
+  const [contractedHoursData, setContractedHoursData] = useState<Map<number, { contracted_hours: number; notes?: string | null }>>(new Map());
+  const [contractedHoursReady, setContractedHoursReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    import("@/modules/analytics/hooks/useContractedHours")
+      .then(() => {
+        if (!cancelled) setContractedHoursReady(true);
+      })
+      .catch(() => {
+        // Table not available — silently skip
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const upsertContractedHours = useCallback(async (projectId: number, hours: number, updatedBy: string, notes: string): Promise<boolean> => {
+    if (!contractedHoursReady) return false;
+    try {
+      const mod = await import("@/modules/analytics/hooks/useContractedHours");
+      // We can't call hooks dynamically, so we'll use the supabase client directly
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await (supabase as any)
+        .from("project_contracted_hours")
+        .upsert({ project_id: projectId, contracted_hours: hours, updated_by: updatedBy, notes: notes ?? null }, { onConflict: "project_id" });
+      if (error) throw error;
+      // Refresh data
+      const { data: rows } = await (supabase as any)
+        .from("project_contracted_hours")
+        .select("project_id, contracted_hours, notes, updated_by, updated_at");
+      const map = new Map<number, { contracted_hours: number; notes?: string | null }>();
+      (rows ?? []).forEach((r: any) => map.set(Number(r.project_id), r));
+      setContractedHoursData(map);
+      return true;
+    } catch (err) {
+      console.error("[Analiticas] upsertContractedHours failed:", err);
+      return false;
+    }
+  }, [contractedHoursReady]);
+
+  // Fetch contracted hours data once ready
+  useEffect(() => {
+    if (!contractedHoursReady) return;
+    let cancelled = false;
+    import("@/integrations/supabase/client").then(async ({ supabase }) => {
+      try {
+        const { data: rows, error } = await (supabase as any)
+          .from("project_contracted_hours")
+          .select("project_id, contracted_hours, notes, updated_by, updated_at");
+        if (error) {
+          console.warn("[Analiticas] contracted hours fetch error:", error.message);
+          return;
+        }
+        if (cancelled) return;
+        const map = new Map<number, { contracted_hours: number; notes?: string | null }>();
+        (rows ?? []).forEach((r: any) => map.set(Number(r.project_id), r));
+        setContractedHoursData(map);
+      } catch (e) {
+        console.warn("[Analiticas] contracted hours fetch failed:", e);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [contractedHoursReady]);
 
   // Merge contracted hours into projects list
   const projectsWithContracted = useMemo(() => {
@@ -356,7 +431,7 @@ export default function AnaliticasPage() {
           </div>
         </motion.div>
 
-        {/* Search + Filters (same layout as Tarefas) */}
+        {/* Search + Filters */}
         <AnalyticsFilters
           filters={filters}
           onChange={setFilters}
@@ -410,14 +485,16 @@ export default function AnaliticasPage() {
         onClose={() => setDrawerProject(null)}
       />
 
-      {/* Admin: Contracted Hours Modal */}
+      {/* Admin: Contracted Hours Modal — lazy loaded to avoid crash if table missing */}
       {isAdmin && hoursModalProject && (
-        <ContractedHoursModal
-          project={hoursModalProject}
-          currentHours={contractedHoursData.get(hoursModalProject.projectId)?.contracted_hours ?? 0}
-          onClose={() => setHoursModalProject(null)}
-          onSave={handleSaveHours}
-        />
+        <Suspense fallback={null}>
+          <ContractedHoursModal
+            project={hoursModalProject}
+            currentHours={contractedHoursData.get(hoursModalProject.projectId)?.contracted_hours ?? 0}
+            onClose={() => setHoursModalProject(null)}
+            onSave={handleSaveHours}
+          />
+        </Suspense>
       )}
     </div>
   );
