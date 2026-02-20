@@ -146,10 +146,12 @@ function DashboardInner() {
     : SIDEBAR_WIDTH;
 
   return (
+    /* Outer wrapper: full viewport height minimum, grid controls sidebar vs content columns */
     <div
       style={{
         display: "grid",
         gridTemplateColumns: `${sidebarWidth} 1fr`,
+        gridTemplateRows: "1fr",
         minHeight: "100vh",
         transition: "grid-template-columns 200ms linear",
         background: "hsl(222 47% 5%)",
@@ -157,7 +159,7 @@ function DashboardInner() {
     >
       <SyncIndicator syncing={loading} />
 
-      {/* Sidebar column — sticky so it stays visible while scrolling */}
+      {/* Sidebar column: stretches to match the grid row height (= tallest column) */}
       <div
         style={{
           position: "sticky",
@@ -166,18 +168,21 @@ function DashboardInner() {
           overflowY: "auto",
           overflowX: "hidden",
           zIndex: 20,
+          scrollbarWidth: "none",
         }}
       >
-        <AppSidebar
-          notificationBell={
-            <NotificationBell
-              notifications={notifications}
-              unreadCount={unreadCount}
-              onMarkAsRead={markAsRead}
-              onMarkAllAsRead={markAllAsRead}
-            />
-          }
-        />
+        <div style={{ minHeight: "100%", display: "flex", flexDirection: "column" }}>
+          <AppSidebar
+            notificationBell={
+              <NotificationBell
+                notifications={notifications}
+                unreadCount={unreadCount}
+                onMarkAsRead={markAsRead}
+                onMarkAllAsRead={markAllAsRead}
+              />
+            }
+          />
+        </div>
       </div>
 
       {/* Main content column */}
