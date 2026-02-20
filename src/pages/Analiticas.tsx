@@ -87,25 +87,32 @@ export default function AnaliticasPage() {
   const accessibleProjectIds = session?.accessibleProjectIds;
 
   // Filter tasks by project access for non-admin users
+  // IMPORTANT: combine explicit IDs + company name — union, not either/or
   const companyName = session?.company?.trim()?.toLowerCase();
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return allTasks;
-    // Explicit project access first
-    if (accessibleProjectIds && accessibleProjectIds.length > 0) {
-      const allowedIds = new Set(accessibleProjectIds);
-      return allTasks.filter((t) => {
+
+    const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
+    const hasCompanyName = !!companyName;
+
+    if (!hasExplicitIds && !hasCompanyName) return allTasks;
+
+    const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds) : null;
+    const needle = hasCompanyName ? companyName : null;
+
+    return allTasks.filter((t) => {
+      // Check by explicit project ID
+      if (allowedIds) {
         const pid = Number(t.project_id);
-        return pid && allowedIds.has(pid);
-      });
-    }
-    // Fallback: filter by company name prefix
-    if (companyName) {
-      return allTasks.filter((t) => {
+        if (pid && allowedIds.has(pid)) return true;
+      }
+      // Check by company name prefix (client-based scoping)
+      if (needle) {
         const name = String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? "").toLowerCase();
-        return name.includes(companyName);
-      });
-    }
-    return allTasks;
+        if (name.includes(needle)) return true;
+      }
+      return false;
+    });
   }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
 
   const effectiveUser = isAdmin
@@ -137,9 +144,11 @@ export default function AnaliticasPage() {
   }, [allTasks, isAdmin]);
 
   // Extract unique project options for the filter dropdown
+  // For non-admin: use accessFilteredTasks so ALL allowed projects appear (client + extras),
+  // not just projects where the consultant is explicitly responsible.
   const projectOptions = useMemo(() => {
     const map = new Map<number, string>();
-    const source = isAdmin ? allTasks : userTasks;
+    const source = isAdmin ? allTasks : accessFilteredTasks;
     source.forEach((t) => {
       const pid = Number(t.project_id);
       if (!pid) return;
@@ -149,7 +158,7 @@ export default function AnaliticasPage() {
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [allTasks, userTasks, isAdmin]);
+  }, [allTasks, accessFilteredTasks, isAdmin]);
 
   // Apply status + project filter to user's tasks for display components
   const filteredTasks = useMemo(() => {

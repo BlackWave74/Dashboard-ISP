@@ -274,27 +274,33 @@ export default function TarefasPage() {
   const projectFilteredTasks = useMemo(() => {
     // Admins, gerentes, coordenadores see everything
     if (isAdmin) return normalizedTasks;
-    // If explicit project access is configured, use it
-    if (accessibleProjectIds && accessibleProjectIds.length > 0) {
-      const allowedIds = new Set(accessibleProjectIds);
-      return normalizedTasks.filter((task) => {
+
+    const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
+    const hasCompanyName = !!companyName;
+
+    // Neither configured → show all (edge case, shouldn't happen)
+    if (!hasExplicitIds && !hasCompanyName) return normalizedTasks;
+
+    const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds) : null;
+    const needle = hasCompanyName ? companyName!.toLowerCase() : null;
+
+    return normalizedTasks.filter((task) => {
+      // Check by explicit project ID
+      if (allowedIds) {
         const pid = Number(task.raw["project_id"] ?? task.raw["projectId"]);
-        return pid && allowedIds.has(pid);
-      });
-    }
-    // Fallback: filter by company name prefix (client-based scoping)
-    if (companyName) {
-      const needle = companyName.toLowerCase();
-      return normalizedTasks.filter((task) => {
+        if (pid && allowedIds.has(pid)) return true;
+      }
+      // Check by company name prefix (client-based scoping)
+      if (needle) {
         const projectName = (task.project || "").toLowerCase();
         const joinedProject =
           typeof task.raw.projects === "object" && task.raw.projects !== null
             ? String((task.raw.projects as TaskRecord)["name"] ?? "").toLowerCase()
             : "";
-        return projectName.includes(needle) || joinedProject.includes(needle);
-      });
-    }
-    return normalizedTasks;
+        if (projectName.includes(needle) || joinedProject.includes(needle)) return true;
+      }
+      return false;
+    });
   }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
