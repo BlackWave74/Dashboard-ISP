@@ -189,7 +189,7 @@ function ProjectCard({
       <div className="flex items-start justify-between gap-2 pl-2">
         {/* Nome do projeto */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white/85 leading-snug group-hover:text-white transition-colors truncate">
+          <p className="text-sm font-semibold text-white/85 leading-snug group-hover:text-white transition-colors break-words">
             {projectLabel}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">

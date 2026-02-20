@@ -258,9 +258,9 @@ export async function exportTasksPDF({
   if (stats) {
     const cards = [
       { label: "Total", value: String(stats.total), color: [99, 102, 241] },
-      { label: "Concluídas", value: String(stats.done), color: [34, 197, 94] },
+      { label: "Concluído", value: String(stats.done), color: [34, 197, 94] },
       { label: "Em Andamento", value: String(stats.pending), color: [250, 204, 21] },
-      { label: "Atrasadas", value: String(stats.overdue), color: [239, 68, 68] },
+      { label: "Atrasado", value: String(stats.overdue), color: [239, 68, 68] },
     ];
     if (stats.totalHours) {
       cards.push({ label: "Horas Totais", value: stats.totalHours, color: [139, 92, 246] });
@@ -281,59 +281,99 @@ export async function exportTasksPDF({
     });
     yPos += 22;
 
-    // Row 1: Status donut + Tasks by project bar chart
-    const chartData = [
-      { label: "Concluídas", value: stats.done, color: [34, 197, 94] },
-      { label: "Andamento", value: stats.pending, color: [250, 204, 21] },
-      { label: "Atrasadas", value: stats.overdue, color: [239, 68, 68] },
-    ];
+    // Charts section — only if there is data
+    const hasAnyTask = stats.done > 0 || stats.pending > 0 || stats.overdue > 0;
 
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 27, 75);
-    doc.text("Distribuição por Status", 14, yPos + 4);
-    drawDonutChart(doc, 50, yPos + 26, 16, chartData);
+    if (hasAnyTask) {
+      // Donut — Distribuição por Status
+      const chartData = [
+        { label: "Concluído", value: stats.done, color: [34, 197, 94] },
+        { label: "Andamento", value: stats.pending, color: [250, 204, 21] },
+        { label: "Atrasado", value: stats.overdue, color: [239, 68, 68] },
+      ];
+      doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+      doc.text("Distribuição por Status", 14, yPos + 4);
+      drawDonutChart(doc, 50, yPos + 26, 16, chartData);
 
-    // Bar chart — tasks by top 6 projects
-    const projectCounts = new Map<string, number>();
-    tasks.forEach((t) => {
-      const p = t.project || "Sem projeto";
-      projectCounts.set(p, (projectCounts.get(p) ?? 0) + 1);
-    });
-    const topProjects = Array.from(projectCounts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map((e, i) => ({
-        label: e[0],
-        value: e[1],
-        color: [[99, 102, 241], [34, 197, 94], [250, 204, 21], [139, 92, 246], [239, 68, 68], [59, 130, 246]][i % 6],
-      }));
+      // Bar chart — Tarefas por Responsável (só se houver dados)
+      const consultantCounts = new Map<string, number>();
+      tasks.forEach((t) => {
+        const c = t.consultant || "Não atribuído";
+        consultantCounts.set(c, (consultantCounts.get(c) ?? 0) + 1);
+      });
+      const topConsultants = Array.from(consultantCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map((e, i) => ({
+          label: e[0],
+          value: e[1],
+          color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21], [239, 68, 68], [99, 102, 241]][i % 6],
+        }));
 
-    if (topProjects.length > 0) {
-      drawBarChart(doc, 110, yPos, (pageW - 124) / 2, 44, topProjects, "Tarefas por Projeto");
+      if (topConsultants.length > 0) {
+        drawBarChart(doc, 115, yPos, pageW - 129, 44, topConsultants, "Tarefas por Responsável");
+      }
+
+      yPos += 52;
+
+      // Pulso de Produtividade — Horizontal completion by project (como o gráfico da tela)
+      const projectCounts = new Map<string, { done: number; pending: number; overdue: number }>();
+      tasks.forEach((t) => {
+        const p = t.project || "Sem projeto";
+        const cur = projectCounts.get(p) ?? { done: 0, pending: 0, overdue: 0 };
+        if (t.statusLabel === "Concluído") cur.done++;
+        else if (t.statusLabel === "Atrasado") cur.overdue++;
+        else cur.pending++;
+        projectCounts.set(p, cur);
+      });
+
+      const productivityData = Array.from(projectCounts.entries())
+        .sort((a, b) => (b[1].done + b[1].pending + b[1].overdue) - (a[1].done + a[1].pending + a[1].overdue))
+        .slice(0, 8);
+
+      if (productivityData.length > 0) {
+        doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+        doc.text("Pulso de Produtividade — % Conclusão por Projeto", 14, yPos + 4);
+
+        const startY = yPos + 10;
+        const rowH = 7;
+        const labelW = 58;
+        const barMaxW = pageW - 28 - labelW - 22;
+
+        productivityData.forEach(([name, s], i) => {
+          const total = s.done + s.pending + s.overdue;
+          const pct = total > 0 ? Math.round((s.done / total) * 100) : 0;
+          const ry = startY + i * rowH;
+
+          // Label — nome truncado
+          doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(50, 50, 70);
+          const shortName = name.length > 28 ? name.slice(0, 27) + "…" : name;
+          doc.text(shortName, 14, ry + rowH * 0.65);
+
+          // Track de fundo
+          const bx = 14 + labelW;
+          const bh = rowH * 0.5;
+          const by = ry + rowH * 0.18;
+          doc.setFillColor(225, 225, 240); doc.roundedRect(bx, by, barMaxW, bh, 0.7, 0.7, "F");
+
+          // Barra de conclusão
+          if (pct > 0) {
+            const fillW = (pct / 100) * barMaxW;
+            const color: [number, number, number] = pct >= 80 ? [34, 197, 94] : pct >= 50 ? [250, 204, 21] : [239, 68, 68];
+            doc.setFillColor(...color);
+            doc.roundedRect(bx, by, fillW, bh, 0.7, 0.7, "F");
+          }
+
+          // % label
+          doc.setFontSize(6); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 70);
+          doc.text(`${pct}%`, bx + barMaxW + 3, ry + rowH * 0.65);
+        });
+
+        yPos += 10 + productivityData.length * rowH + 6;
+      }
+    } else {
+      yPos += 4;
     }
-
-    // Bar chart — tasks by consultant
-    const consultantCounts = new Map<string, number>();
-    tasks.forEach((t) => {
-      const c = t.consultant || "Não atribuído";
-      consultantCounts.set(c, (consultantCounts.get(c) ?? 0) + 1);
-    });
-    const topConsultants = Array.from(consultantCounts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map((e, i) => ({
-        label: e[0],
-        value: e[1],
-        color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21], [239, 68, 68]][i % 5],
-      }));
-
-    if (topConsultants.length > 0) {
-      const chartX = 110 + (pageW - 124) / 2 + 8;
-      drawBarChart(doc, chartX, yPos, (pageW - 124) / 2 - 8, 44, topConsultants, "Tarefas por Responsável");
-    }
-
-    yPos += 50;
   }
 
   // Table
@@ -347,12 +387,20 @@ export async function exportTasksPDF({
     body: tableBody,
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 3, textColor: [30, 27, 75], lineColor: [200, 200, 220], lineWidth: 0.2 },
-    headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+    headStyles: {
+      fillColor: [30, 27, 75],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 8,
+      halign: "center",
+    },
     alternateRowStyles: { fillColor: [245, 245, 255] },
     columnStyles: {
-      0: { cellWidth: "auto", fontStyle: "bold" },
-      3: { halign: "center", cellWidth: 25 },
-      4: { halign: "center", cellWidth: 25 },
+      0: { cellWidth: "auto", fontStyle: "bold", halign: "left" },
+      1: { halign: "center" },
+      2: { halign: "center" },
+      3: { halign: "center", cellWidth: 26 },
+      4: { halign: "center", cellWidth: 26 },
       5: { halign: "center", cellWidth: 22 },
     },
     margin: { left: 14, right: 14 },

@@ -50,9 +50,9 @@ export type TaskStatusLabel = {
 };
 
 export const STATUS_LABELS: Record<TaskStatusKey, TaskStatusLabel> = {
-  overdue: { key: "overdue", label: "Atrasadas" },
+  overdue: { key: "overdue", label: "Atrasado" },
   pending: { key: "pending", label: "Em andamento" },
-  done: { key: "done", label: "Concluidas" },
+  done: { key: "done", label: "Concluído" },
   unknown: { key: "unknown", label: "Sem status" },
 };
 
