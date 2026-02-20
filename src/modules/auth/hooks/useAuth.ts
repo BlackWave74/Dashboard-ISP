@@ -19,6 +19,7 @@ export type AuthSession = {
   clienteId?: number | null;
   allowedAreas?: AccessArea[] | null;
   accessibleProjectIds?: number[] | null;
+  accessibleProjectNames?: string[] | null;
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: number;
@@ -61,7 +62,7 @@ const buildSession = async (
   const expiresIn = Number(data?.expires_in ?? 0);
   const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-  const [role, allowedAreas, accessibleProjectIds, clienteInfo] = await Promise.all([
+  const [role, allowedAreas, accessibleProjects, clienteInfo] = await Promise.all([
     fetchUserRole(data?.access_token, user?.id, metaObj),
     fetchAllowedAreas(data?.access_token, user?.id),
     fetchAccessibleProjects(data?.access_token, user?.id),
@@ -75,7 +76,8 @@ const buildSession = async (
     company: clienteInfo.clienteName ?? clientName ?? storedSession?.company ?? null,
     clienteId: clienteInfo.clienteId ?? storedSession?.clienteId ?? null,
     allowedAreas,
-    accessibleProjectIds,
+    accessibleProjectIds: accessibleProjects?.ids ?? null,
+    accessibleProjectNames: accessibleProjects?.names ?? null,
     accessToken: data?.access_token,
     refreshToken: data?.refresh_token ?? storedSession?.refreshToken,
     expiresAt,
