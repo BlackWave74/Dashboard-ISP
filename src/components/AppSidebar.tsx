@@ -111,7 +111,7 @@ function SidebarNavItem({ to, icon: Icon, label, end, iconColor }: NavItemProps)
     <NavLink
       to={to}
       end={end}
-      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white hover:translate-x-0.5 hover:shadow-md hover:shadow-[hsl(234_89%_50%/0.1)] whitespace-nowrap ${collapsed ? "justify-center !px-0" : ""}`}
+      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/60 transition-all duration-200 hover:bg-white/[0.08] hover:text-white whitespace-nowrap ${collapsed ? "justify-center !px-0" : ""}`}
       activeClassName="!bg-white/[0.15] !text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)] !rounded-xl hover:!bg-white/[0.15] hover:!text-white"
     >
       <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={iconColor ? { color: iconColor } : undefined} />
@@ -215,13 +215,10 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   return (
     <Sidebar
       collapsible="icon"
-      className="!border-r-0 ml-0 shadow-[4px_0_30px_-4px_rgba(0,0,0,0.7)]"
+      className="!border-r-0"
       style={{
-        zIndex: 20,
-        borderRadius: 0,
-        background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
+        background: "transparent",
         height: "100%",
-        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
       }}
@@ -421,7 +418,7 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             <TooltipContent side="right">Sair</TooltipContent>
           </Tooltip>
         ) : (
-          <button onClick={handleLogout} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 hover:bg-white/[0.06] hover:translate-x-0.5" style={{ color: "hsl(0 0% 50%)" }}>
+          <button onClick={handleLogout} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 hover:bg-white/[0.06]" style={{ color: "hsl(0 0% 50%)" }}>
             <LogOut className="h-[18px] w-[18px]" />
             Sair
           </button>
