@@ -183,29 +183,29 @@ export default function Gamificacao() {
       }} />
       <div className="pointer-events-none absolute bottom-[20%] right-[10%] h-[300px] w-[300px] rounded-full opacity-6 blur-[120px]" style={{ background: "radial-gradient(circle, hsl(280 70% 55%), transparent 70%)" }} />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] space-y-8 px-6 pt-6 md:px-10 pb-16">
+      <div className="relative z-10 mx-auto w-full max-w-[1200px] space-y-6 sm:space-y-8 px-3 sm:px-6 pt-4 sm:pt-6 md:px-10 pb-16">
         {/* Header with trophy animation */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-3">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-2 sm:space-y-3">
           <TrophyAnimation />
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               Ranking de Produtividade
             </h1>
-            <p className="text-sm text-muted-foreground mt-1.5">Últimos 90 dias • Baseado em tarefas concluídas no prazo</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-1.5">Últimos 90 dias • Baseado em tarefas concluídas no prazo</p>
           </div>
         </motion.div>
 
         {/* Podium — fixed sizes, no oscillation */}
         {topThree.length > 0 && (
-          <div className="flex items-end justify-center gap-4 pt-2">
+          <div className="flex items-end justify-center gap-2 sm:gap-4 pt-2">
             {[1, 0, 2].map((podiumIdx) => {
               const person = topThree[podiumIdx];
-              if (!person) return <div key={podiumIdx} className="w-36" />;
+              if (!person) return <div key={podiumIdx} className="w-24 sm:w-36" />;
               const isFirst = podiumIdx === 0;
               const isSecond = podiumIdx === 1;
               // isThird = podiumIdx === 2
 
-              const podiumHeights = [180, 150, 120];
+              const podiumHeights = [140, 115, 90]; // smaller on mobile via CSS
 
               // Medal colors: gold, silver, bronze
               const medalConfigs = [
@@ -269,11 +269,11 @@ export default function Gamificacao() {
                   >
                     {person.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                   </div>
-                  <p className="text-sm font-bold text-foreground text-center truncate max-w-[110px]">{person.name}</p>
+                  <p className="text-xs sm:text-sm font-bold text-foreground text-center truncate max-w-[80px] sm:max-w-[110px]">{person.name}</p>
                   <p className="text-xs font-semibold" style={{ color: mc.rankColor }}>{person.points} pts</p>
                   {/* Podium bar */}
                   <motion.div
-                    className="w-28 mt-3 rounded-t-xl flex flex-col items-center justify-start pt-4"
+                    className="w-20 sm:w-28 mt-2 sm:mt-3 rounded-t-xl flex flex-col items-center justify-start pt-3 sm:pt-4"
                     style={{
                       height: podiumHeights[podiumIdx],
                       background: mc.barBg,
@@ -302,7 +302,7 @@ export default function Gamificacao() {
               <Award className="h-4 w-4 text-primary" />
               Conquistas Disponíveis
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
               {Object.entries(BADGE_DEFS).map(([key, def], i) => (
                 <motion.div
                   key={key}
