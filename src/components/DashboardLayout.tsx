@@ -10,6 +10,7 @@ import SyncIndicator from "@/components/SyncIndicator";
 import { useTrackPresence } from "@/hooks/useUserPresence";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/NotificationBell";
+import AssistantReminder from "@/components/AssistantReminder";
 import {
   parseDateValue,
   isDeadlineSoon,
@@ -231,6 +232,9 @@ function DashboardInner() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Virtual Assistant Reminder */}
+      <AssistantReminder />
     </div>
   );
 }
