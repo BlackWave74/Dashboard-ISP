@@ -25,6 +25,10 @@ const ROUTE_TO_AREA: Record<string, AccessArea> = {
   "/comodato": "comodato",
   "/integracoes": "integracoes",
   "/usuarios": "usuarios",
+  "/calendario": "calendario",
+  "/gamificacao": "gamificacao",
+  "/ferramentas": "ferramentas",
+  "/suporte": "suporte",
 };
 
 /** Lightweight task normalization for notification purposes only */

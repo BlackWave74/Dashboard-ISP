@@ -9,7 +9,7 @@ import {
 } from "@/modules/auth/api/fetchAuthData";
 
 export type UserRole = "admin" | "consultor" | "gerente" | "coordenador" | "cliente";
-export type AccessArea = "home" | "comodato" | "integracoes" | "tarefas" | "usuarios" | "analiticas";
+export type AccessArea = "home" | "comodato" | "integracoes" | "tarefas" | "usuarios" | "analiticas" | "calendario" | "gamificacao" | "ferramentas" | "suporte";
 
 export type AuthSession = {
   name: string;
@@ -40,11 +40,11 @@ type AuthResult = {
 };
 
 export const ACCESS_RULES: Record<UserRole, Record<AccessArea, boolean>> = {
-  admin: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true },
-  gerente: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true },
-  coordenador: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true },
-  consultor: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false, analiticas: false },
-  cliente: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false, analiticas: false },
+  admin: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true, calendario: true, gamificacao: true, ferramentas: true, suporte: true },
+  gerente: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true, calendario: true, gamificacao: true, ferramentas: true, suporte: true },
+  coordenador: { home: true, comodato: true, integracoes: true, tarefas: true, usuarios: true, analiticas: true, calendario: true, gamificacao: true, ferramentas: true, suporte: true },
+  consultor: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false, analiticas: false, calendario: true, gamificacao: true, ferramentas: true, suporte: true },
+  cliente: { home: true, comodato: false, integracoes: false, tarefas: true, usuarios: false, analiticas: false, calendario: false, gamificacao: false, ferramentas: false, suporte: true },
 };
 
 const SESSION_KEY = "auth_session";

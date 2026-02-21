@@ -253,8 +253,8 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
           </nav>
         </div>
 
-        {/* GESTÃO — Tarefas, Analíticas, Ranking */}
-        {(canAccess("tarefas") || canAccess("analiticas")) && (
+        {/* GESTÃO — Tarefas, Analíticas, Ranking, Calendário */}
+        {(canAccess("tarefas") || canAccess("analiticas") || canAccess("calendario") || canAccess("gamificacao")) && (
           <div className="mb-5">
             {!collapsed && (
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
@@ -266,8 +266,8 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                 <>
                   {canAccess("tarefas") && <SidebarNavItem to="/tarefas" icon={ListTodo} label="Tarefas" iconColor="hsl(38 92% 50%)" />}
                   {canAccess("analiticas") && <SidebarNavItem to="/analiticas" icon={BarChart3} label="Analíticas" iconColor="hsl(280 70% 55%)" />}
-                  <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" iconColor="hsl(160 84% 39%)" />
-                  <SidebarNavItem to="/gamificacao" icon={Trophy} label="Ranking" iconColor="hsl(45 90% 55%)" />
+                  {canAccess("calendario") && <SidebarNavItem to="/calendario" icon={CalendarDays} label="Calendário" iconColor="hsl(160 84% 39%)" />}
+                  {canAccess("gamificacao") && <SidebarNavItem to="/gamificacao" icon={Trophy} label="Ranking" iconColor="hsl(45 90% 55%)" />}
                 </>
               ) : (
                 <>
@@ -298,12 +298,16 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
                           <BarChart3 className="h-4 w-4" style={{ color: "hsl(280 70% 55%)" }} /><span>Analíticas</span>
                         </NavLink>
                       )}
-                      <NavLink to="/calendario" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                        <CalendarDays className="h-4 w-4" style={{ color: "hsl(160 84% 39%)" }} /><span>Calendário</span>
-                      </NavLink>
-                      <NavLink to="/gamificacao" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                        <Trophy className="h-4 w-4" style={{ color: "hsl(45 90% 55%)" }} /><span>Ranking</span>
-                      </NavLink>
+                      {canAccess("calendario") && (
+                        <NavLink to="/calendario" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                          <CalendarDays className="h-4 w-4" style={{ color: "hsl(160 84% 39%)" }} /><span>Calendário</span>
+                        </NavLink>
+                      )}
+                      {canAccess("gamificacao") && (
+                        <NavLink to="/gamificacao" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                          <Trophy className="h-4 w-4" style={{ color: "hsl(45 90% 55%)" }} /><span>Ranking</span>
+                        </NavLink>
+                      )}
                     </div>
                   )}
                 </>
@@ -313,48 +317,52 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
         )}
 
         {/* FERRAMENTAS — Ferramentas + Comodato */}
-        <div className="mb-5">
-          {!collapsed && (
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
-              Ferramentas
-            </p>
-          )}
-          <nav className="flex flex-col gap-0.5">
-            {collapsed ? (
-              <>
-                <SidebarNavItem to="/ferramentas" icon={Wrench} label="Ferramentas" iconColor="hsl(200 90% 50%)" />
-                {canAccess("comodato") && <SidebarNavItem to="/comodato" icon={Package} label="Comodato" iconColor="hsl(38 92% 50%)" />}
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => toggleSection("automacao")}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 ${
-                    isAutomacaoActive
-                      ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
-                      : "text-white/60 hover:bg-white/[0.08] hover:text-white"
-                  }`}
-                >
-                  <Wrench className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ color: "hsl(200 90% 50%)" }} />
-                  <span className="flex-1 text-left truncate">Ferramentas</span>
-                  <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${openSection === "automacao" ? "rotate-0" : "-rotate-90"}`} />
-                </button>
-                {(openSection === "automacao" || isAutomacaoActive) && (
-                  <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
-                    <NavLink to="/ferramentas" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                      <Video className="h-4 w-4" style={{ color: "hsl(200 90% 50%)" }} /><span>Gerador de Reunião Meet</span>
-                    </NavLink>
-                    {canAccess("comodato") && (
-                      <NavLink to="/comodato" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
-                        <Package className="h-4 w-4" style={{ color: "hsl(38 92% 50%)" }} /><span>Comodato</span>
-                      </NavLink>
-                    )}
-                  </div>
-                )}
-              </>
+        {(canAccess("ferramentas") || canAccess("comodato")) && (
+          <div className="mb-5">
+            {!collapsed && (
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
+                Ferramentas
+              </p>
             )}
-          </nav>
-        </div>
+            <nav className="flex flex-col gap-0.5">
+              {collapsed ? (
+                <>
+                  {canAccess("ferramentas") && <SidebarNavItem to="/ferramentas" icon={Wrench} label="Ferramentas" iconColor="hsl(200 90% 50%)" />}
+                  {canAccess("comodato") && <SidebarNavItem to="/comodato" icon={Package} label="Comodato" iconColor="hsl(38 92% 50%)" />}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => toggleSection("automacao")}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-200 ${
+                      isAutomacaoActive
+                        ? "bg-white/[0.15] text-white shadow-lg shadow-[hsl(234_89%_50%/0.2)]"
+                        : "text-white/60 hover:bg-white/[0.08] hover:text-white"
+                    }`}
+                  >
+                    <Wrench className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ color: "hsl(200 90% 50%)" }} />
+                    <span className="flex-1 text-left truncate">Ferramentas</span>
+                    <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${openSection === "automacao" ? "rotate-0" : "-rotate-90"}`} />
+                  </button>
+                  {(openSection === "automacao" || isAutomacaoActive) && (
+                    <div className="ml-[18px] mt-0.5 flex flex-col gap-0.5 border-l-2 border-white/10 pl-3">
+                      {canAccess("ferramentas") && (
+                        <NavLink to="/ferramentas" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                          <Video className="h-4 w-4" style={{ color: "hsl(200 90% 50%)" }} /><span>Gerador de Reunião Meet</span>
+                        </NavLink>
+                      )}
+                      {canAccess("comodato") && (
+                        <NavLink to="/comodato" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.06] hover:text-white" activeClassName="!text-white !bg-white/[0.1] !rounded-xl">
+                          <Package className="h-4 w-4" style={{ color: "hsl(38 92% 50%)" }} /><span>Comodato</span>
+                        </NavLink>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </nav>
+          </div>
+        )}
 
         {/* ADMINISTRAÇÃO */}
         {showAdminSection && (
@@ -405,16 +413,18 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
         )}
 
         {/* SUPORTE */}
-        <div>
-          {!collapsed && (
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
-              Suporte
-            </p>
-          )}
-          <nav className="flex flex-col gap-0.5">
-            <SidebarNavItem to="/suporte" icon={HelpCircle} label="Ajuda" iconColor="hsl(200 50% 70%)" />
-          </nav>
-        </div>
+        {canAccess("suporte") && (
+          <div>
+            {!collapsed && (
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
+                Suporte
+              </p>
+            )}
+            <nav className="flex flex-col gap-0.5">
+              <SidebarNavItem to="/suporte" icon={HelpCircle} label="Ajuda" iconColor="hsl(200 50% 70%)" />
+            </nav>
+          </div>
+        )}
       </SidebarContent>
 
       <SidebarFooter className={`!border-t-0 flex-none ${collapsed ? "px-1" : "px-3"} pb-4 pt-2 space-y-2`}>

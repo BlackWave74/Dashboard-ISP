@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import assistantAvatar from "@/assets/assistant-avatar.png";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 /* ─── Messages by role category ─── */
@@ -33,6 +32,31 @@ const STAFF_MESSAGES = [
     cta: "Ver Tarefas",
     link: "/tarefas",
   },
+  {
+    text: "Verifique os prazos das tarefas da sua equipe. Antecipar atrasos é a chave para entregas de qualidade! ⏰",
+    cta: "Ver Tarefas",
+    link: "/tarefas",
+  },
+  {
+    text: "Já verificou as integrações hoje? Manter tudo conectado garante que nada fique para trás! 🔗",
+    cta: "Ver Integrações",
+    link: "/integracoes",
+  },
+  {
+    text: "Acompanhe as horas alocadas nos projetos. Entender o investimento de tempo é essencial para o planejamento! ⏱️",
+    cta: "Ver Analíticas",
+    link: "/analiticas",
+  },
+  {
+    text: "Dica: use o calendário para ter uma visão geral dos prazos da semana. Organização faz toda a diferença! 📅",
+    cta: "Ver Calendário",
+    link: "/calendario",
+  },
+  {
+    text: "Precisa de ajuda? Nossa equipe de suporte está sempre pronta para auxiliar você! 🤝",
+    cta: "Abrir Suporte",
+    link: "/suporte",
+  },
 ];
 
 const CLIENT_MESSAGES = [
@@ -56,6 +80,21 @@ const CLIENT_MESSAGES = [
     cta: "Ver Tarefas",
     link: "/tarefas",
   },
+  {
+    text: "Ficou com dúvida? Fale com nosso suporte — estamos aqui para ajudar você a alcançar os melhores resultados! 💬",
+    cta: "Falar com Suporte",
+    link: "/suporte",
+  },
+  {
+    text: "Transparência é nosso compromisso! Acompanhe cada etapa do seu projeto diretamente no painel. 🔍",
+    cta: "Ver Tarefas",
+    link: "/tarefas",
+  },
+  {
+    text: "Obrigado por confiar na ISP Consulte! Seu sucesso é o nosso sucesso. Estamos juntos nessa jornada! 🌟",
+    cta: "Ver Tarefas",
+    link: "/tarefas",
+  },
 ];
 
 const INTERVAL_MS = 5 * 60 * 1000;
@@ -69,8 +108,6 @@ export default function AssistantReminder() {
 
   const role = session?.role;
   const isClient = role === "cliente";
-
-  // Pick message set based on role
   const messages = isClient ? CLIENT_MESSAGES : STAFF_MESSAGES;
 
   const show = useCallback(() => {
@@ -105,7 +142,6 @@ export default function AssistantReminder() {
     };
   }, [show]);
 
-  // Don't render if not authenticated
   if (!session) return null;
 
   const msg = messages[messageIdx];
@@ -138,15 +174,16 @@ export default function AssistantReminder() {
             </button>
 
             <div className="flex gap-3 p-4">
+              {/* Company logo as avatar */}
               <div className="shrink-0">
                 <div
-                  className="h-12 w-12 rounded-full border-2 overflow-hidden"
+                  className="h-12 w-12 rounded-full border-2 overflow-hidden flex items-center justify-center bg-white/10"
                   style={{ borderColor: "hsl(262 83% 58% / 0.4)" }}
                 >
                   <img
-                    src={assistantAvatar}
-                    alt="Assistente ISP"
-                    className="h-full w-full object-cover"
+                    src="/resouce/logo.png"
+                    alt="ISP Consulte"
+                    className="h-9 w-9 object-contain"
                   />
                 </div>
                 <div className="relative -mt-3 ml-8">
