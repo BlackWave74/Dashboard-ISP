@@ -54,6 +54,13 @@ const typeConfig = {
     border: "border-blue-500/20",
     dot: "bg-blue-400",
   },
+  project_alert: {
+    icon: AlertTriangle,
+    color: "text-orange-400",
+    bg: "bg-orange-500/15",
+    border: "border-orange-500/30",
+    dot: "bg-orange-400",
+  },
   info: {
     icon: Bell,
     color: "text-white/60",

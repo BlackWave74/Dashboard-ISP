@@ -1,8 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
+import WeeklyReportModal from "@/components/WeeklyReportModal";
+import type { TaskView } from "@/modules/tasks/types";
+import {
+  parseDateValue,
+  isDeadlineSoon,
+  normalizeTaskTitle,
+  deadlineColor,
+  formatDatePtBR,
+  formatDurationHHMM,
+  type TaskStatusKey,
+} from "@/modules/tasks/utils";
 
 /* ─── Messages by role category ─── */
 
@@ -57,6 +68,12 @@ const STAFF_MESSAGES = [
     cta: "Abrir Suporte",
     link: "/suporte",
   },
+  {
+    text: "Bora tirar um relatório semanal? Veja o progresso de todos os projetos em um só lugar! 📋",
+    cta: "Gerar Relatório",
+    link: "__weekly_report__",
+    isReport: true,
+  },
 ];
 
 const CLIENT_MESSAGES = [
@@ -95,20 +112,65 @@ const CLIENT_MESSAGES = [
     cta: "Ver Tarefas",
     link: "/tarefas",
   },
+  {
+    text: "Que tal conferir como seus projetos estão evoluindo? Gere um relatório semanal agora! 📊",
+    cta: "Ver Relatório",
+    link: "__weekly_report__",
+    isReport: true,
+  },
 ];
+
+type NotifTask = {
+  title?: string;
+  project?: string;
+  statusKey?: string;
+  deadlineDate?: Date | null;
+  deadlineIsSoon?: boolean;
+  consultant?: string;
+};
+
+type MessageItem = {
+  text: string;
+  cta: string;
+  link: string;
+  isReport?: boolean;
+};
 
 const INTERVAL_MS = 5 * 60 * 1000;
 const DISMISS_KEY = "assistant-reminder-dismissed";
 
-export default function AssistantReminder() {
+type Props = {
+  notifTasks?: NotifTask[];
+};
+
+export default function AssistantReminder({ notifTasks }: Props) {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [messageIdx, setMessageIdx] = useState(0);
+  const [showReport, setShowReport] = useState(false);
 
   const role = session?.role;
   const isClient = role === "cliente";
-  const messages = isClient ? CLIENT_MESSAGES : STAFF_MESSAGES;
+  const messages: MessageItem[] = isClient ? CLIENT_MESSAGES : STAFF_MESSAGES;
+
+  // Convert notifTasks to TaskView-like objects for the report modal
+  const reportTasks = useMemo<TaskView[]>(() => {
+    if (!notifTasks) return [];
+    return notifTasks.map((t) => ({
+      title: t.title || "Tarefa",
+      description: "",
+      project: t.project || "Sem projeto",
+      consultant: t.consultant || "",
+      statusKey: (t.statusKey || "unknown") as TaskStatusKey,
+      durationLabel: "",
+      deadlineDate: t.deadlineDate || null,
+      deadlineLabel: "",
+      deadlineColor: "",
+      deadlineIsSoon: t.deadlineIsSoon || false,
+      raw: {} as any,
+    }));
+  }, [notifTasks]);
 
   const show = useCallback(() => {
     const lastDismissed = localStorage.getItem(DISMISS_KEY);
@@ -126,9 +188,13 @@ export default function AssistantReminder() {
   }, []);
 
   const handleCta = useCallback(
-    (link: string) => {
+    (msg: MessageItem) => {
       dismiss();
-      navigate(link);
+      if (msg.isReport) {
+        setShowReport(true);
+      } else {
+        navigate(msg.link);
+      }
     },
     [dismiss, navigate]
   );
@@ -148,81 +214,92 @@ export default function AssistantReminder() {
   const label = isClient ? "ISP Parceiro" : "ISP Assistente";
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 30, scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 260, damping: 20 }}
-          className="fixed bottom-6 left-6 z-50 w-[340px] max-w-[calc(100vw-3rem)]"
-        >
-          <div
-            className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl"
-            style={{
-              background: "linear-gradient(145deg, hsl(262 50% 16%), hsl(234 45% 10%))",
-              boxShadow: "0 20px 50px -12px hsl(262 83% 20% / 0.5)",
-            }}
+    <>
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="fixed bottom-6 left-6 z-50 w-[340px] max-w-[calc(100vw-3rem)]"
           >
-            <div className="h-[2px] w-full bg-gradient-to-r from-primary via-[hsl(262_83%_58%)] to-transparent opacity-60" />
-
-            <button
-              onClick={dismiss}
-              className="absolute top-3 right-3 rounded-lg p-1 text-white/20 transition hover:bg-white/[0.06] hover:text-white/50"
+            <div
+              className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl"
+              style={{
+                background: "linear-gradient(145deg, hsl(262 50% 16%), hsl(234 45% 10%))",
+                boxShadow: "0 20px 50px -12px hsl(262 83% 20% / 0.5)",
+              }}
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
+              <div className="h-[2px] w-full bg-gradient-to-r from-primary via-[hsl(262_83%_58%)] to-transparent opacity-60" />
 
-            <div className="flex gap-3 p-4">
-              {/* Company logo as avatar */}
-              <div className="shrink-0">
-                <div
-                  className="h-12 w-12 rounded-full border-2 overflow-hidden flex items-center justify-center bg-white/10"
-                  style={{ borderColor: "hsl(262 83% 58% / 0.4)" }}
-                >
-                  <img
-                    src="/resouce/logo.png"
-                    alt="ISP Consulte"
-                    className="h-9 w-9 object-contain"
-                  />
+              <button
+                onClick={dismiss}
+                className="absolute top-3 right-3 rounded-lg p-1 text-white/20 transition hover:bg-white/[0.06] hover:text-white/50"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+
+              <div className="flex gap-3 p-4">
+                {/* Company logo as avatar */}
+                <div className="shrink-0">
+                  <div
+                    className="h-12 w-12 rounded-full border-2 overflow-hidden flex items-center justify-center bg-white/10"
+                    style={{ borderColor: "hsl(262 83% 58% / 0.4)" }}
+                  >
+                    <img
+                      src="/resouce/logo.png"
+                      alt="ISP Consulte"
+                      className="h-9 w-9 object-contain"
+                    />
+                  </div>
+                  <div className="relative -mt-3 ml-8">
+                    <div className="h-3.5 w-3.5 rounded-full border-2 bg-emerald-400" style={{ borderColor: "hsl(234 45% 10%)" }} />
+                  </div>
                 </div>
-                <div className="relative -mt-3 ml-8">
-                  <div className="h-3.5 w-3.5 rounded-full border-2 bg-emerald-400" style={{ borderColor: "hsl(234 45% 10%)" }} />
+
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-primary/70 mb-1">
+                    {label}
+                  </p>
+                  <p className="text-[13px] leading-relaxed text-white/75">
+                    {msg.text}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCta(msg)}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/[0.08]"
+                    style={{
+                      background: "linear-gradient(135deg, hsl(262 83% 58% / 0.2), hsl(234 89% 64% / 0.15))",
+                      border: "1px solid hsl(262 83% 58% / 0.2)",
+                    }}
+                  >
+                    {msg.isReport ? <FileText className="h-3 w-3" /> : null}
+                    {msg.cta}
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex-1 min-w-0 pt-0.5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-primary/70 mb-1">
-                  {label}
-                </p>
-                <p className="text-[13px] leading-relaxed text-white/75">
-                  {msg.text}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => handleCta(msg.link)}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/[0.08]"
-                  style={{
-                    background: "linear-gradient(135deg, hsl(262 83% 58% / 0.2), hsl(234 89% 64% / 0.15))",
-                    border: "1px solid hsl(262 83% 58% / 0.2)",
-                  }}
-                >
-                  {msg.cta}
-                  <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
+              <motion.div
+                className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full opacity-[0.04]"
+                style={{ background: "radial-gradient(circle, hsl(262 83% 58%), transparent)" }}
+                animate={{ scale: [1, 1.3, 1], opacity: [0.04, 0.08, 0.04] }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              />
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            <motion.div
-              className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full opacity-[0.04]"
-              style={{ background: "radial-gradient(circle, hsl(262 83% 58%), transparent)" }}
-              animate={{ scale: [1, 1.3, 1], opacity: [0.04, 0.08, 0.04] }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            />
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      {/* Weekly Report Modal */}
+      <WeeklyReportModal
+        open={showReport}
+        onClose={() => setShowReport(false)}
+        tasks={reportTasks}
+        userName={session.name}
+      />
+    </>
   );
 }
