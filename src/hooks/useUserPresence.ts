@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseExt as supabase } from "@/lib/supabase";
 
 export interface PresenceEntry {
   auth_user_id: string; // usamos o email como chave única aqui
