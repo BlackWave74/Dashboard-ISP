@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowRight, FileText } from "lucide-react";
+import assistantAvatar from "@/assets/assistant-avatar.png";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import WeeklyReportModal from "@/components/WeeklyReportModal";
@@ -235,16 +236,21 @@ export default function AssistantReminder({ notifTasks }: Props) {
               </button>
 
               <div className="flex gap-3 p-4">
-                {/* Company logo as avatar */}
+                {/* Assistant avatar */}
                 <div className="shrink-0">
                   <div
-                    className="h-12 w-12 rounded-full border-2 overflow-hidden flex items-center justify-center bg-white/10"
-                    style={{ borderColor: "hsl(262 83% 58% / 0.4)" }}
+                    className="h-12 w-12 rounded-full border-2 overflow-hidden flex items-center justify-center"
+                    style={{ borderColor: "hsl(262 83% 58% / 0.4)", background: "linear-gradient(135deg, hsl(262 83% 58% / 0.3), hsl(234 89% 64% / 0.2))" }}
                   >
                     <img
-                      src="/resouce/logo.png"
-                      alt="ISP Consulte"
-                      className="h-9 w-9 object-contain"
+                      src={assistantAvatar}
+                      alt="Assistente"
+                      className="h-10 w-10 rounded-full object-cover"
+                      onError={(e) => {
+                        // Fallback to emoji if image not found
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.parentElement!.innerHTML = '<span style="font-size:24px">🤖</span>';
+                      }}
                     />
                   </div>
                   <div className="relative -mt-3 ml-8">
