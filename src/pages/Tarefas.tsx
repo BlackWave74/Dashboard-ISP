@@ -617,39 +617,43 @@ export default function TarefasPage() {
                 <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
                 {formatLastUpdated(combinedLastUpdated)}
               </div>
-              <button
-                type="button"
-                onClick={() => setShowExportModal(true)}
-                disabled={filteredTasks.length === 0}
-                className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-40 whitespace-nowrap"
-                title="Exportar PDF"
-              >
-                <FileDown className="h-3.5 w-3.5" />
-                PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => { reload(); reloadTimes(); }}
-                disabled={refreshing || reloadCooldownMsLeft > 0 || reloadsRemainingThisMinute <= 0}
-                title={
-                  reloadsRemainingThisMinute <= 0
-                    ? "Limite de 5 atualizações por minuto atingido"
-                    : reloadCooldownMsLeft > 0
-                    ? `Aguarde ${Math.ceil(reloadCooldownMsLeft / 1000)}s`
-                    : `Atualizar dados (${reloadsRemainingThisMinute} restantes)`
-                }
-                className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-40 whitespace-nowrap"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-                {refreshing
-                  ? "Atualizando..."
-                  : reloadsRemainingThisMinute <= 0
-                  ? "Limite atingido"
-                  : "Atualizar"}
-                {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
-                  <span className="opacity-50">({reloadsRemainingThisMinute})</span>
-                )}
-              </button>
+              {session?.role !== "cliente" && (
+                <button
+                  type="button"
+                  onClick={() => setShowExportModal(true)}
+                  disabled={filteredTasks.length === 0}
+                  className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-40 whitespace-nowrap"
+                  title="Exportar PDF"
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  PDF
+                </button>
+              )}
+              {session?.role !== "cliente" && (
+                <button
+                  type="button"
+                  onClick={() => { reload(); reloadTimes(); }}
+                  disabled={refreshing || reloadCooldownMsLeft > 0 || reloadsRemainingThisMinute <= 0}
+                  title={
+                    reloadsRemainingThisMinute <= 0
+                      ? "Limite de 5 atualizações por minuto atingido"
+                      : reloadCooldownMsLeft > 0
+                      ? `Aguarde ${Math.ceil(reloadCooldownMsLeft / 1000)}s`
+                      : `Atualizar dados (${reloadsRemainingThisMinute} restantes)`
+                  }
+                  className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-40 whitespace-nowrap"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                  {refreshing
+                    ? "Atualizando..."
+                    : reloadsRemainingThisMinute <= 0
+                    ? "Limite atingido"
+                    : "Atualizar"}
+                  {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
+                    <span className="opacity-50">({reloadsRemainingThisMinute})</span>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
