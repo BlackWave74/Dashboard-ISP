@@ -5,6 +5,14 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    // Fallback: ensure env vars are always available even if .env is missing
+    ...(process.env.VITE_SUPABASE_URL ? {} : {
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify("https://phughcqnevoziyqmpvoj.supabase.co"),
+      'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBodWdoY3FuZXZveml5cW1wdm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExOTQxMzMsImV4cCI6MjA4Njc3MDEzM30.CIna0qk0vjHnVuWRowq0AZuKTxra8XyVCgqt8llpvZw"),
+      'import.meta.env.VITE_SUPABASE_PROJECT_ID': JSON.stringify("phughcqnevoziyqmpvoj"),
+    }),
+  },
   server: {
     host: "::",
     port: 8080,
