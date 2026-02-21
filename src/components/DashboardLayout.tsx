@@ -238,7 +238,7 @@ function DashboardInner() {
       </main>
 
       {/* Virtual Assistant Reminder */}
-      <AssistantReminder />
+      <AssistantReminder notifTasks={notifTasks} />
     </div>
   );
 }

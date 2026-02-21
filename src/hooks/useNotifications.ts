@@ -2,8 +2,10 @@ import { useCallback, useMemo, useState } from "react";
 import { storage } from "@/modules/shared/storage";
 
 export type AppNotification = {
+  /** When type is "project_alert", links to a project with accumulated overdue tasks */
+  overdueProjectCount?: number;
   id: string;
-  type: "overdue" | "deadline_soon" | "new_assignment" | "info";
+  type: "overdue" | "deadline_soon" | "new_assignment" | "info" | "project_alert";
   title: string;
   message: string;
   timestamp: number;
@@ -149,8 +151,44 @@ export function useNotifications(
       }
     });
 
-    // Sort: own tasks first, then unread, then by timestamp desc
+    // ── Smart project alerts (admin only): aggregate overdue tasks per project ──
+    if (isPrivileged) {
+      const overdueByProject: Record<string, number> = {};
+      visibleTasks.forEach((task) => {
+        if (task.statusKey === "done") return;
+        const deadlineDate = task.deadlineDate;
+        const isOverdue =
+          task.statusKey === "overdue" ||
+          (deadlineDate !== null && deadlineDate !== undefined && deadlineDate < new Date());
+        if (isOverdue) {
+          const project = (task.project || "").trim() || "Sem projeto";
+          overdueByProject[project] = (overdueByProject[project] ?? 0) + 1;
+        }
+      });
+
+      const ALERT_THRESHOLD = 5;
+      Object.entries(overdueByProject).forEach(([projectName, count]) => {
+        if (count >= ALERT_THRESHOLD) {
+          const id = makeId("project_alert", projectName);
+          items.push({
+            id,
+            type: "project_alert",
+            title: `🚨 Projeto com ${count} tarefas atrasadas`,
+            message: `O projeto "${projectName}" acumulou ${count} tarefas atrasadas. Ação imediata recomendada.`,
+            timestamp: now,
+            read: readIds.has(id),
+            projectName,
+            overdueProjectCount: count,
+          });
+        }
+      });
+    }
+
+    // Sort: project alerts first, then own tasks, then unread, then by timestamp desc
     items.sort((a, b) => {
+      const aIsAlert = a.type === "project_alert" ? 1 : 0;
+      const bIsAlert = b.type === "project_alert" ? 1 : 0;
+      if (aIsAlert !== bIsAlert) return bIsAlert - aIsAlert;
       if (a.isOwnTask !== b.isOwnTask) return a.isOwnTask ? -1 : 1;
       if (a.read !== b.read) return a.read ? 1 : -1;
       return b.timestamp - a.timestamp;
