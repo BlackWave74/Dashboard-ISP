@@ -391,39 +391,43 @@ export default function AnaliticasPage() {
               <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
               {formatLastUpdated(combinedLastUpdated)}
             </div>
-            <button
-              type="button"
-              onClick={() => setShowExportModal(true)}
-              disabled={projects.length === 0}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-emerald-500/30 hover:text-emerald-400 disabled:opacity-40"
-              title="Exportar PDF"
-            >
-              <FileDown className="h-3.5 w-3.5" />
-              PDF
-            </button>
-            <button
-              type="button"
-              onClick={() => { reloadTasks(); reloadTimes(); }}
-              disabled={refreshing || reloadCooldownMsLeft > 0 || reloadsRemainingThisMinute <= 0}
-              title={
-                reloadsRemainingThisMinute <= 0
-                  ? "Limite de 5 atualizações por minuto atingido"
-                  : reloadCooldownMsLeft > 0
-                  ? `Aguarde ${Math.ceil(reloadCooldownMsLeft / 1000)}s`
-                  : `Atualizar dados (${reloadsRemainingThisMinute} restantes)`
-              }
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              {refreshing
-                ? "Atualizando..."
-                : reloadsRemainingThisMinute <= 0
-                ? "Limite atingido"
-                : "Atualizar"}
-              {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
-                <span className="opacity-50">({reloadsRemainingThisMinute})</span>
-              )}
-            </button>
+            {session?.role !== "cliente" && (
+              <button
+                type="button"
+                onClick={() => setShowExportModal(true)}
+                disabled={projects.length === 0}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-emerald-500/30 hover:text-emerald-400 disabled:opacity-40"
+                title="Exportar PDF"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                PDF
+              </button>
+            )}
+            {session?.role !== "cliente" && (
+              <button
+                type="button"
+                onClick={() => { reloadTasks(); reloadTimes(); }}
+                disabled={refreshing || reloadCooldownMsLeft > 0 || reloadsRemainingThisMinute <= 0}
+                title={
+                  reloadsRemainingThisMinute <= 0
+                    ? "Limite de 5 atualizações por minuto atingido"
+                    : reloadCooldownMsLeft > 0
+                    ? `Aguarde ${Math.ceil(reloadCooldownMsLeft / 1000)}s`
+                    : `Atualizar dados (${reloadsRemainingThisMinute} restantes)`
+                }
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                {refreshing
+                  ? "Atualizando..."
+                  : reloadsRemainingThisMinute <= 0
+                  ? "Limite atingido"
+                  : "Atualizar"}
+                {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
+                  <span className="opacity-50">({reloadsRemainingThisMinute})</span>
+                )}
+              </button>
+            )}
           </div>
         </motion.div>
 
