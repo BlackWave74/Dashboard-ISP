@@ -112,12 +112,6 @@ const CLIENT_MESSAGES = [
     cta: "Ver Tarefas",
     link: "/tarefas",
   },
-  {
-    text: "Que tal conferir como seus projetos estão evoluindo? Gere um relatório semanal agora! 📊",
-    cta: "Ver Relatório",
-    link: "__weekly_report__",
-    isReport: true,
-  },
 ];
 
 type NotifTask = {
