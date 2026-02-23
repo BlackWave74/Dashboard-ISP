@@ -484,27 +484,28 @@ export default function UsuariosPage() {
 
   return (
     <div className="page-gradient w-full">
-      <div className="mx-auto w-full max-w-[1400px] space-y-5 p-5 md:p-8">
+      <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 sm:p-5 md:p-8">
 
         {/* ═══ HEADER ═══ */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-          className="flex flex-wrap items-end justify-between gap-4"
+          className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end justify-between gap-3 sm:gap-4"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] shadow-lg shadow-[hsl(262_83%_58%/0.25)]">
               <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[hsl(var(--task-text))]">Gestão de Usuários</h1>
-              <p className="text-sm text-[hsl(var(--task-text-muted))]">Gerencie acessos, permissões e projetos.</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))]">Gestão de Usuários</h1>
+              <p className="text-xs sm:text-sm text-[hsl(var(--task-text-muted))]">Gerencie acessos, permissões e projetos.</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button onClick={() => { setShowCreate(!showCreate); setShowEditPanel(false); }}
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-[hsl(262_83%_58%/0.3)] transition hover:shadow-[hsl(262_83%_58%/0.5)] hover:scale-[1.02] active:scale-[0.98]"
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] px-3 sm:px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-[hsl(262_83%_58%/0.3)] transition hover:shadow-[hsl(262_83%_58%/0.5)] hover:scale-[1.02] active:scale-[0.98]"
             >
               <UserPlus className="h-3.5 w-3.5" />
-              Novo Usuário
+              <span className="hidden sm:inline">Novo Usuário</span>
+              <span className="sm:hidden">Novo</span>
             </button>
             <button onClick={async () => {
               if (!token) return;
@@ -521,13 +522,13 @@ export default function UsuariosPage() {
               className="flex items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-400 transition hover:border-amber-500/40 hover:bg-amber-500/20"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Limpar Órfãos
+              <span className="hidden sm:inline">Limpar Órfãos</span>
             </button>
             <button onClick={() => api.loadUsers()} disabled={api.loading}
               className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-purple)/0.4)] hover:text-[hsl(var(--task-purple))] disabled:opacity-40"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${api.loading ? "animate-spin" : ""}`} />
-              Atualizar
+              <span className="hidden sm:inline">Atualizar</span>
             </button>
           </div>
         </motion.div>

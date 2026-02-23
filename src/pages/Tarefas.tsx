@@ -602,17 +602,16 @@ export default function TarefasPage() {
 
         {/* ═══ HEADER ═══ */}
         <motion.div {...fadeUp} className="mb-5">
-          <div className="flex items-start justify-between">
-            <div className="flex-1" />
+          <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="text-center flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
+              <h1 className="text-lg sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
                 Acompanhamento de Tarefas
               </h1>
-              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] whitespace-nowrap">
+              <p className="mt-0.5 text-[11px] sm:text-sm text-[hsl(var(--task-text-muted))]">
                 Acompanhe o progresso, prazos e desempenho das atividades em tempo real.
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0 flex-1 justify-end">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-center">
               <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
                 <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
                 {formatLastUpdated(combinedLastUpdated)}
@@ -626,7 +625,7 @@ export default function TarefasPage() {
                   title="Exportar PDF"
                 >
                   <FileDown className="h-3.5 w-3.5" />
-                  PDF
+                  <span className="hidden sm:inline">PDF</span>
                 </button>
               )}
               {session?.role !== "cliente" && (
@@ -644,11 +643,13 @@ export default function TarefasPage() {
                   className="flex items-center gap-1.5 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-3 py-2 text-xs font-medium text-[hsl(var(--task-text-muted))] transition hover:border-[hsl(var(--task-yellow)/0.4)] hover:text-[hsl(var(--task-yellow))] disabled:opacity-40 whitespace-nowrap"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-                  {refreshing
-                    ? "Atualizando..."
-                    : reloadsRemainingThisMinute <= 0
-                    ? "Limite atingido"
-                    : "Atualizar"}
+                  <span className="hidden sm:inline">
+                    {refreshing
+                      ? "Atualizando..."
+                      : reloadsRemainingThisMinute <= 0
+                      ? "Limite atingido"
+                      : "Atualizar"}
+                  </span>
                   {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
                     <span className="opacity-50">({reloadsRemainingThisMinute})</span>
                   )}
