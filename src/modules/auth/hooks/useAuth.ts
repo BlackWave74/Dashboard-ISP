@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storage } from "@/modules/shared/storage";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, supabaseExt } from "@/lib/supabase";
 import {
   fetchUserRole,
   fetchAllowedAreas,
   fetchAccessibleProjects,
   fetchClienteInfo,
 } from "@/modules/auth/api/fetchAuthData";
+
+/** Sync auth session to the supabaseExt client so Realtime/Presence works */
+const syncSupabaseSession = (accessToken: string, refreshToken?: string) => {
+  if (!accessToken) return;
+  supabaseExt.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken ?? "",
+  }).catch(() => { /* best-effort */ });
+};
 
 export type UserRole = "admin" | "consultor" | "gerente" | "coordenador" | "cliente";
 export type AccessArea = "home" | "comodato" | "integracoes" | "tarefas" | "usuarios" | "analiticas" | "calendario" | "gamificacao" | "ferramentas" | "suporte";
@@ -115,6 +124,7 @@ export function useAuth() {
         const refreshed = await buildSession(data, stored.email, stored);
         setSession(refreshed);
         persistSession(refreshed);
+        syncSupabaseSession(data.access_token, data.refresh_token);
         return refreshed;
       } catch (err) {
         if (attempt < 1) {
@@ -139,11 +149,11 @@ export function useAuth() {
           if (refreshed) { setLoadingSession(false); return; }
         }
 
-        // Token still valid: re-fetch project access from DB in background
-        // so that admin changes (e.g. adding/removing projects) take effect
-        // without requiring a full logout/login cycle.
+        // Token still valid: sync to supabaseExt for Realtime, then
+        // re-fetch project access from DB in background
         setSession(saved);
         setLoadingSession(false);
+        syncSupabaseSession(saved.accessToken!, saved.refreshToken);
 
         if (saved.accessToken && saved.email) {
           try {
@@ -233,6 +243,7 @@ export function useAuth() {
         const authSession = await buildSession(data, email);
         setSession(authSession);
         persistSession(authSession);
+        syncSupabaseSession(data.access_token, data.refresh_token);
         loginSpamCountRef.current = 0;
         loginBlockedUntilRef.current = 0;
         failedAttemptsRef.current = 0;
@@ -260,6 +271,7 @@ export function useAuth() {
         });
       } catch { /* best-effort */ }
     }
+    supabaseExt.auth.signOut().catch(() => {});
     setSession(null);
     persistSession(null);
   }, [session?.accessToken, persistSession]);
