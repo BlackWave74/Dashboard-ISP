@@ -370,23 +370,22 @@ export default function AnaliticasPage() {
 
   return (
     <div className="page-gradient w-full">
-      <div className="mx-auto w-full max-w-[1900px] space-y-5 p-5 md:p-8">
-        {/* Header with Atualizar button top-right */}
+      <div className="mx-auto w-full max-w-[1900px] space-y-5 p-4 sm:p-5 md:p-8">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex items-start justify-between"
+          className="flex flex-col sm:flex-row items-center gap-3"
         >
-          <div className="flex-1" />
-          <div className="flex flex-col items-center gap-1 text-center">
-            <h1 className="text-2xl font-bold text-foreground">Analíticas</h1>
-            <p className="text-sm text-white/35">
+          <div className="flex flex-col items-center sm:items-start gap-1 text-center sm:text-left flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analíticas</h1>
+            <p className="text-xs sm:text-sm text-white/35">
               {effectiveUser ? `Projetos de ${effectiveUser}` : "Visão geral de desempenho dos projetos."}
               {filters.period !== "180d" && ` · Últimos ${periodDays} dias`}
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0 flex-1 justify-end">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-center">
             <div className="flex items-center gap-1.5 text-[10px] text-white/35">
               <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
               {formatLastUpdated(combinedLastUpdated)}
@@ -400,7 +399,7 @@ export default function AnaliticasPage() {
                 title="Exportar PDF"
               >
                 <FileDown className="h-3.5 w-3.5" />
-                PDF
+                <span className="hidden sm:inline">PDF</span>
               </button>
             )}
             {session?.role !== "cliente" && (
@@ -418,11 +417,13 @@ export default function AnaliticasPage() {
                 className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/50 transition hover:border-white/[0.12] hover:text-white/70 disabled:opacity-40"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-                {refreshing
-                  ? "Atualizando..."
-                  : reloadsRemainingThisMinute <= 0
-                  ? "Limite atingido"
-                  : "Atualizar"}
+                <span className="hidden sm:inline">
+                  {refreshing
+                    ? "Atualizando..."
+                    : reloadsRemainingThisMinute <= 0
+                    ? "Limite atingido"
+                    : "Atualizar"}
+                </span>
                 {reloadsRemainingThisMinute > 0 && reloadsRemainingThisMinute < 5 && !refreshing && (
                   <span className="opacity-50">({reloadsRemainingThisMinute})</span>
                 )}

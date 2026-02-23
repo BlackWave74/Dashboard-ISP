@@ -101,7 +101,7 @@ function CustomSelect({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-9 min-w-[170px] items-center gap-2 rounded-xl border px-3 text-[12px] font-semibold transition-all ${
+        className={`flex h-9 w-full min-w-0 sm:min-w-[170px] sm:w-auto items-center gap-2 rounded-xl border px-3 text-[12px] font-semibold transition-all ${
           value && value !== "all"
             ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-white/80"
             : "border-white/[0.08] bg-[hsl(var(--task-surface))] text-white/50"
@@ -250,18 +250,18 @@ export function TaskFilters({
     (project !== "all" && project ? 1 : 0);
 
   return (
-    <div className="space-y-2 flex flex-col items-center">
+    <div className="space-y-2 flex flex-col items-center w-full">
       {/* Search + Filter toggle side by side */}
-      <div className="flex items-center justify-center gap-2 flex-wrap">
-        {/* Search field — same style as filter button */}
-        <div className="relative flex items-center">
+      <div className="flex items-center justify-center gap-2 flex-wrap w-full px-1 sm:px-0">
+        {/* Search field */}
+        <div className="relative flex items-center flex-1 min-w-0 max-w-[320px]">
           <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-white/30" />
           <input
             ref={searchRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar tarefa..."
-            className="h-[38px] w-[210px] rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-[13px] font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(var(--task-purple)/0.4)] focus:bg-[hsl(var(--task-purple)/0.1)] focus:text-[hsl(var(--task-purple))]"
+            className="h-[38px] w-full rounded-xl border border-white/[0.06] bg-white/[0.03] pl-9 pr-7 text-[13px] font-semibold text-white/50 placeholder:text-white/30 outline-none transition hover:border-white/[0.12] hover:text-white/70 focus:border-[hsl(var(--task-purple)/0.4)] focus:bg-[hsl(var(--task-purple)/0.1)] focus:text-[hsl(var(--task-purple))]"
           />
           {search && (
             <button
@@ -307,17 +307,17 @@ export function TaskFilters({
             transition={{ duration: 0.2 }}
             className="overflow-visible w-full"
           >
-            <div className="flex flex-wrap items-end justify-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-visible">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end justify-center gap-3 sm:gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-4 overflow-visible">
               {/* Status */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 w-full sm:w-auto">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Status</label>
-                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
+                <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1 overflow-x-auto">
                   {statusChips.map((chip) => (
                     <button
                       key={chip.value}
                       type="button"
                       onClick={() => setStatus(chip.value)}
-                      className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
+                      className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold transition-all whitespace-nowrap ${
                         status === chip.value
                           ? "bg-[hsl(var(--task-purple))] text-white shadow"
                           : "text-white/30 hover:text-white/50"
