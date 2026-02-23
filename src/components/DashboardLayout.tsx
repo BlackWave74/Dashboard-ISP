@@ -11,6 +11,7 @@ import { useTrackPresence } from "@/hooks/useUserPresence";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/NotificationBell";
 import AssistantReminder from "@/components/AssistantReminder";
+import MobileHeader from "@/components/MobileHeader";
 import {
   parseDateValue,
   isDeadlineSoon,
@@ -167,6 +168,15 @@ function DashboardInner() {
     ? SIDEBAR_WIDTH_ICON
     : SIDEBAR_WIDTH;
 
+  const notificationBellEl = (
+    <NotificationBell
+      notifications={notifications}
+      unreadCount={unreadCount}
+      onMarkAsRead={markAsRead}
+      onMarkAllAsRead={markAllAsRead}
+    />
+  );
+
   return (
     <div
       style={{
@@ -180,50 +190,42 @@ function DashboardInner() {
     >
       <SyncIndicator syncing={loading} />
 
-      {/*
-        Sidebar column — dois layers:
-        - OUTER: ocupa TODA a altura do conteúdo (altura do grid row). É onde fica o
-          background gradient para que a cor preencha até embaixo mesmo em telas longas.
-        - INNER: position:sticky + height:100vh → mantém a nav visível ao scrollar.
-          overflow:hidden no inner evita que scrollbar apareça na sidebar.
-      */}
-      <div
-        style={{
-          background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
-          boxShadow: "4px 0 30px -4px rgba(0,0,0,0.7)",
-          zIndex: 20,
-          position: "relative",
-          /* Garante que a coluna se estique até o final do conteúdo */
-          alignSelf: "stretch",
-        }}
-      >
+      {/* Sidebar column (hidden on mobile — uses Sheet overlay instead) */}
+      {!isMobile && (
         <div
           style={{
-            position: "sticky",
-            top: 0,
-            height: "100vh",
-            overflowY: "auto",
-            overflowX: "hidden",
-            scrollbarWidth: "none",
-            display: "flex",
-            flexDirection: "column",
+            background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
+            boxShadow: "4px 0 30px -4px rgba(0,0,0,0.7)",
+            zIndex: 20,
+            position: "relative",
+            alignSelf: "stretch",
           }}
         >
-          <AppSidebar
-            notificationBell={
-              <NotificationBell
-                notifications={notifications}
-                unreadCount={unreadCount}
-                onMarkAsRead={markAsRead}
-                onMarkAllAsRead={markAllAsRead}
-              />
-            }
-          />
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              height: "100vh",
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollbarWidth: "none",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <AppSidebar notificationBell={notificationBellEl} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main content column */}
-      <main style={{ minWidth: 0, overflowX: "hidden" }}>
+      <main style={{ minWidth: 0, overflowX: "hidden", gridColumn: isMobile ? "1 / -1" : undefined }}>
+        {/* Mobile top bar with hamburger */}
+        <MobileHeader notificationBell={notificationBellEl} />
+
+        {/* Mobile sidebar (Sheet overlay) — rendered here so it's in the DOM */}
+        {isMobile && <AppSidebar notificationBell={notificationBellEl} />}
+
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
