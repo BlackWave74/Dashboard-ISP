@@ -217,7 +217,7 @@ export default function AssistantReminder({ notifTasks }: Props) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className="fixed bottom-6 left-6 z-50 w-[340px] max-w-[calc(100vw-3rem)]"
+            className="fixed bottom-6 left-4 right-4 z-50 sm:left-6 sm:right-auto sm:w-[340px]"
           >
             <div
               className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl"
