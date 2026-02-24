@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseExt as supabase } from "@/lib/supabase";
 
 export interface PresenceEntry {
@@ -9,11 +9,8 @@ export interface PresenceEntry {
 }
 
 const PRESENCE_CHANNEL = "isp-user-presence";
+const PRESENCE_STALE_TTL_MS = 45_000;
 
-/**
- * Wait until supabaseExt has a valid access token.
- * Retries up to 10 times with 800ms intervals.
- */
 async function waitForSession(cancelled: () => boolean): Promise<boolean> {
   for (let attempt = 0; attempt < 10; attempt++) {
     if (cancelled()) return false;
@@ -21,28 +18,39 @@ async function waitForSession(cancelled: () => boolean): Promise<boolean> {
     if (data?.session?.access_token) return true;
     await new Promise((r) => setTimeout(r, 800));
   }
-  console.warn("[Presence] supabaseExt session not available after retries");
+  console.warn("[Presence] session não ficou disponível após tentativas");
   return false;
 }
 
-/**
- * Hook para RASTREAR a presença do usuário atual no canal Realtime.
- * Chamado uma vez por sessão autenticada — registra o usuário como "online".
- */
 export function useTrackPresence(
   email: string | undefined,
   name: string | undefined,
   _emailDup?: string | undefined,
 ) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
+
+  const normalizedEmail = useMemo(() => String(email ?? "").trim().toLowerCase(), [email]);
 
   useEffect(() => {
-    if (!email || !name) return;
-
-    const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return;
 
     let cancelled = false;
+
+    const clearReconnect = () => {
+      if (reconnectTimerRef.current) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    };
+
+    const cleanupChannel = () => {
+      if (channelRef.current) {
+        channelRef.current.untrack();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
 
     const startTracking = async () => {
       const ready = await waitForSession(() => cancelled);
@@ -53,44 +61,94 @@ export function useTrackPresence(
       });
 
       channel
-        .on("presence", { event: "sync" }, () => {})
-        .subscribe(async (status) => {
-          if (status === "SUBSCRIBED") {
-            await channel.track({
+        .on("presence", { event: "sync" }, () => {
+          const state = channel.presenceState<PresenceEntry>();
+          const own = state[normalizedEmail];
+          if (!own || own.length === 0) {
+            void channel.track({
               auth_user_id: normalizedEmail,
-              name,
+              name: (name || normalizedEmail.split("@")[0] || "Usuário").trim(),
               email: normalizedEmail,
               online_at: new Date().toISOString(),
             } satisfies PresenceEntry);
+          }
+        })
+        .subscribe(async (status) => {
+          if (cancelled) return;
+
+          if (status === "SUBSCRIBED") {
+            await channel.track({
+              auth_user_id: normalizedEmail,
+              name: (name || normalizedEmail.split("@")[0] || "Usuário").trim(),
+              email: normalizedEmail,
+              online_at: new Date().toISOString(),
+            } satisfies PresenceEntry);
+            return;
+          }
+
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            cleanupChannel();
+            clearReconnect();
+            reconnectTimerRef.current = window.setTimeout(() => {
+              if (!cancelled) void startTracking();
+            }, 1200);
           }
         });
 
       channelRef.current = channel;
     };
 
-    startTracking();
+    void startTracking();
 
     return () => {
       cancelled = true;
-      if (channelRef.current) {
-        channelRef.current.untrack();
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      clearReconnect();
+      cleanupChannel();
     };
-  }, [email, name]);
+  }, [normalizedEmail, name]);
 }
 
-/**
- * Hook para OBSERVAR quem está online — somente para admins.
- * Retorna um Map de email → PresenceEntry com o horário de login.
- */
 export function useOnlineUsers(): Map<string, PresenceEntry> {
   const [onlineMap, setOnlineMap] = useState<Map<string, PresenceEntry>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const cacheRef = useRef<Map<string, { entry: PresenceEntry; seenAt: number }>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
+
+    const publishFromCache = () => {
+      const now = Date.now();
+      const map = new Map<string, PresenceEntry>();
+      cacheRef.current.forEach(({ entry, seenAt }, key) => {
+        if (now - seenAt <= PRESENCE_STALE_TTL_MS) {
+          map.set(key, entry);
+        }
+      });
+      setOnlineMap(map);
+    };
+
+    const syncState = () => {
+      const channel = channelRef.current;
+      if (!channel) return;
+
+      const state = channel.presenceState<PresenceEntry>();
+      const now = Date.now();
+
+      Object.values(state).forEach((entries) => {
+        const sorted = [...entries].sort(
+          (a, b) => new Date(b.online_at).getTime() - new Date(a.online_at).getTime(),
+        );
+        const entry = sorted[0];
+        if (entry?.email && entry.email !== "__observer__") {
+          cacheRef.current.set(entry.email.trim().toLowerCase(), {
+            entry,
+            seenAt: now,
+          });
+        }
+      });
+
+      publishFromCache();
+    };
 
     const startObserving = async () => {
       const ready = await waitForSession(() => cancelled);
@@ -100,38 +158,38 @@ export function useOnlineUsers(): Map<string, PresenceEntry> {
         config: { presence: { key: "__observer__" } },
       });
 
-      const syncState = () => {
-        const state = channel.presenceState<PresenceEntry>();
-        const map = new Map<string, PresenceEntry>();
-        Object.values(state).forEach((entries) => {
-          const sorted = [...entries].sort(
-            (a, b) => new Date(b.online_at).getTime() - new Date(a.online_at).getTime(),
-          );
-          const entry = sorted[0];
-          if (entry?.email && entry.email !== "__observer__") {
-            map.set(entry.email.trim().toLowerCase(), entry);
-          }
-        });
-        setOnlineMap(map);
-      };
-
       channel
         .on("presence", { event: "sync" }, syncState)
         .on("presence", { event: "join" }, syncState)
         .on("presence", { event: "leave" }, syncState)
-        .subscribe();
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") syncState();
+        });
 
       channelRef.current = channel;
     };
 
-    startObserving();
+    const gcTimer = window.setInterval(() => {
+      const now = Date.now();
+      cacheRef.current.forEach((value, key) => {
+        if (now - value.seenAt > PRESENCE_STALE_TTL_MS) {
+          cacheRef.current.delete(key);
+        }
+      });
+      publishFromCache();
+    }, 8_000);
+
+    void startObserving();
 
     return () => {
       cancelled = true;
+      window.clearInterval(gcTimer);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      cacheRef.current.clear();
+      setOnlineMap(new Map());
     };
   }, []);
 

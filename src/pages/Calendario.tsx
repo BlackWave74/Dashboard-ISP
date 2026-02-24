@@ -1,13 +1,17 @@
-/**
- * CALENDÁRIO DE TAREFAS
- * Layout inspirado em designs modernos de calendário (Dribbble).
- * Estrutura: Grade de dias + painel lateral de detalhes.
- * Manter esta estrutura para futuras melhorias.
- */
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertTriangle, User, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Bell,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  User,
+  Calendar,
+} from "lucide-react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { normalizeTaskTitle, parseDateValue } from "@/modules/tasks/utils";
@@ -22,25 +26,39 @@ function getTaskStatusKey(t: Record<string, any>): string {
   return "pending";
 }
 
-const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-const STATUS_CONFIG: Record<string, { dot: string; bg: string; text: string; label: string; icon: typeof CheckCircle2 }> = {
-  overdue: { dot: "bg-red-500", bg: "bg-red-500/10", text: "text-red-400", label: "Atrasada", icon: AlertTriangle },
-  pending: { dot: "bg-amber-400", bg: "bg-amber-500/10", text: "text-amber-400", label: "Pendente", icon: Clock },
-  done: { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-400", label: "Concluída", icon: CheckCircle2 },
-  unknown: { dot: "bg-muted-foreground", bg: "bg-muted/30", text: "text-muted-foreground", label: "—", icon: Clock },
+const STATUS_CONFIG: Record<string, { dot: string; line: string; text: string; label: string; icon: typeof CheckCircle2 }> = {
+  overdue: {
+    dot: "bg-rose-400",
+    line: "bg-rose-400",
+    text: "text-rose-400",
+    label: "Atrasada",
+    icon: AlertTriangle,
+  },
+  pending: {
+    dot: "bg-amber-400",
+    line: "bg-amber-400",
+    text: "text-amber-400",
+    label: "Pendente",
+    icon: Clock,
+  },
+  done: {
+    dot: "bg-emerald-400",
+    line: "bg-emerald-400",
+    text: "text-emerald-400",
+    label: "Concluída",
+    icon: CheckCircle2,
+  },
+  unknown: {
+    dot: "bg-[hsl(var(--muted-foreground))]",
+    line: "bg-[hsl(var(--muted-foreground))]",
+    text: "text-muted-foreground",
+    label: "Sem status",
+    icon: Clock,
+  },
 };
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-function getFirstDayOfWeek(year: number, month: number) {
-  return new Date(year, month, 1).getDay();
-}
-function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
 
 type CalendarTask = {
   title: string;
@@ -50,21 +68,57 @@ type CalendarTask = {
   consultant: string;
 };
 
+type CalendarCell = {
+  date: Date;
+  inCurrentMonth: boolean;
+};
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function buildMonthGrid(year: number, month: number): CalendarCell[] {
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+
+  const cells: CalendarCell[] = [];
+
+  for (let i = firstDay - 1; i >= 0; i--) {
+    cells.push({
+      date: new Date(year, month - 1, prevMonthDays - i),
+      inCurrentMonth: false,
+    });
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push({ date: new Date(year, month, day), inCurrentMonth: true });
+  }
+
+  const remaining = 42 - cells.length;
+  for (let day = 1; day <= remaining; day++) {
+    cells.push({ date: new Date(year, month + 1, day), inCurrentMonth: false });
+  }
+
+  return cells;
+}
+
 export default function Calendario() {
   usePageSEO("/calendario");
   const { session } = useAuth();
   const { tasks } = useTasks({ accessToken: session?.accessToken, period: "all" });
 
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [selectedDay, setSelectedDay] = useState(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
 
   const calendarTasks = useMemo<CalendarTask[]>(() => {
     return tasks
       .map((t) => {
         const deadline = parseDateValue(t.deadline) ?? parseDateValue(t.due_date) ?? parseDateValue(t.dueDate);
         if (!deadline) return null;
+
         return {
           title: normalizeTaskTitle(String(t.title ?? t.nome ?? t.name ?? "Tarefa")),
           project: String(t.projects?.name ?? t.project_name ?? t.project ?? ""),
@@ -78,173 +132,164 @@ export default function Calendario() {
 
   const tasksMap = useMemo(() => {
     const map = new Map<string, CalendarTask[]>();
-    calendarTasks.forEach((t) => {
-      const key = `${t.deadline.getFullYear()}-${t.deadline.getMonth()}-${t.deadline.getDate()}`;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(t);
+    calendarTasks.forEach((task) => {
+      const key = `${task.deadline.getFullYear()}-${task.deadline.getMonth()}-${task.deadline.getDate()}`;
+      const list = map.get(key) ?? [];
+      list.push(task);
+      map.set(key, list);
     });
     return map;
   }, [calendarTasks]);
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfWeek(year, month);
-  const days = Array.from({ length: 42 }, (_, i) => {
-    const dayNum = i - firstDay + 1;
-    if (dayNum < 1 || dayNum > daysInMonth) return null;
-    return new Date(year, month, dayNum);
-  });
-
-  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(year - 1); } else setMonth(month - 1); };
-  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(year + 1); } else setMonth(month + 1); };
-  const goToday = () => { setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDay(today); };
+  const monthCells = useMemo(() => buildMonthGrid(year, month), [year, month]);
 
   const selectedTasks = useMemo(() => {
-    if (!selectedDay) return [] as CalendarTask[];
-    const raw = tasksMap.get(`${selectedDay.getFullYear()}-${selectedDay.getMonth()}-${selectedDay.getDate()}`) ?? [];
+    const key = `${selectedDay.getFullYear()}-${selectedDay.getMonth()}-${selectedDay.getDate()}`;
+    const items = tasksMap.get(key) ?? [];
     const order: Record<string, number> = { overdue: 0, pending: 1, done: 2 };
-    return [...raw].sort((a, b) => (order[a.statusKey] ?? 3) - (order[b.statusKey] ?? 3));
+    return [...items].sort((a, b) => (order[a.statusKey] ?? 3) - (order[b.statusKey] ?? 3));
   }, [selectedDay, tasksMap]);
 
   const monthStats = useMemo(() => {
-    let overdue = 0, pending = 0, done = 0;
-    calendarTasks.forEach((t) => {
-      if (t.deadline.getFullYear() === year && t.deadline.getMonth() === month) {
-        if (t.statusKey === "overdue") overdue++;
-        else if (t.statusKey === "done") done++;
-        else pending++;
+    let overdue = 0;
+    let pending = 0;
+    let done = 0;
+
+    calendarTasks.forEach((task) => {
+      if (task.deadline.getMonth() === month && task.deadline.getFullYear() === year) {
+        if (task.statusKey === "overdue") overdue += 1;
+        else if (task.statusKey === "done") done += 1;
+        else pending += 1;
       }
     });
-    return { overdue, pending, done, total: overdue + pending + done };
-  }, [calendarTasks, year, month]);
+
+    return { overdue, pending, done };
+  }, [calendarTasks, month, year]);
+
+  const prevMonth = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear((v) => v - 1);
+    } else {
+      setMonth((v) => v - 1);
+    }
+  };
+
+  const nextMonth = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear((v) => v + 1);
+    } else {
+      setMonth((v) => v + 1);
+    }
+  };
 
   return (
     <div className="page-gradient w-full">
-      <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 sm:p-5 md:p-8">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
-              <CalendarDays className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Calendário de Entregas</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Visão estilo agenda para acompanhar atrasos e próximos vencimentos</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {[
-              { label: "Atrasadas", value: monthStats.overdue, color: "text-red-400" },
-              { label: "Pendentes", value: monthStats.pending, color: "text-amber-400" },
-              { label: "Concluídas", value: monthStats.done, color: "text-emerald-400" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-center">
-                <p className={`text-base sm:text-lg font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-[10px] text-muted-foreground font-medium">{s.label}</p>
+      <div className="mx-auto w-full max-w-[1500px] p-3 sm:p-5 md:p-7">
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="overflow-hidden rounded-[26px] border border-white/[0.08] bg-[hsl(var(--card)/0.75)] shadow-[0_30px_80px_hsl(260_60%_2%/0.55)]"
+        >
+          <header className="flex flex-col gap-4 border-b border-white/[0.06] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--task-purple)/0.2)]">
+                <CalendarDays className="h-5 w-5 text-[hsl(var(--task-purple))]" />
               </div>
-            ))}
-          </div>
-        </motion.div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground sm:text-2xl">Morning, {session?.name?.split(" ")[0] || "Time"}!</h1>
+                <p className="text-xs text-muted-foreground sm:text-sm">Aqui está sua agenda de entregas do dia.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 min-w-[220px] items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-xs text-muted-foreground">
+                <Search className="h-4 w-4" />
+                Buscar atividades
+              </div>
+              <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-muted-foreground transition hover:text-foreground">
+                <Bell className="h-4 w-4" />
+              </button>
+            </div>
+          </header>
 
-        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-          {/* Calendar Grid */}
-          <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-4 sm:p-5">
-              {/* Month navigation */}
-              <div className="flex items-center justify-between mb-4">
-                <Button variant="ghost" size="icon" onClick={prevMonth} className="text-muted-foreground hover:text-foreground rounded-xl h-9 w-9">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex items-center gap-3">
-                  <h2 className="text-base sm:text-lg font-bold text-foreground">{MONTHS[month]} {year}</h2>
-                  <button
-                    onClick={goToday}
-                    className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold text-muted-foreground hover:text-foreground hover:border-primary/30 transition"
-                  >
-                    Hoje
+          <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
+            <div className="p-4 sm:p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] text-muted-foreground transition hover:text-foreground">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-sm font-semibold text-foreground">
+                    {MONTHS[month]} {year}
+                  </div>
+                  <button onClick={nextMonth} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] text-muted-foreground transition hover:text-foreground">
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={nextMonth} className="text-muted-foreground hover:text-foreground rounded-xl h-9 w-9">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                <div className="hidden items-center gap-2 sm:flex">
+                  <BadgeInfo label="Atrasadas" value={monthStats.overdue} color="text-rose-400" />
+                  <BadgeInfo label="Pendentes" value={monthStats.pending} color="text-amber-400" />
+                  <BadgeInfo label="Concluídas" value={monthStats.done} color="text-emerald-400" />
+                </div>
               </div>
 
-              {/* Weekday headers */}
-              <div className="grid grid-cols-7 gap-1 mb-1">
-                {WEEKDAYS.map((d) => (
-                  <div key={d} className="text-center text-[10px] sm:text-[11px] font-bold text-muted-foreground/50 py-1.5 uppercase tracking-wider">{d}</div>
+              <div className="grid grid-cols-7 gap-2">
+                {WEEKDAYS.map((day) => (
+                  <div key={day} className="px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 sm:text-[11px]">
+                    {day.slice(0, 3)}
+                  </div>
                 ))}
-              </div>
 
-              {/* Days grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {days.map((day, i) => {
-                  if (!day) return <div key={i} className="min-h-[56px] sm:min-h-[68px]" />;
-                  const key = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+                {monthCells.map((cell, index) => {
+                  const date = cell.date;
+                  const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
                   const dayTasks = tasksMap.get(key) ?? [];
-                  const isToday = isSameDay(day, today);
-                  const isSelected = selectedDay && isSameDay(day, selectedDay);
-                  const hasOverdue = dayTasks.some((t) => t.statusKey === "overdue");
-                  const hasDone = dayTasks.some((t) => t.statusKey === "done");
-                  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                  const isSelected = isSameDay(date, selectedDay);
+                  const isToday = isSameDay(date, now);
 
                   return (
-                    <motion.button
-                      key={i}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedDay(day)}
-                      className={`relative flex flex-col items-center justify-start rounded-xl p-1 sm:p-1.5 min-h-[56px] sm:min-h-[68px] transition-all ${
+                    <button
+                      key={`${key}-${index}`}
+                      onClick={() => setSelectedDay(date)}
+                      className={`group relative min-h-[98px] rounded-2xl border p-2 text-left transition-all sm:min-h-[112px] ${
                         isSelected
-                          ? "bg-primary/15 ring-1 ring-primary/40"
-                          : isToday
-                          ? "bg-primary/8 ring-1 ring-primary/20"
-                          : isWeekend
-                          ? "bg-white/[0.01]"
-                          : "hover:bg-white/[0.03]"
-                      }`}
+                          ? "border-[hsl(var(--task-purple)/0.55)] bg-[hsl(var(--task-purple)/0.15)]"
+                          : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]"
+                      } ${!cell.inCurrentMonth ? "opacity-45" : "opacity-100"}`}
                     >
-                      <span className={`text-xs sm:text-sm font-semibold ${
-                        isToday ? "text-primary font-bold" : isSelected ? "text-foreground" : isWeekend ? "text-foreground/40" : "text-foreground/70"
-                      }`}>
-                        {day.getDate()}
+                      <span className={`text-sm font-semibold ${isToday ? "text-[hsl(var(--task-purple))]" : "text-foreground/80"}`}>
+                        {date.getDate()}
                       </span>
+
                       {dayTasks.length > 0 && (
-                        <div className="flex gap-0.5 mt-1 flex-wrap justify-center max-w-full">
-                          {dayTasks.slice(0, 3).map((t, ti) => (
-                            <span
-                              key={ti}
-                              className={`h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full ${STATUS_CONFIG[t.statusKey]?.dot ?? STATUS_CONFIG.unknown.dot}`}
-                            />
+                        <div className="mt-2 space-y-1">
+                          {dayTasks.slice(0, 2).map((task, i) => (
+                            <div key={`${task.title}-${i}`} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                              <span className={`h-1.5 w-1.5 rounded-full ${STATUS_CONFIG[task.statusKey]?.dot ?? STATUS_CONFIG.unknown.dot}`} />
+                              <span className="truncate">{task.title}</span>
+                            </div>
                           ))}
-                          {dayTasks.length > 3 && (
-                            <span className="text-[8px] sm:text-[9px] text-primary font-bold ml-0.5">+{dayTasks.length - 3}</span>
+                          {dayTasks.length > 2 && (
+                            <span className="text-[10px] font-semibold text-[hsl(var(--task-purple))]">+{dayTasks.length - 2} tarefas</span>
                           )}
                         </div>
                       )}
-                      {hasOverdue && (
-                        <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-red-500 animate-pulse" />
-                      )}
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
             </div>
-          </motion.div>
 
-          {/* Day Detail Panel */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm sticky top-6 p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-bold text-foreground">
-                  {selectedDay
-                    ? `${selectedDay.getDate()} de ${MONTHS[selectedDay.getMonth()]}`
-                    : "Selecione um dia"}
-                </h3>
-                {selectedTasks.length > 0 && (
-                  <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
-                    {selectedTasks.length}
-                  </span>
-                )}
+            <aside className="border-t border-white/[0.06] bg-white/[0.02] p-4 lg:border-l lg:border-t-0">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-foreground">Agenda do dia</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {selectedDay.getDate()} de {MONTHS[selectedDay.getMonth()]}, {selectedDay.getFullYear()}
+                  </p>
+                </div>
+                <Calendar className="h-4 w-4 text-[hsl(var(--task-purple))]" />
               </div>
 
               <AnimatePresence mode="wait">
@@ -254,51 +299,55 @@ export default function Calendario() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex flex-col items-center py-12 text-muted-foreground"
+                    className="rounded-2xl border border-dashed border-white/[0.1] p-6 text-center"
                   >
-                    <CalendarDays className="h-10 w-10 mb-3 opacity-15" />
-                    <p className="text-sm">{selectedDay ? "Nenhuma tarefa neste dia" : "Clique em um dia para ver tarefas"}</p>
+                    <p className="text-sm text-muted-foreground">Sem tarefas neste dia.</p>
                   </motion.div>
                 ) : (
-                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 styled-scrollbar">
-                    {selectedTasks.map((t, i) => {
-                      const cfg = STATUS_CONFIG[t.statusKey] ?? STATUS_CONFIG.unknown;
-                      const StatusIcon = cfg.icon;
+                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
+                    {selectedTasks.map((task, idx) => {
+                      const cfg = STATUS_CONFIG[task.statusKey] ?? STATUS_CONFIG.unknown;
+                      const Icon = cfg.icon;
                       return (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.04 }}
-                          className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"
-                        >
+                        <div key={`${task.title}-${idx}`} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+                          <span className={`mb-2 block h-1 w-full rounded-full ${cfg.line}`} />
                           <div className="flex items-start gap-2.5">
-                            <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${cfg.bg}`}>
-                              <StatusIcon className={`h-3.5 w-3.5 ${cfg.text}`} />
+                            <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.06]">
+                              <Icon className={`h-3.5 w-3.5 ${cfg.text}`} />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-[13px] font-semibold text-foreground leading-snug line-clamp-2">{t.title}</p>
-                              {t.project && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{t.project}</p>}
-                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                <span className={`text-[10px] font-bold ${cfg.text}`}>{cfg.label}</span>
-                                {t.consultant && (
-                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                                    <User className="h-2.5 w-2.5" />{t.consultant}
+                              <p className="truncate text-[13px] font-semibold text-foreground">{task.title}</p>
+                              {task.project && <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{task.project}</p>}
+                              <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+                                <span className={`font-bold ${cfg.text}`}>{cfg.label}</span>
+                                {task.consultant && (
+                                  <span className="inline-flex items-center gap-1 truncate">
+                                    <User className="h-3 w-3" />
+                                    {task.consultant}
                                   </span>
                                 )}
                               </div>
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       );
                     })}
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-          </motion.div>
-        </div>
+            </aside>
+          </div>
+        </motion.section>
       </div>
+    </div>
+  );
+}
+
+function BadgeInfo({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-center">
+      <p className={`text-sm font-bold ${color}`}>{value}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
     </div>
   );
 }
