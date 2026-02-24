@@ -579,24 +579,14 @@ export default function TarefasPage() {
   return (
     <div className="task-page min-h-screen relative">
       
-      {/* Background — matching home page purple gradient */}
+      {/* Background — roxo sóbrio, sem brilho / glow */}
       <div
         className="pointer-events-none fixed inset-0"
         style={{
           background:
-            "linear-gradient(180deg, hsl(270 60% 10%) 0%, hsl(250 50% 8%) 25%, hsl(234 45% 7%) 50%, hsl(260 40% 9%) 75%, hsl(234 45% 6%) 100%)",
+            "linear-gradient(180deg, hsl(260 35% 8%) 0%, hsl(250 40% 7%) 30%, hsl(240 35% 6%) 60%, hsl(234 30% 5%) 100%)",
         }}
       />
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          className="absolute top-[20%] left-[-10%] h-[600px] w-[600px] rounded-full opacity-20 blur-[160px]"
-          style={{ background: "radial-gradient(circle, hsl(270 80% 50%), transparent 70%)" }}
-        />
-        <div
-          className="absolute top-[60%] right-[-10%] h-[500px] w-[500px] rounded-full opacity-15 blur-[140px]"
-          style={{ background: "radial-gradient(circle, hsl(234 89% 50%), transparent 70%)" }}
-        />
-      </div>
 
       <div className="relative z-10 w-full max-w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
 
@@ -605,10 +595,10 @@ export default function TarefasPage() {
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="text-center flex-1">
               <h1 className="text-lg sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
-                Acompanhamento de Tarefas
+                Tarefas
               </h1>
               <p className="mt-0.5 text-[11px] sm:text-sm text-[hsl(var(--task-text-muted))]">
-                Acompanhe o progresso, prazos e desempenho das atividades em tempo real.
+                Progresso, prazos e desempenho das atividades.
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0 flex-wrap justify-center">

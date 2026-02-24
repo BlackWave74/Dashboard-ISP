@@ -232,19 +232,23 @@ export async function exportTasksPDF({
 
   const logo = await loadLogoBase64();
 
-  // Header bar
-  doc.setFillColor(30, 27, 75);
-  doc.rect(0, 0, pageW, 28, "F");
+  // Header bar — fundo escuro profissional
+  doc.setFillColor(24, 22, 60);
+  doc.rect(0, 0, pageW, 30, "F");
+  // Accent line
+  doc.setFillColor(99, 102, 241);
+  doc.rect(0, 30, pageW, 1.2, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text(title, 14, 13);
-  doc.setFontSize(9);
+  doc.text(title, 14, 14);
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
+  doc.setTextColor(180, 180, 210);
   const subLine = generatedBy
     ? `Gerado por ${generatedBy} em ${now}`
     : subtitle || `Gerado em ${now}`;
-  doc.text(subLine, 14, 20);
+  doc.text(subLine, 14, 22);
 
   if (logo) drawLogo(doc, logo, pageW);
   else {
@@ -252,34 +256,35 @@ export async function exportTasksPDF({
     doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
   }
 
-  let yPos = 34;
+  let yPos = 38;
 
-  // Stats cards
+  // Stats cards — cores sóbrias: verde=concluído, vermelho=atrasado
   if (stats) {
     const cards = [
-      { label: "Total", value: String(stats.total), color: [99, 102, 241] },
+      { label: "Total", value: String(stats.total), color: [80, 85, 140] },
       { label: "Concluído", value: String(stats.done), color: [34, 197, 94] },
-      { label: "Em Andamento", value: String(stats.pending), color: [250, 204, 21] },
+      { label: "Em Andamento", value: String(stats.pending), color: [100, 116, 139] },
       { label: "Atrasado", value: String(stats.overdue), color: [239, 68, 68] },
     ];
     if (stats.totalHours) {
       cards.push({ label: "Horas Totais", value: stats.totalHours, color: [139, 92, 246] });
     }
 
-    const cardW = (pageW - 28 - (cards.length - 1) * 4) / cards.length;
+    const cardW = (pageW - 28 - (cards.length - 1) * 5) / cards.length;
     cards.forEach((card, i) => {
-      const x = 14 + i * (cardW + 4);
+      const x = 14 + i * (cardW + 5);
       doc.setFillColor(card.color[0], card.color[1], card.color[2]);
-      doc.roundedRect(x, yPos, cardW, 16, 2, 2, "F");
+      doc.roundedRect(x, yPos, cardW, 18, 2.5, 2.5, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
+      doc.setFontSize(15);
       doc.setFont("helvetica", "bold");
-      doc.text(card.value, x + cardW / 2, yPos + 8, { align: "center" });
+      doc.text(card.value, x + cardW / 2, yPos + 9, { align: "center" });
       doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
-      doc.text(card.label, x + cardW / 2, yPos + 13, { align: "center" });
+      doc.setTextColor(230, 230, 255);
+      doc.text(card.label, x + cardW / 2, yPos + 15, { align: "center" });
     });
-    yPos += 22;
+    yPos += 24;
 
     // Charts section — only if there is data
     const hasAnyTask = stats.done > 0 || stats.pending > 0 || stats.overdue > 0;
@@ -382,29 +387,43 @@ export async function exportTasksPDF({
   ]);
 
   autoTable(doc, {
-    startY: yPos,
+    startY: yPos + 2,
     head: [["Tarefa", "Projeto", "Responsável", "Status", "Prazo", "Duração"]],
     body: tableBody,
     theme: "grid",
-    styles: { fontSize: 8, cellPadding: 3, textColor: [30, 27, 75], lineColor: [200, 200, 220], lineWidth: 0.2 },
+    styles: { fontSize: 7.5, cellPadding: 3.5, textColor: [30, 27, 75], lineColor: [210, 210, 225], lineWidth: 0.15 },
     headStyles: {
-      fillColor: [30, 27, 75],
+      fillColor: [24, 22, 60],
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 8,
+      fontSize: 7.5,
       halign: "center",
+      cellPadding: 4,
     },
-    alternateRowStyles: { fillColor: [245, 245, 255] },
+    alternateRowStyles: { fillColor: [248, 248, 255] },
     columnStyles: {
       0: { cellWidth: "auto", fontStyle: "bold", halign: "left" },
-      1: { halign: "center" },
-      2: { halign: "center" },
-      3: { halign: "center", cellWidth: 26 },
-      4: { halign: "center", cellWidth: 26 },
-      5: { halign: "center", cellWidth: 22 },
+      1: { halign: "center", cellWidth: 44 },
+      2: { halign: "center", cellWidth: 34 },
+      3: { halign: "center", cellWidth: 24 },
+      4: { halign: "center", cellWidth: 24 },
+      5: { halign: "center", cellWidth: 20 },
     },
     margin: { left: 14, right: 14 },
     didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
+    /* Cor de status condicional: verde=concluído, vermelho=atrasado */
+    didParseCell: (data: any) => {
+      if (data.section === "body" && data.column.index === 3) {
+        const val = String(data.cell.raw ?? "").toLowerCase();
+        if (val.includes("conclu") || val === "done") {
+          data.cell.styles.textColor = [34, 160, 80];
+          data.cell.styles.fontStyle = "bold";
+        } else if (val.includes("atras") || val === "overdue") {
+          data.cell.styles.textColor = [220, 50, 50];
+          data.cell.styles.fontStyle = "bold";
+        }
+      }
+    },
   });
 
   doc.save(fileName);
