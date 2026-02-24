@@ -128,14 +128,17 @@ const Sidebar = React.forwardRef<
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent
+      <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className="bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-          style={{ width: SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
+          className="p-0 text-sidebar-foreground [&>button]:hidden border-r-0"
+          style={{
+            width: SIDEBAR_WIDTH_MOBILE,
+            background: "linear-gradient(180deg, hsl(234 50% 12%) 0%, hsl(260 45% 10%) 50%, hsl(234 45% 8%) 100%)",
+          } as React.CSSProperties}
           side={side}
         >
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full w-full flex-col overflow-y-auto">{children}</div>
         </SheetContent>
       </Sheet>
     );
