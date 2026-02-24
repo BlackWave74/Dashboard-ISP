@@ -243,37 +243,59 @@ export default function Calendario() {
                   const dayTasks = tasksMap.get(key) ?? [];
                   const isSelected = isSameDay(date, selectedDay);
                   const isToday = isSameDay(date, now);
+                  const overdueCount = dayTasks.filter(t => t.statusKey === "overdue").length;
+                  const pendingCount = dayTasks.filter(t => t.statusKey === "pending").length;
+                  const doneCount = dayTasks.filter(t => t.statusKey === "done").length;
+
+                  // Determine dominant status for cell bg tint
+                  let cellBg = "bg-white/[0.02]";
+                  let cellBorder = "border-white/[0.06]";
+                  if (cell.inCurrentMonth && dayTasks.length > 0) {
+                    if (overdueCount > 0) {
+                      cellBg = "bg-rose-500/[0.08]";
+                      cellBorder = "border-rose-500/[0.2]";
+                    } else if (pendingCount > 0) {
+                      cellBg = "bg-amber-500/[0.08]";
+                      cellBorder = "border-amber-500/[0.2]";
+                    } else if (doneCount > 0) {
+                      cellBg = "bg-emerald-500/[0.08]";
+                      cellBorder = "border-emerald-500/[0.2]";
+                    }
+                  }
 
                   return (
-                    <button
+                    <motion.button
                       key={`${key}-${index}`}
                       onClick={() => setSelectedDay(date)}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
                       className={`group relative min-h-[98px] rounded-2xl border p-2 text-left transition-all sm:min-h-[112px] ${
                         isSelected
-                          ? "border-[hsl(var(--task-purple)/0.55)] bg-[hsl(var(--task-purple)/0.15)]"
-                          : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]"
-                      } ${!cell.inCurrentMonth ? "opacity-45" : "opacity-100"}`}
+                          ? "border-[hsl(var(--task-purple)/0.55)] bg-[hsl(var(--task-purple)/0.15)] ring-1 ring-[hsl(var(--task-purple)/0.3)]"
+                          : `${cellBorder} ${cellBg} hover:bg-white/[0.05]`
+                      } ${!cell.inCurrentMonth ? "opacity-40" : "opacity-100"}`}
                     >
                       <span className={`text-sm font-semibold ${isToday ? "text-[hsl(var(--task-purple))]" : "text-foreground/80"}`}>
                         {date.getDate()}
                       </span>
 
-                      {dayTasks.length > 0 && (() => {
-                        const doneCount = dayTasks.filter(t => t.statusKey === "done").length;
-                        const overdueCount = dayTasks.filter(t => t.statusKey === "overdue").length;
-                        const pendingCount = dayTasks.length - doneCount - overdueCount;
-                        return (
-                          <div className="mt-1.5 space-y-0.5">
-                            <p className="text-[11px] font-bold text-foreground/90">{dayTasks.length} tarefa{dayTasks.length > 1 ? "s" : ""}</p>
-                            <div className="flex flex-col gap-0.5 text-[10px] font-semibold">
-                              {overdueCount > 0 && <span className="text-rose-400">{overdueCount} atrasada{overdueCount > 1 ? "s" : ""}</span>}
-                              {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</span>}
-                              {doneCount > 0 && <span className="text-emerald-400">{doneCount} concluída{doneCount > 1 ? "s" : ""}</span>}
-                            </div>
+                      {dayTasks.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.05 }}
+                          className="mt-1.5 space-y-0.5"
+                        >
+                          <p className="text-[11px] font-bold text-foreground/90">{dayTasks.length} tarefa{dayTasks.length > 1 ? "s" : ""}</p>
+                          <div className="flex flex-col gap-0.5 text-[10px] font-semibold">
+                            {overdueCount > 0 && <span className="text-rose-400">{overdueCount} atrasada{overdueCount > 1 ? "s" : ""}</span>}
+                            {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</span>}
+                            {doneCount > 0 && <span className="text-emerald-400">{doneCount} concluída{doneCount > 1 ? "s" : ""}</span>}
                           </div>
-                        );
-                      })()}
-                    </button>
+                        </motion.div>
+                      )}
+                    </motion.button>
                   );
                 })}
               </div>
@@ -302,12 +324,25 @@ export default function Calendario() {
                     <p className="text-sm text-muted-foreground">Sem tarefas neste dia.</p>
                   </motion.div>
                 ) : (
-                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[420px] overflow-y-auto styled-scrollbar pr-1">
+                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[580px] overflow-y-auto styled-scrollbar pr-1">
                     {selectedTasks.map((task, idx) => {
                       const cfg = STATUS_CONFIG[task.statusKey] ?? STATUS_CONFIG.unknown;
                       const Icon = cfg.icon;
+                      const cardBg = task.statusKey === "overdue"
+                        ? "bg-rose-500/[0.1] border-rose-500/[0.25]"
+                        : task.statusKey === "pending"
+                        ? "bg-amber-500/[0.08] border-amber-500/[0.2]"
+                        : task.statusKey === "done"
+                        ? "bg-emerald-500/[0.08] border-emerald-500/[0.2]"
+                        : "bg-white/[0.03] border-white/[0.08]";
                       return (
-                        <div key={`${task.title}-${idx}`} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+                        <motion.div
+                          key={`${task.title}-${idx}`}
+                          initial={{ opacity: 0, x: 12 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05, duration: 0.25 }}
+                          className={`rounded-xl border p-3 ${cardBg}`}
+                        >
                           <span className={`mb-2 block h-1 w-full rounded-full ${cfg.line}`} />
                           <div className="flex items-start gap-2.5">
                             <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.06]">
@@ -327,7 +362,7 @@ export default function Calendario() {
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </motion.div>
