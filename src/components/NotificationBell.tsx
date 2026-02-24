@@ -12,6 +12,7 @@ import {
   Filter,
 } from "lucide-react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { AppNotification } from "@/hooks/useNotifications";
 
 type StatusFilter = "all" | "overdue" | "in_progress";
@@ -99,6 +100,7 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
   const buttonRef = useRef<HTMLButtonElement>(null);
   const bellControls = useAnimation();
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMobile = useIsMobile();
 
   // Periodic bell shake when there are unread notifications
   useEffect(() => {
@@ -149,6 +151,29 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
 
   const filteredUnread = filtered.filter((n) => !n.read).length;
 
+  // Compute panel position for desktop; mobile uses fixed full-width
+  const getPanelStyle = (): React.CSSProperties => {
+    if (isMobile) {
+      return {
+        background: "linear-gradient(160deg, hsl(234 50% 13%), hsl(260 45% 10%))",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100%",
+        maxWidth: "100%",
+        maxHeight: "100%",
+        borderRadius: 0,
+      };
+    }
+    const rect = buttonRef.current?.getBoundingClientRect();
+    return {
+      background: "linear-gradient(160deg, hsl(234 50% 13%), hsl(260 45% 10%))",
+      top: rect ? rect.bottom + 8 : 0,
+      right: 16,
+    };
+  };
+
   return (
     <div className="relative">
       <button
@@ -178,37 +203,44 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
 
       <AnimatePresence>
         {open && (
-          <motion.div
-            ref={panelRef}
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed z-[100] w-[380px] max-h-[520px] overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/60"
-            style={{
-              background: "linear-gradient(160deg, hsl(234 50% 13%), hsl(260 45% 10%))",
-              top: buttonRef.current ? buttonRef.current.getBoundingClientRect().top : 0,
-              left: buttonRef.current ? buttonRef.current.getBoundingClientRect().right + 12 : 0,
-            }}
-          >
+          <>
+            {/* Mobile backdrop */}
+            {isMobile && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[99] bg-black/60"
+                onClick={() => setOpen(false)}
+              />
+            )}
+            <motion.div
+              ref={panelRef}
+              initial={isMobile ? { opacity: 0, y: "100%" } : { opacity: 0, y: -8, scale: 0.96 }}
+              animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: 1 }}
+              exit={isMobile ? { opacity: 0, y: "100%" } : { opacity: 0, y: -8, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+              className={`fixed z-[100] overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/60 flex flex-col ${
+                isMobile ? "inset-0" : "w-[380px] max-h-[520px] rounded-2xl"
+              }`}
+              style={getPanelStyle()}
+            >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+            <div className={`flex items-center justify-between border-b border-white/[0.06] px-4 ${isMobile ? "py-4" : "py-3"}`}>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">Tarefas Pendentes</h3>
+                <h3 className={`font-bold text-white ${isMobile ? "text-base" : "text-sm"}`}>Tarefas Pendentes</h3>
                 {filteredUnread > 0 && (
                   <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-400">
                     {filteredUnread} nova{filteredUnread > 1 ? "s" : ""}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setOpen(false)}
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 transition hover:bg-white/[0.06] hover:text-white/60"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className={`flex items-center justify-center rounded-xl text-white/40 transition hover:bg-white/[0.08] hover:text-white/70 ${isMobile ? "h-10 w-10" : "h-6 w-6 rounded-lg"}`}
+              >
+                <X className={isMobile ? "h-5 w-5" : "h-3.5 w-3.5"} />
+              </button>
             </div>
 
             {/* Filter bar */}
@@ -255,7 +287,7 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
             </div>
 
             {/* List */}
-            <div className="overflow-y-auto max-h-[390px] divide-y divide-white/[0.04]">
+            <div className={`overflow-y-auto divide-y divide-white/[0.04] ${isMobile ? "flex-1" : "max-h-[390px]"}`}>
               {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04]">
@@ -337,6 +369,7 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
               )}
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
