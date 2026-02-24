@@ -224,6 +224,12 @@ export async function exportTasksPDF({
   stats,
   generatedBy,
 }: ExportOptions) {
+  // Derive project-centric title when all tasks belong to one project
+  const projectNames = new Set(tasks.map(t => t.project).filter(Boolean));
+  const dynamicTitle = projectNames.size === 1
+    ? `Relatório — ${[...projectNames][0]}`
+    : title;
+
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const now = new Date().toLocaleDateString("pt-BR", {
@@ -241,7 +247,7 @@ export async function exportTasksPDF({
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text(title, 14, 14);
+  doc.text(dynamicTitle, 14, 14);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(180, 180, 210);

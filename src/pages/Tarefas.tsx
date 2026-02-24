@@ -981,13 +981,13 @@ export default function TarefasPage() {
           transition={{ duration: 0.4, delay: 0.45 }}
           className="relative"
         >
-          <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="mb-3 flex items-center gap-3">
             <h3 className="text-base font-bold text-[hsl(var(--task-text))]">
               Lista de Atividades
-              <span className="ml-2 text-xs font-normal text-[hsl(var(--task-text-muted))]">
-                {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa encontrada" : "tarefas encontradas"}
-              </span>
             </h3>
+            <span className="text-xs font-normal text-[hsl(var(--task-text-muted))]">
+              {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa encontrada" : "tarefas encontradas"}
+            </span>
             <button
               type="button"
               onClick={() => setShowTaskListInfo(true)}

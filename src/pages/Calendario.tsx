@@ -4,8 +4,6 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Search,
-  Bell,
   Clock,
   AlertTriangle,
   CheckCircle2,
@@ -198,19 +196,17 @@ export default function Calendario() {
                 <CalendarDays className="h-5 w-5 text-[hsl(var(--task-purple))]" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground sm:text-2xl">Morning, {session?.name?.split(" ")[0] || "Time"}!</h1>
+                <h1 className="text-xl font-bold text-foreground sm:text-2xl">Olá, {session?.name?.split(" ")[0] || "Equipe"}!</h1>
                 <p className="text-xs text-muted-foreground sm:text-sm">Aqui está sua agenda de entregas do dia.</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 min-w-[220px] items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-xs text-muted-foreground">
-                <Search className="h-4 w-4" />
-                Buscar atividades
-              </div>
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-muted-foreground transition hover:text-foreground">
-                <Bell className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => { setSelectedDay(new Date(now.getFullYear(), now.getMonth(), now.getDate())); setMonth(now.getMonth()); setYear(now.getFullYear()); }}
+              className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground hover:border-[hsl(var(--task-purple)/0.4)]"
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              Hoje
+            </button>
           </header>
 
           <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
@@ -262,19 +258,19 @@ export default function Calendario() {
                         {date.getDate()}
                       </span>
 
-                      {dayTasks.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          {dayTasks.slice(0, 2).map((task, i) => (
-                            <div key={`${task.title}-${i}`} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                              <span className={`h-1.5 w-1.5 rounded-full ${STATUS_CONFIG[task.statusKey]?.dot ?? STATUS_CONFIG.unknown.dot}`} />
-                              <span className="truncate">{task.title}</span>
+                      {dayTasks.length > 0 && (() => {
+                        const doneCount = dayTasks.filter(t => t.statusKey === "done").length;
+                        const pendingCount = dayTasks.length - doneCount;
+                        return (
+                          <div className="mt-1.5 space-y-0.5">
+                            <p className="text-[10px] font-bold text-foreground/80">{dayTasks.length} tarefa{dayTasks.length > 1 ? "s" : ""}</p>
+                            <div className="flex items-center gap-1.5 text-[9px]">
+                              {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pend.</span>}
+                              {doneCount > 0 && <span className="text-emerald-400">{doneCount} ok</span>}
                             </div>
-                          ))}
-                          {dayTasks.length > 2 && (
-                            <span className="text-[10px] font-semibold text-[hsl(var(--task-purple))]">+{dayTasks.length - 2} tarefas</span>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        );
+                      })()}
                     </button>
                   );
                 })}
@@ -304,7 +300,7 @@ export default function Calendario() {
                     <p className="text-sm text-muted-foreground">Sem tarefas neste dia.</p>
                   </motion.div>
                 ) : (
-                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
+                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[340px] overflow-y-auto styled-scrollbar pr-1">
                     {selectedTasks.map((task, idx) => {
                       const cfg = STATUS_CONFIG[task.statusKey] ?? STATUS_CONFIG.unknown;
                       const Icon = cfg.icon;
