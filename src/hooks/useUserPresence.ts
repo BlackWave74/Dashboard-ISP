@@ -11,12 +11,23 @@ export interface PresenceEntry {
 const PRESENCE_CHANNEL = "isp-user-presence";
 
 /**
+ * Wait until supabaseExt has a valid access token.
+ * Retries up to 10 times with 800ms intervals.
+ */
+async function waitForSession(cancelled: () => boolean): Promise<boolean> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    if (cancelled()) return false;
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) return true;
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  console.warn("[Presence] supabaseExt session not available after retries");
+  return false;
+}
+
+/**
  * Hook para RASTREAR a presença do usuário atual no canal Realtime.
  * Chamado uma vez por sessão autenticada — registra o usuário como "online".
- * A chave é o email do usuário (sempre disponível na sessão).
- *
- * IMPORTANTE: Aguarda a sessão do supabaseExt estar sincronizada antes
- * de abrir o canal Realtime, evitando falhas silenciosas de autenticação.
  */
 export function useTrackPresence(
   email: string | undefined,
@@ -31,15 +42,8 @@ export function useTrackPresence(
     let cancelled = false;
 
     const startTracking = async () => {
-      // Wait until supabaseExt has a valid session (synced from useAuth)
-      // Retry a few times with short delays to handle timing issues
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const { data } = await supabase.auth.getSession();
-        if (data?.session?.access_token) break;
-        if (cancelled) return;
-        await new Promise((r) => setTimeout(r, 600));
-      }
-      if (cancelled) return;
+      const ready = await waitForSession(() => cancelled);
+      if (!ready || cancelled) return;
 
       const channel = supabase.channel(PRESENCE_CHANNEL, {
         config: { presence: { key: email } },
@@ -77,23 +81,17 @@ export function useTrackPresence(
 /**
  * Hook para OBSERVAR quem está online — somente para admins.
  * Retorna um Map de email → PresenceEntry com o horário de login.
- * Usa o mesmo canal para leitura de presença.
  */
 export function useOnlineUsers(): Map<string, PresenceEntry> {
   const [onlineMap, setOnlineMap] = useState<Map<string, PresenceEntry>>(new Map());
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     const startObserving = async () => {
-      // Wait for session like the tracker
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const { data } = await supabase.auth.getSession();
-        if (data?.session?.access_token) break;
-        if (cancelled) return;
-        await new Promise((r) => setTimeout(r, 600));
-      }
-      if (cancelled) return;
+      const ready = await waitForSession(() => cancelled);
+      if (!ready || cancelled) return;
 
       const channel = supabase.channel(PRESENCE_CHANNEL, {
         config: { presence: { key: "__observer__" } },
@@ -120,20 +118,17 @@ export function useOnlineUsers(): Map<string, PresenceEntry> {
         .on("presence", { event: "leave" }, syncState)
         .subscribe();
 
-      // Cleanup ref for this closure
-      if (!cancelled) {
-        cleanupRef = () => {
-          supabase.removeChannel(channel);
-        };
-      }
+      channelRef.current = channel;
     };
 
-    let cleanupRef: (() => void) | null = null;
     startObserving();
 
     return () => {
       cancelled = true;
-      cleanupRef?.();
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, []);
 

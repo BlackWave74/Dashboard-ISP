@@ -577,27 +577,17 @@ export default function TarefasPage() {
   }
 
   return (
-    <div className="task-page min-h-screen relative">
-      
-      {/* Background — roxo sóbrio, sem brilho / glow */}
-      <div
-        className="pointer-events-none fixed inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, hsl(260 35% 8%) 0%, hsl(250 40% 7%) 30%, hsl(240 35% 6%) 60%, hsl(234 30% 5%) 100%)",
-        }}
-      />
-
-      <div className="relative z-10 w-full max-w-full px-3 py-4 sm:px-5 lg:px-8 overflow-x-hidden">
+    <div className="page-gradient w-full">
+      <div className="mx-auto w-full max-w-[1900px] space-y-5 p-4 sm:p-5 md:p-8 overflow-x-hidden">
 
         {/* ═══ HEADER ═══ */}
         <motion.div {...fadeUp} className="mb-5">
           <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="text-center flex-1">
-              <h1 className="text-lg sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
+            <div className="flex flex-col items-center sm:items-start gap-1 text-center sm:text-left flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
                 Tarefas
               </h1>
-              <p className="mt-0.5 text-[11px] sm:text-sm text-[hsl(var(--task-text-muted))]">
+              <p className="text-xs sm:text-sm text-[hsl(var(--task-text-muted))]">
                 Progresso, prazos e desempenho das atividades.
               </p>
             </div>
@@ -1089,6 +1079,7 @@ export default function TarefasPage() {
         />
       )}
     </div>
+  </div>
   );
 }
 

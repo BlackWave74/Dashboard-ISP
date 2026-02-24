@@ -24,8 +24,8 @@ import {
 } from "recharts";
 import { Info, CheckCircle2, AlertTriangle, Hourglass } from "lucide-react";
 import { type TaskView } from "@/modules/tasks/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { motion } from "framer-motion";
+// Dialog removed — chart info is now inline
+import { motion, AnimatePresence } from "framer-motion";
 
 type ActiveDotProps = DotProps & { payload?: { iso?: string } };
 type BarProject = { name: string; hours: number; count?: number };
@@ -98,7 +98,7 @@ function groupByDeadline(tasks: TaskView[], limit: TimelineRange) {
   });
 }
 
-/* ─── Chart Info Modal with contextual data ─── */
+/* ─── Chart Info Inline Panel (replaces modal) ─── */
 type ChartInfoProps = {
   title: string;
   description: string;
@@ -145,96 +145,95 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
   }, [tasks, dataType]);
 
   return (
-    <>
+    <div className="relative">
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] transition hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-yellow))]"
-        title="Mais informações"
+        onClick={() => setOpen(!open)}
+        className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
+          open
+            ? "bg-[hsl(var(--task-yellow)/0.15)] text-[hsl(var(--task-yellow))]"
+            : "text-[hsl(var(--task-text-muted))] hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-yellow))]"
+        }`}
+        title={open ? "Fechar informações" : "Mais informações"}
       >
         <Info className="h-4 w-4" />
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-lg w-[calc(100vw-2rem)] mx-auto animate-scale-in rounded-3xl p-6">
-          <DialogHeader className="text-center items-center">
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--task-yellow)/0.15)]"
-            >
-              <Info className="h-5 w-5 text-[hsl(var(--task-yellow))]" />
-            </motion.div>
-            <DialogTitle className="text-[hsl(var(--task-text))] text-center text-xl">{title}</DialogTitle>
-            <DialogDescription className="text-[hsl(var(--task-text-muted))] text-[13px] leading-relaxed mt-2 text-center">
-              {description}
-            </DialogDescription>
-          </DialogHeader>
 
-          {/* Contextual data */}
-          {contextData?.type === "consultants" && (
-            <div className="mt-4 space-y-2.5 max-h-[320px] overflow-y-auto styled-scrollbar">
-              {contextData.items.map(([name, data], i) => (
-                <div key={name} className="flex items-center gap-3 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-4 py-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
-                      <span className="text-[11px] text-emerald-400">{data.done} feitas</span>
-                      {data.overdue > 0 && <span className="text-[11px] text-rose-400">{data.overdue} atrasadas</span>}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute right-0 top-9 z-50 w-72 sm:w-80 overflow-hidden rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] shadow-xl shadow-black/30"
+          >
+            <div className="p-4">
+              <p className="text-sm font-bold text-[hsl(var(--task-text))] mb-1">{title}</p>
+              <p className="text-[11px] leading-relaxed text-[hsl(var(--task-text-muted))] mb-3">{description}</p>
+
+              {/* Contextual data */}
+              {contextData?.type === "consultants" && (
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto styled-scrollbar">
+                  {contextData.items.map(([name, data], i) => (
+                    <div key={name} className="flex items-center gap-2 rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
+                        {name.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                        <div className="flex gap-2">
+                          <span className="text-[10px] text-emerald-400">{data.done} feitas</span>
+                          {data.overdue > 0 && <span className="text-[10px] text-rose-400">{data.overdue} atrasadas</span>}
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-[hsl(var(--task-text))]">{data.total}</span>
                     </div>
-                  </div>
-                  <span className="text-lg font-extrabold text-[hsl(var(--task-text))]">{data.total}</span>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {contextData?.type === "projects" && (
-            <div className="mt-4 space-y-2.5 max-h-[320px] overflow-y-auto styled-scrollbar">
-              {contextData.items.map(([name, data], i) => (
-                <div key={name} className="flex items-center gap-3 rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-4 py-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] text-[hsl(var(--task-text-muted))]">{data.total} tarefas</span>
-                      <span className="text-[11px] text-emerald-400">{data.hours.toFixed(1)}h</span>
+              {contextData?.type === "projects" && (
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto styled-scrollbar">
+                  {contextData.items.map(([name, data], i) => (
+                    <div key={name} className="flex items-center gap-2 rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
+                        {name.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                        <span className="text-[10px] text-emerald-400">{data.hours.toFixed(1)}h</span>
+                      </div>
+                      <span className="text-sm font-bold text-[hsl(var(--task-text))]">{data.total}</span>
                     </div>
-                  </div>
-                  <span className="text-lg font-extrabold text-[hsl(var(--task-text))]">{data.total}</span>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {contextData?.type === "summary" && (
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-3 text-center">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto mb-1" />
-                <p className="text-lg font-extrabold text-emerald-400">{contextData.done}</p>
-                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Concluídas</p>
-              </div>
-              <div className="rounded-xl border border-[hsl(var(--task-yellow)/0.2)] bg-[hsl(var(--task-yellow)/0.05)] px-3 py-3 text-center">
-                <Hourglass className="h-4 w-4 text-[hsl(var(--task-yellow))] mx-auto mb-1" />
-                <p className="text-lg font-extrabold text-[hsl(var(--task-yellow))]">{contextData.pending}</p>
-                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Em Andamento</p>
-              </div>
-              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-3 text-center">
-                <AlertTriangle className="h-4 w-4 text-rose-400 mx-auto mb-1" />
-                <p className="text-lg font-extrabold text-rose-400">{contextData.overdue}</p>
-                <p className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Atrasadas</p>
-              </div>
+              {contextData?.type === "summary" && (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-2 py-2 text-center">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 mx-auto mb-0.5" />
+                    <p className="text-sm font-bold text-emerald-400">{contextData.done}</p>
+                    <p className="text-[8px] uppercase text-[hsl(var(--task-text-muted))]">Concluídas</p>
+                  </div>
+                  <div className="rounded-lg border border-[hsl(var(--task-yellow)/0.2)] bg-[hsl(var(--task-yellow)/0.05)] px-2 py-2 text-center">
+                    <Hourglass className="h-3.5 w-3.5 text-[hsl(var(--task-yellow))] mx-auto mb-0.5" />
+                    <p className="text-sm font-bold text-[hsl(var(--task-yellow))]">{contextData.pending}</p>
+                    <p className="text-[8px] uppercase text-[hsl(var(--task-text-muted))]">Em Andamento</p>
+                  </div>
+                  <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 px-2 py-2 text-center">
+                    <AlertTriangle className="h-3.5 w-3.5 text-rose-400 mx-auto mb-0.5" />
+                    <p className="text-sm font-bold text-rose-400">{contextData.overdue}</p>
+                    <p className="text-[8px] uppercase text-[hsl(var(--task-text-muted))]">Atrasadas</p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
