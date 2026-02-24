@@ -145,7 +145,7 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
   }, [tasks, dataType]);
 
   return (
-    <div className="relative">
+    <div className="w-full">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -159,20 +159,19 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
         <Info className="h-4 w-4" />
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -6, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -6, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 top-9 z-50 w-72 sm:w-80 overflow-hidden rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] shadow-xl shadow-black/30"
+            className="mt-2 w-full overflow-hidden rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]"
           >
             <div className="p-4">
               <p className="text-sm font-bold text-[hsl(var(--task-text))] mb-1">{title}</p>
               <p className="text-[11px] leading-relaxed text-[hsl(var(--task-text-muted))] mb-3">{description}</p>
 
-              {/* Contextual data */}
               {contextData?.type === "consultants" && (
                 <div className="space-y-1.5 max-h-[200px] overflow-y-auto styled-scrollbar">
                   {contextData.items.map(([name, data], i) => (

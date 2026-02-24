@@ -98,9 +98,12 @@ export default function Calendario() {
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(year + 1); } else setMonth(month + 1); };
   const goToday = () => { setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDay(today); };
 
-  const selectedTasks = selectedDay
-    ? tasksMap.get(`${selectedDay.getFullYear()}-${selectedDay.getMonth()}-${selectedDay.getDate()}`) ?? []
-    : [];
+  const selectedTasks = useMemo(() => {
+    if (!selectedDay) return [] as CalendarTask[];
+    const raw = tasksMap.get(`${selectedDay.getFullYear()}-${selectedDay.getMonth()}-${selectedDay.getDate()}`) ?? [];
+    const order: Record<string, number> = { overdue: 0, pending: 1, done: 2 };
+    return [...raw].sort((a, b) => (order[a.statusKey] ?? 3) - (order[b.statusKey] ?? 3));
+  }, [selectedDay, tasksMap]);
 
   const monthStats = useMemo(() => {
     let overdue = 0, pending = 0, done = 0;
@@ -118,25 +121,24 @@ export default function Calendario() {
     <div className="page-gradient w-full">
       <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 sm:p-5 md:p-8">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
               <CalendarDays className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Calendário</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Tarefas organizadas por data de entrega</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Calendário de Entregas</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Visão estilo agenda para acompanhar atrasos e próximos vencimentos</p>
             </div>
           </div>
-          {/* Stats compactos */}
-          <div className="flex items-center gap-4 sm:gap-5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { label: "Atrasadas", value: monthStats.overdue, color: "text-red-400" },
               { label: "Pendentes", value: monthStats.pending, color: "text-amber-400" },
               { label: "Concluídas", value: monthStats.done, color: "text-emerald-400" },
             ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className={`text-lg sm:text-xl font-bold ${s.color}`}>{s.value}</p>
+              <div key={s.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-center">
+                <p className={`text-base sm:text-lg font-bold ${s.color}`}>{s.value}</p>
                 <p className="text-[10px] text-muted-foreground font-medium">{s.label}</p>
               </div>
             ))}
@@ -231,7 +233,6 @@ export default function Calendario() {
           {/* Day Detail Panel */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm sticky top-6 p-4 sm:p-5">
-              {/* Panel header */}
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-bold text-foreground">

@@ -582,8 +582,8 @@ export default function TarefasPage() {
 
         {/* ═══ HEADER ═══ */}
         <motion.div {...fadeUp} className="mb-5">
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex flex-col items-center sm:items-start gap-1 text-center sm:text-left flex-1">
+          <div className="flex flex-col sm:flex-row items-start gap-3">
+            <div className="flex flex-col items-start gap-1 text-left flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--task-text))] tracking-tight">
                 Tarefas
               </h1>
@@ -591,7 +591,7 @@ export default function TarefasPage() {
                 Progresso, prazos e desempenho das atividades.
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-center">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-start sm:justify-end">
               <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--task-text-muted))]">
                 <span className={`h-1.5 w-1.5 rounded-full ${refreshing ? "bg-[hsl(var(--task-yellow))] animate-pulse" : "bg-emerald-400"}`} />
                 {formatLastUpdated(combinedLastUpdated)}
@@ -993,7 +993,6 @@ export default function TarefasPage() {
             </div>
           )}
 
-          {/* Show shimmer ONLY when loading with no cached data */}
           {(loading || loadingTimes) && tasks.length === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -1079,7 +1078,6 @@ export default function TarefasPage() {
         />
       )}
     </div>
-  </div>
   );
 }
 

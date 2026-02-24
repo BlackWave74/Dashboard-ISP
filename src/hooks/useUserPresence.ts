@@ -39,6 +39,9 @@ export function useTrackPresence(
   useEffect(() => {
     if (!email || !name) return;
 
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return;
+
     let cancelled = false;
 
     const startTracking = async () => {
@@ -46,7 +49,7 @@ export function useTrackPresence(
       if (!ready || cancelled) return;
 
       const channel = supabase.channel(PRESENCE_CHANNEL, {
-        config: { presence: { key: email } },
+        config: { presence: { key: normalizedEmail } },
       });
 
       channel
@@ -54,9 +57,9 @@ export function useTrackPresence(
         .subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
             await channel.track({
-              auth_user_id: email,
+              auth_user_id: normalizedEmail,
               name,
-              email,
+              email: normalizedEmail,
               online_at: new Date().toISOString(),
             } satisfies PresenceEntry);
           }
@@ -106,7 +109,7 @@ export function useOnlineUsers(): Map<string, PresenceEntry> {
           );
           const entry = sorted[0];
           if (entry?.email && entry.email !== "__observer__") {
-            map.set(entry.email, entry);
+            map.set(entry.email.trim().toLowerCase(), entry);
           }
         });
         setOnlineMap(map);
