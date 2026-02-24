@@ -22,9 +22,8 @@ import {
   PolarAngleAxis,
   type DotProps,
 } from "recharts";
-import { Info, CheckCircle2, AlertTriangle, Hourglass } from "lucide-react";
-import { type TaskView } from "@/modules/tasks/types";
-// Dialog removed — chart info is now inline
+import { Info, CheckCircle2, AlertTriangle, Hourglass, X } from "lucide-react";
+import type { TaskView } from "@/modules/tasks/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ActiveDotProps = DotProps & { payload?: { iso?: string } };
@@ -98,20 +97,19 @@ function groupByDeadline(tasks: TaskView[], limit: TimelineRange) {
   });
 }
 
-/* ─── Chart Info Inline Panel (replaces modal) ─── */
+/* ─── Chart Info Overlay (same pattern as Analytics) ─── */
 type ChartInfoProps = {
   title: string;
   description: string;
   tasks?: TaskView[];
   dataType?: "consultants" | "projects" | "timeline";
+  show: boolean;
+  onClose: () => void;
 };
 
-function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps) {
-  const [open, setOpen] = useState(false);
-
+function ChartInfoOverlay({ title, description, tasks, dataType, show, onClose }: ChartInfoProps) {
   const contextData = useMemo(() => {
     if (!tasks?.length) return null;
-
     if (dataType === "consultants") {
       const map = new Map<string, { total: number; done: number; overdue: number }>();
       tasks.forEach((t) => {
@@ -124,7 +122,6 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
       });
       return { type: "consultants" as const, items: [...map.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8) };
     }
-
     if (dataType === "projects") {
       const map = new Map<string, { total: number; hours: number; done: number }>();
       tasks.forEach((t) => {
@@ -137,7 +134,6 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
       });
       return { type: "projects" as const, items: [...map.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8) };
     }
-
     const done = tasks.filter((t) => t.statusKey === "done").length;
     const pending = tasks.filter((t) => t.statusKey === "pending" || t.statusKey === "unknown").length;
     const overdue = tasks.filter((t) => t.statusKey === "overdue").length;
@@ -145,94 +141,80 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
   }, [tasks, dataType]);
 
   return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
-          open
-            ? "bg-[hsl(var(--task-yellow)/0.15)] text-[hsl(var(--task-yellow))]"
-            : "text-[hsl(var(--task-text-muted))] hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-yellow))]"
-        }`}
-        title={open ? "Fechar informações" : "Mais informações"}
-      >
-        <Info className="h-4 w-4" />
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: "auto" }}
-            exit={{ opacity: 0, y: -6, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="mt-2 w-full overflow-hidden rounded-xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]"
-          >
-            <div className="p-4">
-              <p className="text-sm font-bold text-[hsl(var(--task-text))] mb-1">{title}</p>
-              <p className="text-[11px] leading-relaxed text-[hsl(var(--task-text-muted))] mb-3">{description}</p>
-
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="absolute inset-0 z-20 flex flex-col rounded-2xl overflow-y-auto styled-scrollbar"
+          style={{ background: "hsl(260 30% 10% / 0.97)", backdropFilter: "blur(8px)" }}
+        >
+          <div className="p-5 flex-1">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-white/90">Sobre este gráfico</h4>
+              <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:text-white/90 hover:bg-white/10 transition">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-2.5 text-[11px] text-white/60 leading-relaxed">
+              <p><strong className="text-white/80">{title}</strong></p>
+              <p className="text-white/50">{description}</p>
               {contextData?.type === "consultants" && (
-                <div className="space-y-1.5 max-h-[200px] overflow-y-auto styled-scrollbar">
+                <div className="space-y-1.5 mt-3">
                   {contextData.items.map(([name, data], i) => (
-                    <div key={name} className="flex items-center gap-2 rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
-                        {name.charAt(0).toUpperCase()}
-                      </span>
+                    <div key={name} className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>{name.charAt(0).toUpperCase()}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                        <p className="text-[11px] font-semibold text-white/80 truncate">{name}</p>
                         <div className="flex gap-2">
                           <span className="text-[10px] text-emerald-400">{data.done} feitas</span>
                           {data.overdue > 0 && <span className="text-[10px] text-rose-400">{data.overdue} atrasadas</span>}
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-[hsl(var(--task-text))]">{data.total}</span>
+                      <span className="text-sm font-bold text-white/90">{data.total}</span>
                     </div>
                   ))}
                 </div>
               )}
-
               {contextData?.type === "projects" && (
-                <div className="space-y-1.5 max-h-[200px] overflow-y-auto styled-scrollbar">
+                <div className="space-y-1.5 mt-3">
                   {contextData.items.map(([name, data], i) => (
-                    <div key={name} className="flex items-center gap-2 rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>
-                        {name.charAt(0).toUpperCase()}
-                      </span>
+                    <div key={name} className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>{name.charAt(0).toUpperCase()}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-[hsl(var(--task-text))] truncate">{name}</p>
+                        <p className="text-[11px] font-semibold text-white/80 truncate">{name}</p>
                         <span className="text-[10px] text-emerald-400">{data.hours.toFixed(1)}h</span>
                       </div>
-                      <span className="text-sm font-bold text-[hsl(var(--task-text))]">{data.total}</span>
+                      <span className="text-sm font-bold text-white/90">{data.total}</span>
                     </div>
                   ))}
                 </div>
               )}
-
               {contextData?.type === "summary" && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 mt-3">
                   <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-2 py-2 text-center">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 mx-auto mb-0.5" />
                     <p className="text-sm font-bold text-emerald-400">{contextData.done}</p>
-                    <p className="text-[8px] uppercase text-[hsl(var(--task-text-muted))]">Concluídas</p>
+                    <p className="text-[8px] uppercase text-white/40">Concluídas</p>
                   </div>
-                  <div className="rounded-lg border border-[hsl(var(--task-yellow)/0.2)] bg-[hsl(var(--task-yellow)/0.05)] px-2 py-2 text-center">
-                    <Hourglass className="h-3.5 w-3.5 text-[hsl(var(--task-yellow))] mx-auto mb-0.5" />
-                    <p className="text-sm font-bold text-[hsl(var(--task-yellow))]">{contextData.pending}</p>
-                    <p className="text-[8px] uppercase text-[hsl(var(--task-text-muted))]">Em Andamento</p>
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-2 py-2 text-center">
+                    <Hourglass className="h-3.5 w-3.5 text-amber-400 mx-auto mb-0.5" />
+                    <p className="text-sm font-bold text-amber-400">{contextData.pending}</p>
+                    <p className="text-[8px] uppercase text-white/40">Em Andamento</p>
                   </div>
                   <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 px-2 py-2 text-center">
                     <AlertTriangle className="h-3.5 w-3.5 text-rose-400 mx-auto mb-0.5" />
                     <p className="text-sm font-bold text-rose-400">{contextData.overdue}</p>
-                    <p className="text-[8px] uppercase text-[hsl(var(--task-text-muted))]">Atrasadas</p>
+                    <p className="text-[8px] uppercase text-white/40">Atrasadas</p>
                   </div>
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -259,6 +241,9 @@ export function TaskCharts({
   onPickDeadlineIso,
 }: Props) {
   const [deadlineRange, setDeadlineRange] = useState<TimelineRange>(30);
+  const [showInfoPie, setShowInfoPie] = useState(false);
+  const [showInfoBar, setShowInfoBar] = useState(false);
+  const [showInfoLine, setShowInfoLine] = useState(false);
 
   const pieByConsultant = useMemo(() => groupTopN(tasks, (t) => t.consultant, 6), [tasks]);
   const barByProject = useMemo(() => {
@@ -326,19 +311,15 @@ export function TaskCharts({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="task-card flex flex-col min-h-0 min-w-0"
+          className="task-card relative flex flex-col min-h-0 min-w-0"
         >
-          <div className="mb-3 flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
-              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Distribuição por consultor</p>
-            </div>
-            <ChartInfoButton
-              title="Distribuição por Responsável"
-              description="Veja como as tarefas estão distribuídas entre os consultores. Clique em uma fatia para filtrar."
-              tasks={tasks}
-              dataType="consultants"
-            />
+          <button onClick={() => setShowInfoPie(true)} className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-white/25 hover:text-white/60 hover:bg-white/[0.08] transition-all">
+            <Info className="h-4 w-4" />
+          </button>
+          <ChartInfoOverlay show={showInfoPie} onClose={() => setShowInfoPie(false)} title="Distribuição por Responsável" description="Veja como as tarefas estão distribuídas entre os consultores. Clique em uma fatia para filtrar." tasks={tasks} dataType="consultants" />
+          <div className="mb-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-yellow))]">Responsáveis</p>
+            <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Distribuição por consultor</p>
           </div>
           <div className="flex-1 min-h-[180px] max-h-[280px]">
             {pieByConsultant.length ? (
@@ -346,32 +327,10 @@ export function TaskCharts({
                 <div className="flex-1 min-w-0 w-full" style={{ minHeight: 180 }}>
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
-                  <Pie
-                        data={pieByConsultant}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius="40%"
-                        outerRadius="65%"
-                        paddingAngle={3}
-                        stroke="none"
-                        isAnimationActive={true}
-                        animationDuration={1200}
-                        animationEasing="ease-out"
-                        className="cursor-pointer"
-                        onClick={(data: { name?: string; payload?: { name?: string } }) => {
-                          const name = String(data?.name ?? data?.payload?.name ?? "");
-                          if (name) onPickConsultant?.(name);
-                        }}
-                      >
-                        {pieByConsultant.map((entry, index) => (
-                          <Cell key={`${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                      <Pie data={pieByConsultant} dataKey="value" nameKey="name" innerRadius="40%" outerRadius="65%" paddingAngle={3} stroke="none" isAnimationActive animationDuration={1200} animationEasing="ease-out" className="cursor-pointer" onClick={(data: { name?: string; payload?: { name?: string } }) => { const name = String(data?.name ?? data?.payload?.name ?? ""); if (name) onPickConsultant?.(name); }}>
+                        {pieByConsultant.map((entry, index) => (<Cell key={`${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />))}
                       </Pie>
-                      <Tooltip
-                        contentStyle={tooltipStyle}
-                        itemStyle={{ color: "#e2e8f0" }}
-                        labelStyle={{ color: "#e2e8f0" }}
-                      />
+                      <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#e2e8f0" }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -398,29 +357,20 @@ export function TaskCharts({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="task-card flex flex-col min-h-0 min-w-0"
+          className="task-card relative flex flex-col min-h-0 min-w-0"
         >
-          <div className="mb-3 flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Alocação por Projeto</p>
-              <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Horas investidas por projeto</p>
-            </div>
-            <ChartInfoButton
-              title="Horas por Projeto"
-              description="Total de horas alocadas por projeto. Os 5 com mais horas são exibidos. Clique em uma barra para filtrar."
-              tasks={tasks}
-              dataType="projects"
-            />
+          <button onClick={() => setShowInfoBar(true)} className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-white/25 hover:text-white/60 hover:bg-white/[0.08] transition-all">
+            <Info className="h-4 w-4" />
+          </button>
+          <ChartInfoOverlay show={showInfoBar} onClose={() => setShowInfoBar(false)} title="Horas por Projeto" description="Total de horas alocadas por projeto. Os 5 com mais horas são exibidos. Clique em uma barra para filtrar." tasks={tasks} dataType="projects" />
+          <div className="mb-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--task-purple))]">Alocação por Projeto</p>
+            <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Horas investidas por projeto</p>
           </div>
           <div className="flex-1 min-h-[180px] max-h-[280px]">
             {barByProject.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={barByProject}
-                  layout="vertical"
-                  barCategoryGap="40%"
-                  margin={{ top: 5, right: 35, bottom: 5, left: 5 }}
-                >
+                <BarChart data={barByProject} layout="vertical" barCategoryGap="40%" margin={{ top: 5, right: 35, bottom: 5, left: 5 }}>
                   <defs>
                     {barByProject.map((_, idx) => (
                       <linearGradient key={idx} id={`barGrad-${idx}`} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -432,31 +382,9 @@ export function TaskCharts({
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" horizontal={false} />
                   <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: number) => `${v.toFixed(v >= 10 ? 0 : 1)}h`} />
                   <YAxis dataKey="name" type="category" hide />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    itemStyle={{ color: "#e2e8f0" }}
-                    labelStyle={{ color: "#e2e8f0" }}
-                    formatter={formatBarTooltip}
-                    labelFormatter={() => ""}
-                    cursor={{ fill: "hsl(228 20% 10%)" }}
-                  />
-                  <Bar
-                    dataKey="hours"
-                    radius={[0, 6, 6, 0]}
-                    barSize={18}
-                    minPointSize={12}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                    animationEasing="ease-out"
-                    className="cursor-pointer"
-                    onClick={(data: { name?: string; payload?: { name?: string } }) => {
-                      const name = String(data?.name ?? data?.payload?.name ?? "");
-                      if (name) onPickProject?.(name);
-                    }}
-                  >
-                    {barByProject.map((_, idx) => (
-                      <Cell key={idx} fill={`url(#barGrad-${idx})`} />
-                    ))}
+                  <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#e2e8f0" }} formatter={formatBarTooltip} labelFormatter={() => ""} cursor={{ fill: "hsl(228 20% 10%)" }} />
+                  <Bar dataKey="hours" radius={[0, 6, 6, 0]} barSize={18} minPointSize={12} isAnimationActive animationDuration={1200} animationEasing="ease-out" className="cursor-pointer" onClick={(data: { name?: string; payload?: { name?: string } }) => { const name = String(data?.name ?? data?.payload?.name ?? ""); if (name) onPickProject?.(name); }}>
+                    {barByProject.map((_, idx) => (<Cell key={idx} fill={`url(#barGrad-${idx})`} />))}
                     <LabelList dataKey="hours" position="right" formatter={formatBarLabel} style={{ fill: "#e2e8f0", fontSize: 10, fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
@@ -474,14 +402,18 @@ export function TaskCharts({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="task-card flex flex-col min-h-0 min-w-0"
+          className="task-card relative flex flex-col min-h-0 min-w-0"
         >
-          <div className="mb-3 flex items-center justify-between">
-            <div className="min-w-0">
+          <button onClick={() => setShowInfoLine(true)} className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-white/25 hover:text-white/60 hover:bg-white/[0.08] transition-all">
+            <Info className="h-4 w-4" />
+          </button>
+          <ChartInfoOverlay show={showInfoLine} onClose={() => setShowInfoLine(false)} title="Linha do Tempo de Prazos" description="Tarefas agrupadas por data de prazo. A linha verde mostra a tendência. A linha tracejada marca o dia atual." tasks={tasks} dataType="timeline" />
+          <div className="mb-3 flex items-center gap-2">
+            <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-400">Linha do Tempo</p>
               <p className="mt-0.5 text-xs sm:text-sm text-[hsl(var(--task-text-muted))] truncate">Tarefas por prazo</p>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 mr-8">
               {[7, 30].map((range) => (
                 <button
                   key={range}
@@ -496,12 +428,6 @@ export function TaskCharts({
                   {range}d
                 </button>
               ))}
-              <ChartInfoButton
-                title="Linha do Tempo de Prazos"
-                description="Tarefas agrupadas por data de prazo. A linha verde mostra a tendência. A linha tracejada marca o dia atual."
-                tasks={tasks}
-                dataType="timeline"
-              />
             </div>
           </div>
           <div className="flex-1 min-h-[180px] max-h-[280px]">
@@ -511,15 +437,9 @@ export function TaskCharts({
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" />
                   <XAxis dataKey="iso" tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`} />
                   <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} width={30} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    itemStyle={{ color: "#e2e8f0" }}
-                    labelStyle={{ color: "#e2e8f0" }}
-                    formatter={lineTooltipFormatter}
-                    labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))}
-                  />
+                  <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#e2e8f0" }} formatter={lineTooltipFormatter} labelFormatter={(label) => formatIsoDatePtBr(String(label ?? ""))} />
                   <ReferenceLine x={todayIso} stroke="hsl(160 84% 60%)" strokeDasharray="4 4" label={{ position: "insideTopRight", value: "Hoje", fill: "#94a3b8", fontSize: 10, dy: -4 }} />
-                  <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" />
+                  <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={renderActiveDot} isAnimationActive animationDuration={1500} animationEasing="ease-out" />
                 </LineChart>
               </ResponsiveContainer>
             ) : isLoading ? (
