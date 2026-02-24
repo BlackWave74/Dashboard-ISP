@@ -106,8 +106,8 @@ interface NavItemProps {
 }
 
 function SidebarNavItem({ to, icon: Icon, label, end, iconColor }: NavItemProps) {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { state, isMobile } = useSidebar();
+  const collapsed = isMobile ? false : state === "collapsed";
 
   const link = (
     <NavLink
@@ -155,8 +155,9 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   const { session, logout, canAccess } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  // On mobile Sheet, always show expanded content
+  const collapsed = isMobile ? false : state === "collapsed";
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -194,10 +195,11 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
   // Only one section open at a time — auto-collapse others
   const [openSection, setOpenSection] = useState<SectionKey | null>(activeSection);
 
-  // Sync open section when route changes
+  // Sync open section when route changes + close mobile sidebar on navigate
   useEffect(() => {
     const active = getActiveSection();
     if (active) setOpenSection(active);
+    if (isMobile) setOpenMobile(false);
   }, [location.pathname]);
 
   const toggleSection = useCallback((key: SectionKey) => {
