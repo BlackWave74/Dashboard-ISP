@@ -102,6 +102,13 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useIsMobile();
 
+  // Lock body scroll when notification panel is open on mobile
+  useEffect(() => {
+    if (!open || !isMobile) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open, isMobile]);
+
   // Periodic bell shake when there are unread notifications
   useEffect(() => {
     if (unreadCount === 0) return;

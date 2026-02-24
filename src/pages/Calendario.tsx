@@ -114,7 +114,7 @@ export default function Calendario() {
       }} />
       <div className="pointer-events-none absolute top-[40%] right-[-10%] h-[500px] w-[500px] rounded-full opacity-12 blur-[140px]" style={{ background: "radial-gradient(circle, hsl(234 89% 50%), transparent 70%)" }} />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-6 px-6 pt-6 md:px-10 pb-16">
+      <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-6 px-3 sm:px-6 pt-4 sm:pt-6 md:px-10 pb-16">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">

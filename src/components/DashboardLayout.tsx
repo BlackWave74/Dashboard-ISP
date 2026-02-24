@@ -72,6 +72,20 @@ const norm = (s: string) =>
 const SIDEBAR_WIDTH = "15.5rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 
+/**
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │  LAYOUT ARCHITECTURE — MANTER ESTA ESTRUTURA PARA NOVAS TELAS     │
+ * │                                                                     │
+ * │  Desktop: CSS Grid com sidebar fixa + conteúdo scrollável           │
+ * │  Mobile:  Grid 1-coluna + MobileHeader sticky + Sidebar Sheet       │
+ * │                                                                     │
+ * │  • Notification bell: único no MobileHeader (mobile) ou             │
+ * │    AppSidebar (desktop). NUNCA duplicar.                            │
+ * │  • Novas páginas devem usar <Outlet /> — NÃO criar layouts novos.  │
+ * │  • Responsividade: usar Tailwind breakpoints (sm/md/lg) e          │
+ * │    isMobile do useSidebar quando necessário.                        │
+ * └─────────────────────────────────────────────────────────────────────┘
+ */
 function DashboardInner() {
   const { session, isAuthenticated, loadingSession, canAccess } = useAuth();
   const location = useLocation();
@@ -220,11 +234,11 @@ function DashboardInner() {
 
       {/* Main content column */}
       <main style={{ minWidth: 0, overflowX: "hidden", gridColumn: isMobile ? "1 / -1" : undefined }}>
-        {/* Mobile top bar with hamburger */}
+        {/* Mobile top bar with hamburger — notification bell lives HERE on mobile (single instance) */}
         <MobileHeader notificationBell={notificationBellEl} />
 
-        {/* Mobile sidebar (Sheet overlay) — rendered here so it's in the DOM */}
-        {isMobile && <AppSidebar notificationBell={notificationBellEl} />}
+        {/* Mobile sidebar (Sheet overlay) — NO notification bell here to avoid duplication */}
+        {isMobile && <AppSidebar />}
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div

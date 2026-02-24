@@ -26,7 +26,7 @@ export default function IndexPage() {
         style={{ background: "radial-gradient(circle, hsl(234 89% 50%), transparent 70%)" }}
       />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-16 px-6 pt-6 md:px-10 pb-16">
+      <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-12 sm:space-y-16 px-3 sm:px-6 pt-4 sm:pt-6 md:px-10 pb-16">
         <HeroSection />
         <StatsCards />
         <FeaturesGrid />

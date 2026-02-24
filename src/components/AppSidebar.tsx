@@ -227,7 +227,9 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
         flexDirection: "column",
       }}
     >
-      {/* Logo + notifications + toggle */}
+      {/* Logo + notifications + toggle
+           On mobile Sheet: show only logo (bell lives in MobileHeader, toggle is unnecessary)
+           On desktop: show logo + notification bell + collapse toggle */}
       <div className={`flex ${collapsed ? "flex-col items-center gap-2 px-1 pt-4 pb-1" : "flex-row items-center justify-between px-4 pt-5 pb-1"}`}>
         {!collapsed && (
           <img
@@ -236,10 +238,12 @@ export function AppSidebar({ notificationBell }: AppSidebarProps) {
             className="h-9 w-auto object-contain transition-all duration-500 hover:brightness-125 hover:drop-shadow-[0_0_8px_hsl(234_89%_64%/0.5)]"
           />
         )}
-        <div className={`flex ${collapsed ? "flex-col" : "flex-row"} items-center gap-1`}>
-          {notificationBell}
-          <ToggleButton />
-        </div>
+        {!isMobile && (
+          <div className={`flex ${collapsed ? "flex-col" : "flex-row"} items-center gap-1`}>
+            {notificationBell}
+            <ToggleButton />
+          </div>
+        )}
       </div>
 
       <SidebarContent className={`${collapsed ? "px-1" : "px-3"} pt-5 overflow-x-hidden flex-1`}>
