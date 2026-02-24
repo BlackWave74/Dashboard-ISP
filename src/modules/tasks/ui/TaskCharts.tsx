@@ -305,7 +305,7 @@ export function TaskCharts({
       )}
 
       {/* Grid: responsive charts */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 overflow-hidden">
         {/* Pie: Consultants */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -323,8 +323,8 @@ export function TaskCharts({
           </div>
           <div className="flex-1 min-h-[180px] max-h-[280px]">
             {pieByConsultant.length ? (
-              <div className="flex flex-col sm:flex-row items-center gap-3 h-full">
-                <div className="flex-1 min-w-0 w-full" style={{ minHeight: 180 }}>
+              <div className="flex flex-col items-center gap-3 h-full overflow-hidden">
+                <div className="w-full min-w-0" style={{ minHeight: 180 }}>
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
                       <Pie data={pieByConsultant} dataKey="value" nameKey="name" innerRadius="40%" outerRadius="65%" paddingAngle={3} stroke="none" isAnimationActive animationDuration={1200} animationEasing="ease-out" className="cursor-pointer" onClick={(data: { name?: string; payload?: { name?: string } }) => { const name = String(data?.name ?? data?.payload?.name ?? ""); if (name) onPickConsultant?.(name); }}>
@@ -334,12 +334,12 @@ export function TaskCharts({
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-1.5 shrink-0 w-full sm:w-auto">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 w-full overflow-hidden">
                   {pieByConsultant.map((d, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate max-w-[80px]">{d.name}</span>
-                      <span className="ml-auto text-[10px] font-bold text-[hsl(var(--task-text))]">{d.value}</span>
+                    <div key={i} className="flex items-center gap-1.5 min-w-0">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate max-w-[70px]">{d.name}</span>
+                      <span className="text-[10px] font-bold text-[hsl(var(--task-text))]">{d.value}</span>
                     </div>
                   ))}
                 </div>
