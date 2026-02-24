@@ -174,10 +174,23 @@ function NotificationBellInner({ notifications, unreadCount, onMarkAsRead, onMar
       };
     }
     const rect = buttonRef.current?.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const panelWidth = 380;
+    let rightPos = 16;
+    if (rect) {
+      const rightEdge = viewportWidth - rect.right;
+      rightPos = Math.max(8, rightEdge - (panelWidth / 2) + (rect.width / 2));
+      // Ensure panel doesn't go off-screen right
+      if (rightPos + panelWidth > viewportWidth - 8) {
+        rightPos = viewportWidth - panelWidth - 8;
+      }
+      // Ensure panel doesn't go off-screen left
+      if (rightPos < 8) rightPos = 8;
+    }
     return {
       background: "linear-gradient(160deg, hsl(234 50% 13%), hsl(260 45% 10%))",
       top: rect ? rect.bottom + 8 : 0,
-      right: 16,
+      right: rightPos,
     };
   };
 

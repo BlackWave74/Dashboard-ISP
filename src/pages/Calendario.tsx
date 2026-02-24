@@ -260,13 +260,15 @@ export default function Calendario() {
 
                       {dayTasks.length > 0 && (() => {
                         const doneCount = dayTasks.filter(t => t.statusKey === "done").length;
-                        const pendingCount = dayTasks.length - doneCount;
+                        const overdueCount = dayTasks.filter(t => t.statusKey === "overdue").length;
+                        const pendingCount = dayTasks.length - doneCount - overdueCount;
                         return (
                           <div className="mt-1.5 space-y-0.5">
-                            <p className="text-[10px] font-bold text-foreground/80">{dayTasks.length} tarefa{dayTasks.length > 1 ? "s" : ""}</p>
-                            <div className="flex items-center gap-1.5 text-[9px]">
-                              {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pend.</span>}
-                              {doneCount > 0 && <span className="text-emerald-400">{doneCount} ok</span>}
+                            <p className="text-[11px] font-bold text-foreground/90">{dayTasks.length} tarefa{dayTasks.length > 1 ? "s" : ""}</p>
+                            <div className="flex flex-col gap-0.5 text-[10px] font-semibold">
+                              {overdueCount > 0 && <span className="text-rose-400">{overdueCount} atrasada{overdueCount > 1 ? "s" : ""}</span>}
+                              {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</span>}
+                              {doneCount > 0 && <span className="text-emerald-400">{doneCount} concluída{doneCount > 1 ? "s" : ""}</span>}
                             </div>
                           </div>
                         );
@@ -300,7 +302,7 @@ export default function Calendario() {
                     <p className="text-sm text-muted-foreground">Sem tarefas neste dia.</p>
                   </motion.div>
                 ) : (
-                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[340px] overflow-y-auto styled-scrollbar pr-1">
+                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[420px] overflow-y-auto styled-scrollbar pr-1">
                     {selectedTasks.map((task, idx) => {
                       const cfg = STATUS_CONFIG[task.statusKey] ?? STATUS_CONFIG.unknown;
                       const Icon = cfg.icon;

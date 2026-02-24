@@ -203,6 +203,9 @@ html, body {
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   -webkit-text-fill-color: hsl(var(--login-text));
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: dark;
 }
 .login-field input:-webkit-autofill,
 .login-field input:-webkit-autofill:hover,
