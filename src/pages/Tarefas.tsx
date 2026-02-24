@@ -43,7 +43,7 @@ import {
 } from "@/modules/tasks/utils";
 import { STATUS_LABELS } from "@/modules/tasks/types";
 import { exportTasksPDF } from "@/lib/exportPdf";
-import ExportPDFModal, { type PDFExportSelection } from "@/modules/analytics/components/ExportPDFModal";
+import ExportPDFModal, { type PDFExportSelection, type TaskIntegrityInfo } from "@/modules/analytics/components/ExportPDFModal";
 
 /* ─── Helpers (business logic preserved) ─── */
 
@@ -1093,22 +1093,50 @@ export default function TarefasPage() {
         <ExportPDFModal
           title="Exportar Relatório de Tarefas"
           onClose={() => setShowExportModal(false)}
-          onExport={async (sel: PDFExportSelection) => {
-            const rows = filteredTasks
-              .filter((t) => {
-                if (t.statusKey === "done" && !sel.includeDone) return false;
-                if (t.statusKey === "overdue" && !sel.includeOverdue) return false;
-                if ((t.statusKey === "pending" || t.statusKey === "unknown") && !sel.includePending) return false;
-                return true;
-              })
-              .map((t) => ({
-                title: (t.title || "").trim() || "Sem título",
-                project: (t.project || "").trim() || "Sem projeto",
-                consultant: sel.includeResponsible ? ((t.consultant || "").trim() || "Sem responsável") : "—",
-                statusLabel: STATUS_LABELS[t.statusKey]?.label || "Sem status",
-                deadlineLabel: sel.includeDeadline ? ((t.deadlineLabel || "").trim() || "Sem prazo") : "—",
-                durationLabel: sel.includeDuration ? ((t.durationLabel || "").trim() || "Sem registro") : "—",
-              }));
+          taskIntegrityData={filteredTasks.map((t): TaskIntegrityInfo => ({
+            title: t.title,
+            project: t.project,
+            consultant: t.consultant,
+            deadlineLabel: t.deadlineLabel,
+            durationLabel: t.durationLabel,
+            statusKey: t.statusKey,
+          }))}
+          onExport={async (sel: PDFExportSelection, incompleteAction) => {
+            const EMPTY_MARKERS = ["sem título", "sem projeto", "sem consultor", "sem prazo", "sem registro", "sem status", "tarefa sem título", "projeto indefinido", ""];
+
+            const isFieldEmpty = (v: string) => EMPTY_MARKERS.includes(v.trim().toLowerCase()) || v.trim() === "" || v.trim() === "—";
+
+            const isTaskIncomplete = (t: typeof filteredTasks[0]) => {
+              if (isFieldEmpty(t.title)) return true;
+              if (isFieldEmpty(t.project)) return true;
+              if (sel.includeResponsible && isFieldEmpty(t.consultant)) return true;
+              if (sel.includeDeadline && isFieldEmpty(t.deadlineLabel)) return true;
+              if (sel.includeDuration && isFieldEmpty(t.durationLabel)) return true;
+              return false;
+            };
+
+            let tasksToExport = filteredTasks.filter((t) => {
+              if (t.statusKey === "done" && !sel.includeDone) return false;
+              if (t.statusKey === "overdue" && !sel.includeOverdue) return false;
+              if ((t.statusKey === "pending" || t.statusKey === "unknown") && !sel.includePending) return false;
+              return true;
+            });
+
+            if (incompleteAction === "exclude") {
+              tasksToExport = tasksToExport.filter((t) => !isTaskIncomplete(t));
+            } else if (incompleteAction === "only-incomplete") {
+              tasksToExport = tasksToExport.filter((t) => isTaskIncomplete(t));
+            }
+
+            const rows = tasksToExport.map((t) => ({
+              title: (t.title || "").trim() || "Sem título",
+              project: (t.project || "").trim() || "Sem projeto",
+              consultant: sel.includeResponsible ? ((t.consultant || "").trim() || "Sem responsável") : "—",
+              statusLabel: STATUS_LABELS[t.statusKey]?.label || "Sem status",
+              deadlineLabel: sel.includeDeadline ? ((t.deadlineLabel || "").trim() || "Sem prazo") : "—",
+              durationLabel: sel.includeDuration ? ((t.durationLabel || "").trim() || "Sem registro") : "—",
+            }));
+
             await exportTasksPDF({
               tasks: rows,
               stats: {
