@@ -151,20 +151,8 @@ export default function FerramentasPage() {
   const activeDuration = DURATION_OPTIONS.find(o => o.value === form.duration);
 
   return (
-    <div className="w-full">
-      {/* Ambient glows */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div
-          className="absolute -top-32 right-0 h-[500px] w-[500px] rounded-full blur-[120px]"
-          style={{ background: "hsl(234 89% 60% / 0.08)" }}
-        />
-        <div
-          className="absolute bottom-0 -left-32 h-[400px] w-[400px] rounded-full blur-[100px]"
-          style={{ background: "hsl(270 70% 50% / 0.06)" }}
-        />
-      </div>
-
-      <div className="relative z-10 w-full px-4 py-8 sm:px-6 lg:px-10">
+    <div className="page-gradient w-full">
+      <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 sm:p-5 md:p-8">
 
         {/* ── Page Header ── */}
         <motion.div

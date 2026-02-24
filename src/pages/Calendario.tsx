@@ -115,13 +115,8 @@ export default function Calendario() {
   }, [calendarTasks, year, month]);
 
   return (
-    <div className="relative min-h-screen w-full">
-      {/* Fundo sóbrio */}
-      <div className="pointer-events-none fixed inset-0" style={{
-        background: "linear-gradient(180deg, hsl(260 35% 8%) 0%, hsl(240 35% 6%) 50%, hsl(234 30% 5%) 100%)",
-      }} />
-
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-5 px-3 sm:px-6 pt-4 sm:pt-6 md:px-10 pb-16">
+    <div className="page-gradient w-full">
+      <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 sm:p-5 md:p-8">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">

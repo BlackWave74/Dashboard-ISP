@@ -91,8 +91,8 @@ export default function SuportePage() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-y-auto" style={{ background: "linear-gradient(165deg, hsl(270 60% 10%), hsl(234 45% 6%))" }}>
-      <div className="mx-auto w-full max-w-[1000px] space-y-5 p-5 md:p-8">
+    <div className="page-gradient w-full">
+      <div className="mx-auto w-full max-w-[1000px] space-y-5 p-4 sm:p-5 md:p-8">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] shadow-lg shadow-[hsl(262_83%_58%/0.25)]">

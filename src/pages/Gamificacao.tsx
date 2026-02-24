@@ -177,13 +177,8 @@ export default function Gamificacao() {
   const topThree = ranking.slice(0, 3);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      <div className="pointer-events-none absolute inset-0" style={{
-        background: "linear-gradient(180deg, hsl(270 60% 10%) 0%, hsl(250 50% 8%) 25%, hsl(234 45% 7%) 50%, hsl(260 40% 9%) 75%, hsl(234 45% 6%) 100%)",
-      }} />
-      <div className="pointer-events-none absolute bottom-[20%] right-[10%] h-[300px] w-[300px] rounded-full opacity-6 blur-[120px]" style={{ background: "radial-gradient(circle, hsl(280 70% 55%), transparent 70%)" }} />
-
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] space-y-6 sm:space-y-8 px-3 sm:px-6 pt-4 sm:pt-6 md:px-10 pb-16">
+    <div className="page-gradient w-full">
+      <div className="mx-auto w-full max-w-[1200px] space-y-6 sm:space-y-8 p-4 sm:p-5 md:p-8">
         {/* Header with trophy animation */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-2 sm:space-y-3">
           <TrophyAnimation />

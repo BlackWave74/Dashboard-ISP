@@ -148,13 +148,8 @@ export default function MapaClientes() {
   }), [clients]);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      <div className="pointer-events-none absolute inset-0" style={{
-        background: "linear-gradient(180deg, hsl(270 60% 10%) 0%, hsl(250 50% 8%) 25%, hsl(234 45% 7%) 50%, hsl(260 40% 9%) 75%, hsl(234 45% 6%) 100%)",
-      }} />
-      <div className="pointer-events-none absolute top-[20%] left-[-5%] h-[500px] w-[500px] rounded-full opacity-12 blur-[140px]" style={{ background: "radial-gradient(circle, hsl(160 84% 39%), transparent 70%)" }} />
-
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] space-y-6 px-6 pt-6 md:px-10 pb-16">
+    <div className="page-gradient w-full">
+      <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 sm:p-5 md:p-8">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
