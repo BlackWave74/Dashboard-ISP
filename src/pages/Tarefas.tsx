@@ -30,6 +30,7 @@ import {
   BarChart3,
   ChevronDown,
   FileDown,
+  Info,
 } from "lucide-react";
 import {
   deadlineColor,
@@ -191,6 +192,7 @@ export default function TarefasPage() {
   const [showCharts, setShowCharts] = useState(true);
   const [showDashboard, setShowDashboard] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showTaskListInfo, setShowTaskListInfo] = useState(false);
   const pageSize = 10;
 
   const searchInputRef = useRef<HTMLInputElement>(null!);
@@ -977,15 +979,59 @@ export default function TarefasPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.45 }}
+          className="relative"
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
             <h3 className="text-base font-bold text-[hsl(var(--task-text))]">
               Lista de Atividades
               <span className="ml-2 text-xs font-normal text-[hsl(var(--task-text-muted))]">
                 {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa encontrada" : "tarefas encontradas"}
               </span>
             </h3>
+            <button
+              type="button"
+              onClick={() => setShowTaskListInfo(true)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted)/0.55)] transition hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-text))]"
+              aria-label="Mais informações sobre a lista"
+            >
+              <Info className="h-4 w-4" />
+            </button>
           </div>
+
+          <AnimatePresence>
+            {showTaskListInfo && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                className="absolute inset-x-0 top-8 z-20 overflow-hidden rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg)/0.98)] backdrop-blur-sm"
+              >
+                <div className="flex items-center justify-between border-b border-[hsl(var(--task-border)/0.55)] px-4 py-3">
+                  <h4 className="text-sm font-bold text-[hsl(var(--task-text))]">Como esta lista é organizada</h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowTaskListInfo(false)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-[hsl(var(--task-text-muted))] transition hover:bg-[hsl(var(--task-surface-hover))] hover:text-[hsl(var(--task-text))]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="space-y-2.5 px-4 py-3 text-[11px] leading-relaxed text-[hsl(var(--task-text-muted))]">
+                  <p>
+                    A <strong className="text-[hsl(var(--task-text))]">Lista de Atividades</strong> prioriza tarefas mais críticas no topo.
+                  </p>
+                  <ul className="list-disc space-y-1 pl-4 marker:text-[hsl(var(--task-yellow))]">
+                    <li><strong className="text-rose-400">Atrasadas</strong> aparecem primeiro.</li>
+                    <li>Depois vêm tarefas em andamento com prazo mais próximo.</li>
+                    <li>Tarefas concluídas ficam ao final da ordenação.</li>
+                  </ul>
+                  <p>
+                    Os filtros (prazo, responsável, projeto e período) refinam a lista antes da ordenação final.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {(error || timesError) && (
             <div className="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-2.5 text-xs text-rose-400">
@@ -1001,9 +1047,9 @@ export default function TarefasPage() {
             </div>
           ) : filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] px-6 py-16 text-center">
-              <Layers className="h-10 w-10 text-[hsl(var(--task-text-muted)/0.15)] mb-3" />
+              <Layers className="mb-3 h-10 w-10 text-[hsl(var(--task-text-muted)/0.15)]" />
               <p className="text-sm font-medium text-[hsl(var(--task-text-muted))]">Nenhuma atividade encontrada</p>
-              <p className="text-xs text-[hsl(var(--task-text-muted)/0.5)] mt-1">Tente ajustar os filtros ou atualizar os dados.</p>
+              <p className="mt-1 text-xs text-[hsl(var(--task-text-muted)/0.5)]">Tente ajustar os filtros ou atualizar os dados.</p>
             </div>
           ) : (
             <>
