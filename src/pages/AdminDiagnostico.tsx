@@ -230,9 +230,9 @@ export default function AdminDiagnostico() {
             boxShadow: "0 0 0 1px hsl(222 25% 13%), 0 20px 40px hsl(222 47% 3% / 0.5)",
           }}
         >
-          {/* Table header */}
+        {/* Table header — hidden on mobile, cards used instead */}
           <div
-            className="grid grid-cols-[1fr_160px_110px_180px] gap-2 px-5 py-3.5"
+            className="hidden sm:grid grid-cols-[1fr_160px_110px_180px] gap-2 px-5 py-3.5"
             style={{
               background: "hsl(222 40% 10%)",
               borderBottom: "1px solid hsl(222 25% 12%)",
@@ -293,14 +293,13 @@ export default function AdminDiagnostico() {
                     initial={{ opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.03 * idx }}
-                    className="grid grid-cols-[1fr_160px_110px_180px] items-center gap-2 px-5 py-3.5 transition-colors"
+                    className="hidden sm:grid grid-cols-[1fr_160px_110px_180px] items-center gap-2 px-5 py-3.5 transition-colors"
                     style={{
                       borderBottom: "1px solid hsl(222 25% 11%)",
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "hsl(222 40% 10%)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
-                    {/* Task name */}
                     <div className="min-w-0 pr-2">
                       <p className="truncate text-sm font-medium" style={{ color: "hsl(210 40% 85%)" }}>
                         {ot.title}
@@ -311,13 +310,9 @@ export default function AdminDiagnostico() {
                         </p>
                       )}
                     </div>
-
-                    {/* Consultant */}
                     <p className="truncate text-xs" style={{ color: "hsl(215 20% 55%)" }}>
                       {ot.consultant}
                     </p>
-
-                    {/* Deadline */}
                     <p
                       className="text-xs font-medium"
                       style={{
@@ -330,8 +325,46 @@ export default function AdminDiagnostico() {
                     >
                       {ot.deadline ? formatDatePtBR(ot.deadline) : "—"}
                     </p>
-
-                    {/* Reason badge */}
+                    <span
+                      className="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                      style={{
+                        background: "hsl(38 92% 50% / 0.1)",
+                        boxShadow: "0 0 0 1px hsl(38 92% 50% / 0.2)",
+                        color: "hsl(38 92% 60%)",
+                      }}
+                    >
+                      <Unlink className="h-2.5 w-2.5 shrink-0" />
+                      {ot.reason}
+                    </span>
+                  </motion.div>
+                ))}
+                {/* Mobile card layout */}
+                {paginated.map((ot, idx) => (
+                  <motion.div
+                    key={`m-${ot.task_id || idx}`}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.03 * idx }}
+                    className="sm:hidden flex flex-col gap-2 px-4 py-3.5"
+                    style={{ borderBottom: "1px solid hsl(222 25% 11%)" }}
+                  >
+                    <p className="text-sm font-medium leading-snug" style={{ color: "hsl(210 40% 85%)" }}>
+                      {ot.title}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: "hsl(215 20% 55%)" }}>
+                      <span>{ot.consultant}</span>
+                      <span
+                        style={{
+                          color: !ot.deadline
+                            ? "hsl(215 20% 38%)"
+                            : ot.deadline < new Date()
+                            ? "hsl(0 70% 60%)"
+                            : "hsl(215 20% 60%)",
+                        }}
+                      >
+                        {ot.deadline ? formatDatePtBR(ot.deadline) : "Sem prazo"}
+                      </span>
+                    </div>
                     <span
                       className="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold"
                       style={{
