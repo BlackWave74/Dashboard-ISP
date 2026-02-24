@@ -40,7 +40,8 @@ type Props = {
   onPickDeadlineIso?: (iso: string) => void;
 };
 
-const COLORS = ["#FCBD0F", "#9333ea", "#22c55e", "#f43f5e", "#06b6d4", "#6366f1", "#f97316", "#84cc16"];
+/* Paleta sóbria: verde para concluído, vermelho para alertas, tons neutros e discretos */
+const COLORS = ["#22c55e", "#ef4444", "#6366f1", "#64748b", "#0ea5e9", "#8b5cf6", "#94a3b8", "#059669"];
 
 const tooltipStyle: React.CSSProperties = {
   background: "hsl(228 25% 8%)",
@@ -154,7 +155,7 @@ function ChartInfoButton({ title, description, tasks, dataType }: ChartInfoProps
         <Info className="h-4 w-4" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-lg mx-auto animate-scale-in fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-3xl p-6">
+        <DialogContent className="border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text))] max-w-lg w-[calc(100vw-2rem)] mx-auto animate-scale-in rounded-3xl p-6">
           <DialogHeader className="text-center items-center">
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
