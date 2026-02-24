@@ -1102,12 +1102,12 @@ export default function TarefasPage() {
                 return true;
               })
               .map((t) => ({
-                title: t.title,
-                project: t.project,
-                consultant: sel.includeResponsible ? t.consultant : "—",
-                statusLabel: STATUS_LABELS[t.statusKey]?.label ?? "—",
-                deadlineLabel: sel.includeDeadline ? t.deadlineLabel : "—",
-                durationLabel: sel.includeDuration ? t.durationLabel : "—",
+                title: (t.title || "").trim() || "Sem título",
+                project: (t.project || "").trim() || "Sem projeto",
+                consultant: sel.includeResponsible ? ((t.consultant || "").trim() || "Sem responsável") : "—",
+                statusLabel: STATUS_LABELS[t.statusKey]?.label || "Sem status",
+                deadlineLabel: sel.includeDeadline ? ((t.deadlineLabel || "").trim() || "Sem prazo") : "—",
+                durationLabel: sel.includeDuration ? ((t.durationLabel || "").trim() || "Sem registro") : "—",
               }));
             await exportTasksPDF({
               tasks: rows,
