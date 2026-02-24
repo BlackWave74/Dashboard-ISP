@@ -859,7 +859,8 @@ export default function UsuariosPage() {
                       const initials = (user.name || user.email || "U")
                         .split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
                           const isSelected = editingUser?.id === user.id;
-                      const presenceEntry = onlineUsers.get(user.email);
+                      const normalizedEmail = String(user.email ?? "").trim().toLowerCase();
+                      const presenceEntry = onlineUsers.get(normalizedEmail) ?? onlineUsers.get(String(user.email ?? "").trim());
                       const isOnline = Boolean(presenceEntry);
                       const loginTime = presenceEntry ? formatLoginTime(presenceEntry.online_at) : null;
 

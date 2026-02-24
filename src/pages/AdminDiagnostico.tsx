@@ -90,16 +90,9 @@ export default function AdminDiagnostico() {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="w-full">
-      {/* Ambient glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[700px] rounded-full blur-[120px]"
-          style={{ background: "hsl(38 92% 50% / 0.04)" }}
-        />
-      </div>
+    <div className="page-gradient w-full">
 
-      <div className="relative z-10 w-full px-4 py-10 sm:px-6">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-10 sm:px-6">
         {/* ── Header ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
