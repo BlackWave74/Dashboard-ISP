@@ -126,7 +126,7 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
             className="overflow-hidden"
           >
             <div className="border-t border-white/[0.04]">
-              <div className="grid grid-cols-[3fr_1.5fr_1fr_80px] gap-3 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-white/25">
+              <div className="grid grid-cols-[2fr_1.5fr_1fr_90px] gap-3 px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/30">
                 <span>Tarefa</span>
                 <span>Projeto</span>
                 <span>Responsável</span>
@@ -151,7 +151,7 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
-                    className="grid grid-cols-[3fr_1.5fr_1fr_80px] gap-3 border-t border-white/[0.03] px-5 py-2.5 text-xs transition hover:bg-white/[0.02]"
+                    className="grid grid-cols-[2fr_1.5fr_1fr_90px] gap-3 border-t border-white/[0.03] px-5 py-2.5 text-[13px] transition hover:bg-white/[0.02]"
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <div

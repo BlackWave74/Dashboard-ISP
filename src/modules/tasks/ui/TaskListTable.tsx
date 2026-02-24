@@ -106,7 +106,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
       {/* Header */}
-      <div className="hidden md:grid grid-cols-[minmax(100px,1fr)_80px_80px_140px_140px_90px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+      <div className="hidden md:grid grid-cols-[minmax(80px,2fr)_90px_90px_160px_160px_100px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
         <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
           Tarefa
         </div>
@@ -131,7 +131,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.025, duration: 0.2 }}
                 onClick={() => setExpandedId(isExpanded ? null : key)}
-                className={`group grid grid-cols-1 md:grid-cols-[minmax(100px,1fr)_80px_80px_140px_140px_90px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
+                className={`group grid grid-cols-1 md:grid-cols-[minmax(80px,2fr)_90px_90px_160px_160px_100px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
               >
                 {/* Task name */}
                 <div className="flex items-center gap-3 px-4 py-3.5">
@@ -154,7 +154,7 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
 
                 {/* Deadline */}
                 <div className="hidden md:flex items-center justify-start px-2 py-3">
-                  <span className={`text-xs ${task.statusKey === "overdue" ? "text-rose-400 font-bold" : task.deadlineIsSoon ? "text-[hsl(var(--task-yellow))]" : "text-[hsl(var(--task-text-muted))]"}`}>
+                  <span className={`text-[13px] ${task.statusKey === "overdue" ? "text-rose-400 font-bold" : task.deadlineIsSoon ? "text-[hsl(var(--task-yellow))]" : "text-[hsl(var(--task-text-muted))]"}`}>
                     {task.deadlineLabel}
                   </span>
                 </div>
@@ -164,17 +164,17 @@ export function TaskListTable({ tasks }: TaskListTableProps) {
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-[9px] font-bold text-[hsl(var(--task-purple))]">
                     {task.consultant ? task.consultant.charAt(0).toUpperCase() : "?"}
                   </div>
-                  <span className="text-xs text-white truncate">{task.consultant}</span>
+                  <span className="text-[13px] text-white truncate">{task.consultant}</span>
                 </div>
 
                 {/* Project */}
                 <div className="hidden md:flex items-center justify-start px-2 py-3">
-                  <span className="text-xs text-white truncate">{task.project}</span>
+                  <span className="text-[13px] text-white truncate">{task.project}</span>
                 </div>
 
                 {/* Duration */}
                 <div className="hidden md:flex items-center justify-start px-2 py-3">
-                  <span className="text-xs font-mono text-white">
+                  <span className="text-[13px] font-mono text-white">
                     {formatDurationHHMM(task.durationSeconds)}
                   </span>
                 </div>
