@@ -324,7 +324,7 @@ export default function Calendario() {
                     <p className="text-sm text-muted-foreground">Sem tarefas neste dia.</p>
                   </motion.div>
                 ) : (
-                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[580px] overflow-y-auto styled-scrollbar pr-1">
+                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[820px] overflow-y-auto styled-scrollbar pr-1">
                     {selectedTasks.map((task, idx) => {
                       const cfg = STATUS_CONFIG[task.statusKey] ?? STATUS_CONFIG.unknown;
                       const Icon = cfg.icon;
