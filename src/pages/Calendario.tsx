@@ -24,7 +24,7 @@ function getTaskStatusKey(t: Record<string, any>): string {
   return "pending";
 }
 
-const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const WEEKDAYS_SHORT = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 const STATUS_CONFIG: Record<string, { dot: string; line: string; text: string; label: string; icon: typeof CheckCircle2 }> = {
@@ -209,8 +209,8 @@ export default function Calendario() {
             </button>
           </header>
 
-          <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
-            <div className="p-4 sm:p-5">
+          <div className="grid gap-0 lg:grid-cols-[1fr_320px]">
+            <div className="p-3 sm:p-5 overflow-x-auto">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <button onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] text-muted-foreground transition hover:text-foreground">
@@ -230,10 +230,10 @@ export default function Calendario() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-2">
-                {WEEKDAYS.map((day) => (
-                  <div key={day} className="px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 sm:text-[11px]">
-                    {day.slice(0, 3)}
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                {WEEKDAYS_SHORT.map((day) => (
+                  <div key={day} className="px-1 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 sm:text-[11px]">
+                    {day}
                   </div>
                 ))}
 
@@ -270,13 +270,13 @@ export default function Calendario() {
                       whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.97 }}
                       transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                      className={`group relative min-h-[98px] rounded-2xl border p-2 text-left transition-all sm:min-h-[112px] ${
+                      className={`group relative min-h-[60px] rounded-xl border p-1.5 text-left transition-all sm:min-h-[98px] sm:rounded-2xl sm:p-2 ${
                         isSelected
                           ? "border-[hsl(var(--task-purple)/0.55)] bg-[hsl(var(--task-purple)/0.15)] ring-1 ring-[hsl(var(--task-purple)/0.3)]"
                           : `${cellBorder} ${cellBg} hover:bg-white/[0.05]`
                       } ${!cell.inCurrentMonth ? "opacity-40" : "opacity-100"}`}
                     >
-                      <span className={`text-sm font-semibold ${isToday ? "text-[hsl(var(--task-purple))]" : "text-foreground/80"}`}>
+                      <span className={`text-xs font-semibold sm:text-sm ${isToday ? "text-[hsl(var(--task-purple))]" : "text-foreground/80"}`}>
                         {date.getDate()}
                       </span>
 
@@ -285,13 +285,19 @@ export default function Calendario() {
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.05 }}
-                          className="mt-1.5 space-y-0.5"
+                          className="mt-0.5 space-y-0 sm:mt-1.5 sm:space-y-0.5"
                         >
-                          <p className="text-[11px] font-bold text-foreground/90">{dayTasks.length} tarefa{dayTasks.length > 1 ? "s" : ""}</p>
-                          <div className="flex flex-col gap-0.5 text-[10px] font-semibold">
+                          <p className="text-[9px] font-bold text-foreground/90 sm:text-[11px]">{dayTasks.length} <span className="hidden sm:inline">tarefa{dayTasks.length > 1 ? "s" : ""}</span></p>
+                          <div className="hidden flex-col gap-0.5 text-[10px] font-semibold sm:flex">
                             {overdueCount > 0 && <span className="text-rose-400">{overdueCount} atrasada{overdueCount > 1 ? "s" : ""}</span>}
                             {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</span>}
                             {doneCount > 0 && <span className="text-emerald-400">{doneCount} concluída{doneCount > 1 ? "s" : ""}</span>}
+                          </div>
+                          {/* Mobile: colored dots only */}
+                          <div className="flex gap-0.5 sm:hidden">
+                            {overdueCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />}
+                            {pendingCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
+                            {doneCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
                           </div>
                         </motion.div>
                       )}
