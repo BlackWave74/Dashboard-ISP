@@ -209,9 +209,9 @@ export default function Calendario() {
             </button>
           </header>
 
-          <div className="grid gap-0 lg:grid-cols-[1fr_320px]">
-            <div className="p-3 sm:p-5 overflow-x-auto">
-              <div className="mb-3 flex items-center justify-between">
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="p-2.5 sm:p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <button onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] text-muted-foreground transition hover:text-foreground">
                     <ChevronLeft className="h-4 w-4" />
@@ -230,84 +230,94 @@ export default function Calendario() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                {WEEKDAYS_SHORT.map((day) => (
-                  <div key={day} className="px-1 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 sm:text-[11px]">
-                    {day}
-                  </div>
-                ))}
+              <div className="mb-3 grid grid-cols-3 gap-1.5 sm:hidden">
+                <BadgeInfo label="Atrasadas" value={monthStats.overdue} color="text-rose-400" />
+                <BadgeInfo label="Pendentes" value={monthStats.pending} color="text-amber-400" />
+                <BadgeInfo label="Concluídas" value={monthStats.done} color="text-emerald-400" />
+              </div>
 
-                {monthCells.map((cell, index) => {
-                  const date = cell.date;
-                  const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-                  const dayTasks = tasksMap.get(key) ?? [];
-                  const isSelected = isSameDay(date, selectedDay);
-                  const isToday = isSameDay(date, now);
-                  const overdueCount = dayTasks.filter(t => t.statusKey === "overdue").length;
-                  const pendingCount = dayTasks.filter(t => t.statusKey === "pending").length;
-                  const doneCount = dayTasks.filter(t => t.statusKey === "done").length;
+              <div className="overflow-x-auto pb-1">
+                <div className="min-w-[560px] sm:min-w-0">
+                  <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                    {WEEKDAYS_SHORT.map((day) => (
+                      <div key={day} className="px-1 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 sm:text-[11px]">
+                        {day}
+                      </div>
+                    ))}
 
-                  // Determine dominant status for cell bg tint
-                  let cellBg = "bg-white/[0.02]";
-                  let cellBorder = "border-white/[0.06]";
-                  if (cell.inCurrentMonth && dayTasks.length > 0) {
-                    if (overdueCount > 0) {
-                      cellBg = "bg-rose-500/[0.08]";
-                      cellBorder = "border-rose-500/[0.2]";
-                    } else if (pendingCount > 0) {
-                      cellBg = "bg-amber-500/[0.08]";
-                      cellBorder = "border-amber-500/[0.2]";
-                    } else if (doneCount > 0) {
-                      cellBg = "bg-emerald-500/[0.08]";
-                      cellBorder = "border-emerald-500/[0.2]";
-                    }
-                  }
+                    {monthCells.map((cell, index) => {
+                      const date = cell.date;
+                      const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+                      const dayTasks = tasksMap.get(key) ?? [];
+                      const isSelected = isSameDay(date, selectedDay);
+                      const isToday = isSameDay(date, now);
+                      const overdueCount = dayTasks.filter(t => t.statusKey === "overdue").length;
+                      const pendingCount = dayTasks.filter(t => t.statusKey === "pending").length;
+                      const doneCount = dayTasks.filter(t => t.statusKey === "done").length;
 
-                  return (
-                    <motion.button
-                      key={`${key}-${index}`}
-                      onClick={() => setSelectedDay(date)}
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                      className={`group relative min-h-[60px] rounded-xl border p-1.5 text-left transition-all sm:min-h-[98px] sm:rounded-2xl sm:p-2 ${
-                        isSelected
-                          ? "border-[hsl(var(--task-purple)/0.55)] bg-[hsl(var(--task-purple)/0.15)] ring-1 ring-[hsl(var(--task-purple)/0.3)]"
-                          : `${cellBorder} ${cellBg} hover:bg-white/[0.05]`
-                      } ${!cell.inCurrentMonth ? "opacity-40" : "opacity-100"}`}
-                    >
-                      <span className={`text-xs font-semibold sm:text-sm ${isToday ? "text-[hsl(var(--task-purple))]" : "text-foreground/80"}`}>
-                        {date.getDate()}
-                      </span>
+                      // Determine dominant status for cell bg tint
+                      let cellBg = "bg-white/[0.02]";
+                      let cellBorder = "border-white/[0.06]";
+                      if (cell.inCurrentMonth && dayTasks.length > 0) {
+                        if (overdueCount > 0) {
+                          cellBg = "bg-rose-500/[0.08]";
+                          cellBorder = "border-rose-500/[0.2]";
+                        } else if (pendingCount > 0) {
+                          cellBg = "bg-amber-500/[0.08]";
+                          cellBorder = "border-amber-500/[0.2]";
+                        } else if (doneCount > 0) {
+                          cellBg = "bg-emerald-500/[0.08]";
+                          cellBorder = "border-emerald-500/[0.2]";
+                        }
+                      }
 
-                      {dayTasks.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.05 }}
-                          className="mt-0.5 space-y-0 sm:mt-1.5 sm:space-y-0.5"
+                      return (
+                        <motion.button
+                          key={`${key}-${index}`}
+                          onClick={() => setSelectedDay(date)}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ type: "spring", stiffness: 360, damping: 22 }}
+                          className={`group relative min-h-[72px] rounded-xl border p-1.5 text-left transition-all sm:min-h-[92px] sm:rounded-2xl sm:p-2 lg:min-h-[98px] ${
+                            isSelected
+                              ? "border-[hsl(var(--task-purple)/0.55)] bg-[hsl(var(--task-purple)/0.15)] ring-1 ring-[hsl(var(--task-purple)/0.3)]"
+                              : `${cellBorder} ${cellBg} hover:bg-white/[0.05]`
+                          } ${!cell.inCurrentMonth ? "opacity-40" : "opacity-100"}`}
                         >
-                          <p className="text-[9px] font-bold text-foreground/90 sm:text-[11px]">{dayTasks.length} <span className="hidden sm:inline">tarefa{dayTasks.length > 1 ? "s" : ""}</span></p>
-                          <div className="hidden flex-col gap-0.5 text-[10px] font-semibold sm:flex">
-                            {overdueCount > 0 && <span className="text-rose-400">{overdueCount} atrasada{overdueCount > 1 ? "s" : ""}</span>}
-                            {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</span>}
-                            {doneCount > 0 && <span className="text-emerald-400">{doneCount} concluída{doneCount > 1 ? "s" : ""}</span>}
-                          </div>
-                          {/* Mobile: colored dots only */}
-                          <div className="flex gap-0.5 sm:hidden">
-                            {overdueCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />}
-                            {pendingCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
-                            {doneCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.button>
-                  );
-                })}
+                          <span className={`text-xs font-semibold sm:text-sm ${isToday ? "text-[hsl(var(--task-purple))]" : "text-foreground/80"}`}>
+                            {date.getDate()}
+                          </span>
+
+                          {dayTasks.length > 0 && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.05 }}
+                              className="mt-0.5 space-y-0 sm:mt-1.5 sm:space-y-0.5"
+                            >
+                              <p className="text-[9px] font-bold text-foreground/90 sm:text-[11px]">{dayTasks.length} <span className="hidden sm:inline">tarefa{dayTasks.length > 1 ? "s" : ""}</span></p>
+                              <div className="hidden flex-col gap-0.5 text-[10px] font-semibold sm:flex">
+                                {overdueCount > 0 && <span className="text-rose-400">{overdueCount} atrasada{overdueCount > 1 ? "s" : ""}</span>}
+                                {pendingCount > 0 && <span className="text-amber-400">{pendingCount} pendente{pendingCount > 1 ? "s" : ""}</span>}
+                                {doneCount > 0 && <span className="text-emerald-400">{doneCount} concluída{doneCount > 1 ? "s" : ""}</span>}
+                              </div>
+                              {/* Mobile: colored dots only */}
+                              <div className="flex gap-0.5 sm:hidden">
+                                {overdueCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />}
+                                {pendingCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
+                                {doneCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
+                              </div>
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
 
-            <aside className="border-t border-white/[0.06] bg-white/[0.02] p-4 lg:border-l lg:border-t-0">
+            <aside className="border-t border-white/[0.06] bg-white/[0.02] p-3 sm:p-4 lg:border-l lg:border-t-0">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-foreground">Agenda do dia</p>
@@ -325,12 +335,12 @@ export default function Calendario() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="rounded-2xl border border-dashed border-white/[0.1] p-6 text-center"
+                    className="rounded-2xl border border-dashed border-white/[0.1] p-5 text-center sm:p-6"
                   >
                     <p className="text-sm text-muted-foreground">Sem tarefas neste dia.</p>
                   </motion.div>
                 ) : (
-                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 max-h-[820px] overflow-y-auto styled-scrollbar pr-1">
+                  <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="styled-scrollbar space-y-2.5 overflow-y-auto pr-1 max-h-[52vh] sm:max-h-[60vh] lg:max-h-[calc(100vh-13rem)]">
                     {selectedTasks.map((task, idx) => {
                       const cfg = STATUS_CONFIG[task.statusKey] ?? STATUS_CONFIG.unknown;
                       const Icon = cfg.icon;
