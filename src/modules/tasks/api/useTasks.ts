@@ -296,6 +296,15 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
 
           if (!response.ok) {
             const text = await response.text();
+            // Detect JWT/auth errors and provide friendly message
+            const lower = text.toLowerCase();
+            if (
+              response.status === 401 || response.status === 403 ||
+              lower.includes("jwt expired") || lower.includes("jwt") ||
+              lower.includes("pgrst301") || lower.includes("pgrst303")
+            ) {
+              throw new Error("__JWT_EXPIRED__");
+            }
             throw new Error(text || `Erro ao buscar tarefas (${response.status}).`);
           }
 
@@ -366,9 +375,15 @@ export function useTasks(params: UseTasksParams = {}): UseTasksResult {
           setLoading(false);
           return;
         }
-        const messageSafe = message || "Nao foi possivel carregar as tarefas.";
-        console.error("[tasks] fetch error", { endpoint, message });
-        setError(messageSafe);
+        // JWT expired: show friendly message
+        if (message === "__JWT_EXPIRED__") {
+          console.warn("[tasks] JWT expired — session needs refresh");
+          setError("Sua sessão expirou. Por favor, faça login novamente para continuar.");
+        } else {
+          const messageSafe = message || "Não foi possível carregar as tarefas.";
+          console.error("[tasks] fetch error", { endpoint, message });
+          setError(messageSafe);
+        }
 
         const cachedFallback = storage.get<{ data: TaskRecord[]; timestamp: number; latestUpdatedAtMs?: number | null } | null>(
           cacheKey,
