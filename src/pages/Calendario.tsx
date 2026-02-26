@@ -230,18 +230,19 @@ export default function Calendario() {
                 </div>
               </div>
 
-              <div className="mb-3 grid grid-cols-3 gap-1.5 sm:hidden">
-                <BadgeInfo label="Atrasadas" value={monthStats.overdue} color="text-rose-400" />
-                <BadgeInfo label="Pendentes" value={monthStats.pending} color="text-amber-400" />
-                <BadgeInfo label="Concluídas" value={monthStats.done} color="text-emerald-400" />
+              <div className="mb-3 grid grid-cols-3 gap-1 sm:hidden">
+                <BadgeInfo label="Atras." value={monthStats.overdue} color="text-rose-400" />
+                <BadgeInfo label="Pend." value={monthStats.pending} color="text-amber-400" />
+                <BadgeInfo label="Conc." value={monthStats.done} color="text-emerald-400" />
               </div>
 
-              <div className="overflow-x-auto pb-1">
-                <div className="min-w-[560px] sm:min-w-0">
-                  <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                    {WEEKDAYS_SHORT.map((day) => (
-                      <div key={day} className="px-1 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 sm:text-[11px]">
-                        {day}
+              <div className="pb-1">
+                <div>
+                  <div className="grid grid-cols-7 gap-0.5 sm:gap-2">
+                    {WEEKDAYS_SHORT.map((day, i) => (
+                      <div key={day} className="px-0 py-1 text-center text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60 sm:px-1 sm:text-[11px] sm:tracking-[0.12em]">
+                        <span className="hidden sm:inline">{day}</span>
+                        <span className="sm:hidden">{["D", "S", "T", "Q", "Q", "S", "S"][i]}</span>
                       </div>
                     ))}
 
@@ -278,7 +279,7 @@ export default function Calendario() {
                           whileHover={{ scale: 1.03 }}
                           whileTap={{ scale: 0.98 }}
                           transition={{ type: "spring", stiffness: 360, damping: 22 }}
-                          className={`group relative min-h-[72px] rounded-xl border p-1.5 text-left transition-all sm:min-h-[92px] sm:rounded-2xl sm:p-2 lg:min-h-[98px] ${
+                          className={`group relative min-h-[52px] rounded-lg border p-1 text-left transition-all sm:min-h-[92px] sm:rounded-2xl sm:p-2 lg:min-h-[98px] ${
                             isSelected
                               ? "border-[hsl(var(--task-purple)/0.55)] bg-[hsl(var(--task-purple)/0.15)] ring-1 ring-[hsl(var(--task-purple)/0.3)]"
                               : `${cellBorder} ${cellBg} hover:bg-white/[0.05]`
