@@ -179,7 +179,7 @@ export default function ExportPDFModal({ onClose, onExport, title = "Exportar PD
           exit={{ opacity: 0, scale: 0.93, y: 16 }}
           transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl"
+          className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.08] shadow-2xl scrollbar-thin scrollbar-thumb-white/10"
           style={{
             background: "linear-gradient(145deg, hsl(270 50% 13%), hsl(234 45% 8%))",
             boxShadow: "0 32px 64px -16px hsl(262 83% 20% / 0.55), 0 0 0 1px hsl(262 83% 58% / 0.08)",
