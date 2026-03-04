@@ -91,7 +91,7 @@ function drawBarChart(
 
   data.forEach((d, i) => {
     const bx = x + barGap + i * (barW + barGap);
-    const bh = (d.value / maxVal) * (chartH - 4); // slightly shorter bars to add top padding
+    const bh = (d.value / maxVal) * (chartH - 4);
     const by = titleYEnd + 4 + (chartH - 4 - bh);
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
     doc.roundedRect(bx, by, barW, bh, 1, 1, "F");
@@ -99,10 +99,11 @@ function drawBarChart(
     doc.setFont("helvetica", "bold");
     doc.setTextColor(d.color[0], d.color[1], d.color[2]);
     doc.text(String(d.value), bx + barW / 2, by - 2.5, { align: "center" });
-    doc.setFontSize(6);
+    doc.setFontSize(5.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 120);
-    const label = d.label.length > 12 ? d.label.slice(0, 11) + "…" : d.label;
+    const maxLabelLen = Math.max(8, Math.floor(barW / 1.8));
+    const label = d.label.length > maxLabelLen ? d.label.slice(0, maxLabelLen - 1) + "…" : d.label;
     doc.text(label, bx + barW / 2, y + 10 + chartH + 6, { align: "center" });
   });
 }
@@ -279,8 +280,9 @@ export async function exportTasksPDF({
     const hasAnyTask = stats.done > 0 || stats.pending > 0 || stats.overdue > 0;
 
     if (hasAnyTask) {
-      // Donut + Bar chart section needs ~52mm
-      yPos = ensureSpace(doc, yPos, 52);
+      // Donut + Bar chart section — compact height
+      const chartSectionH = 44;
+      yPos = ensureSpace(doc, yPos, chartSectionH);
 
       const chartData = [
         { label: "Concluído", value: stats.done, color: [34, 197, 94] },
@@ -289,7 +291,7 @@ export async function exportTasksPDF({
       ];
       doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
       doc.text("Distribuição por Status", 14, yPos + 4);
-      drawDonutChart(doc, 50, yPos + 26, 16, chartData);
+      drawDonutChart(doc, 50, yPos + 22, 14, chartData);
 
       // Bar chart — Tarefas por Responsável (top 4 to avoid name truncation)
       const consultantCounts = new Map<string, number>();
@@ -301,16 +303,16 @@ export async function exportTasksPDF({
         .sort((a, b) => b[1] - a[1])
         .slice(0, 4)
         .map((e, i) => ({
-          label: e[0].length > 12 ? e[0].slice(0, 11) + "…" : e[0],
+          label: e[0].length > 18 ? e[0].slice(0, 17) + "…" : e[0],
           value: e[1],
           color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21]][i % 4],
         }));
 
       if (topConsultants.length > 0) {
-        drawBarChart(doc, 115, yPos, pageW - 129, 44, topConsultants, "Tarefas por Responsável");
+        drawBarChart(doc, 115, yPos, pageW - 129, 38, topConsultants, "Tarefas por Responsável");
       }
 
-      yPos += 52;
+      yPos += chartSectionH + 2;
 
       // Productivity pulse — horizontal completion by project
       const projectCounts = new Map<string, { done: number; pending: number; overdue: number }>();
