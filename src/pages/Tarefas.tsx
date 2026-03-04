@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { storage } from "@/modules/shared/storage";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { useTaskStatusAlerts } from "@/hooks/useTaskStatusAlerts";
 import { usePageSEO } from "@/hooks/usePageSEO";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import DataErrorCard from "@/components/ui/DataErrorCard";
@@ -176,23 +178,30 @@ export default function TarefasPage() {
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const [nowTs] = useState(() => Date.now());
 
-  // Filter state
+  // Filter state — restored from localStorage
+  const FILTERS_KEY = "tarefas:filters";
+  const savedFilters = useMemo(() => storage.get<Record<string, string>>(FILTERS_KEY, {}), []);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [deadline, setDeadline] = useState("all");
-  const [period, setPeriod] = useState("30d");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [deadlineTo, setDeadlineTo] = useState("");
-  const [consultant, setConsultant] = useState("all");
-  const [project, setProject] = useState("all");
+  const [status, setStatus] = useState(savedFilters.status || "all");
+  const [deadline, setDeadline] = useState(savedFilters.deadline || "all");
+  const [period, setPeriod] = useState(savedFilters.period || "30d");
+  const [dateFrom, setDateFrom] = useState(savedFilters.dateFrom || "");
+  const [dateTo, setDateTo] = useState(savedFilters.dateTo || "");
+  const [deadlineTo, setDeadlineTo] = useState(savedFilters.deadlineTo || "");
+  const [consultant, setConsultant] = useState(savedFilters.consultant || "all");
+  const [project, setProject] = useState(savedFilters.project || "all");
   const [page, setPage] = useState(1);
   const [chartSlide, setChartSlide] = useState(0);
   const [showCharts, setShowCharts] = useState(true);
   const [showDashboard, setShowDashboard] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTaskListInfo, setShowTaskListInfo] = useState(false);
+
+  // Persist filters when they change
+  useEffect(() => {
+    storage.set(FILTERS_KEY, { status, deadline, period, dateFrom, dateTo, deadlineTo, consultant, project });
+  }, [status, deadline, period, dateFrom, dateTo, deadlineTo, consultant, project]);
   const pageSize = 10;
 
   const searchInputRef = useRef<HTMLInputElement>(null!);
@@ -272,6 +281,17 @@ export default function TarefasPage() {
     });
   }, [tasks, durationByTaskId]);
 
+  // Detect status changes and show toast alerts
+  const statusAlertData = useMemo(() =>
+    normalizedTasks.map((t) => ({
+      id: t.raw.task_id ?? t.raw.id ?? t.title,
+      status: t.statusKey,
+      title: t.title,
+      project: t.project,
+    })),
+    [normalizedTasks]
+  );
+  useTaskStatusAlerts(statusAlertData, !loading);
 
   // Filter by accessible projects (non-admin users only see assigned projects)
   // Filter by accessible projects (non-admin users only see assigned projects)
