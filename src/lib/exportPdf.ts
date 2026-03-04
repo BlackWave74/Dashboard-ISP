@@ -100,10 +100,10 @@ function drawBarChart(
     doc.setFont("helvetica", "bold");
     doc.setTextColor(d.color[0], d.color[1], d.color[2]);
     doc.text(String(d.value), bx + barW / 2, by - 2.5, { align: "center" });
-    doc.setFontSize(5.5);
+    doc.setFontSize(6.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(160, 160, 190);
-    const maxLabelLen = Math.max(8, Math.floor(barW / 1.8));
+    const maxLabelLen = Math.max(12, Math.floor(barW / 1.4));
     const label = d.label.length > maxLabelLen ? d.label.slice(0, maxLabelLen - 1) + "…" : d.label;
     doc.text(label, bx + barW / 2, y + 10 + chartH + 6, { align: "center" });
   });
@@ -312,7 +312,7 @@ export async function exportTasksPDF({
         .sort((a, b) => b[1] - a[1])
         .slice(0, 4)
         .map((e, i) => ({
-          label: e[0].length > 18 ? e[0].slice(0, 17) + "…" : e[0],
+          label: e[0].length > 26 ? e[0].slice(0, 25) + "…" : e[0],
           value: e[1],
           color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21]][i % 4],
         }));
@@ -357,7 +357,7 @@ export async function exportTasksPDF({
 
         const startY = yPos + 8;
         const rowH = 8;
-        const labelW = 58;
+        const labelW = 72;
         const barMaxW = pageW - 28 - labelW - 28;
 
         productivityData.forEach(([name, s, pct], i) => {
@@ -370,8 +370,8 @@ export async function exportTasksPDF({
             doc.roundedRect(12, ry - 1, pageW - 24, rowH, 1, 1, "F");
           }
 
-          doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(180, 180, 210);
-          const shortName = name.length > 28 ? name.slice(0, 27) + "…" : name;
+          doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(180, 180, 210);
+          const shortName = name.length > 38 ? name.slice(0, 37) + "…" : name;
           doc.text(shortName, 14, ry + rowH * 0.55);
 
           const bx = 14 + labelW;
