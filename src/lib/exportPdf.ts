@@ -431,7 +431,8 @@ export async function exportTasksPDF({
       5: { halign: "center", cellWidth: 20 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); drawFooter(doc, pageW, now, generatedBy); },
+    willDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); },
+    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
     didParseCell: (data: any) => {
       if (data.section === "body" && data.column.index === 3) {
         const val = String(data.cell.raw ?? "").toLowerCase();
@@ -604,7 +605,8 @@ export async function exportClientPDF({
       7: { halign: "center", cellWidth: 20 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); drawFooter(doc, pageW, now, generatedBy); },
+    willDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); },
+    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
   });
 
   doc.save(safeFileName);
@@ -745,7 +747,8 @@ export async function exportAnalyticsPDF({
       5: { halign: "center", cellWidth: 22 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); drawFooter(doc, pageW, now, generatedBy); },
+    willDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); },
+    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
   });
 
   doc.save(fileName);
