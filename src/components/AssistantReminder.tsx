@@ -55,7 +55,7 @@ type NotifTask = {
 };
 
 const INTERVAL_MS = 5 * 60 * 1000;
-const AUTO_DISMISS_MS = 45_000;
+const AUTO_DISMISS_MS = 15_000; // 15 seconds — enough to read, not too long
 const DISMISS_KEY = "assistant-reminder-dismissed";
 
 type Props = {
@@ -246,7 +246,7 @@ export default function AssistantReminder({ notifTasks, statusAlert, onDismissAl
                   >
                     {label}
                   </p>
-                  <p className="text-[13px] leading-relaxed text-white/75">
+                  <p className="text-[13px] leading-relaxed text-white/75 whitespace-pre-line">
                     {currentMsg.text}
                   </p>
 

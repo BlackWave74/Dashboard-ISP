@@ -49,10 +49,13 @@ export function useTaskStatusAlerts(
     }
 
     if (newlyOverdue.length > 0) {
-      const names = newlyOverdue.slice(0, 3).map((t) => `"${t.title}"`).join(", ");
-      const extra = newlyOverdue.length > 3 ? ` e mais ${newlyOverdue.length - 3}` : "";
+      const names = newlyOverdue.slice(0, 3).map((t) => `• "${t.title}"`).join("\n");
+      const extra = newlyOverdue.length > 3 ? `\ne mais ${newlyOverdue.length - 3} tarefa(s)` : "";
+      const heading = newlyOverdue.length === 1
+        ? "⚠️ Uma tarefa ficou atrasada:"
+        : `⚠️ ${newlyOverdue.length} tarefas ficaram atrasadas:`;
       setAlert({
-        message: `Atenção! ${newlyOverdue.length === 1 ? "Uma tarefa ficou atrasada" : `${newlyOverdue.length} tarefas ficaram atrasadas`}: ${names}${extra}. Confira suas tarefas para não perder os prazos! ⚠️`,
+        message: `${heading}\n\n${names}${extra}\n\nConfira suas tarefas para não perder os prazos!`,
         count: newlyOverdue.length,
         timestamp: Date.now(),
       });
