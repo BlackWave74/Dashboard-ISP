@@ -25,6 +25,21 @@ type ExportOptions = {
   };
 };
 
+/* ═══════════════════════════════════════════════
+ * Page break helper — ensures a section fits on
+ * the current page, otherwise adds a new page.
+ * Returns the Y position to draw at.
+ * ═══════════════════════════════════════════════ */
+function ensureSpace(doc: jsPDF, currentY: number, neededHeight: number, margin = 14): number {
+  const pageH = doc.internal.pageSize.getHeight();
+  const available = pageH - margin - currentY;
+  if (neededHeight > available && currentY > margin + 32) {
+    doc.addPage();
+    return margin;
+  }
+  return currentY;
+}
+
 /** Load logo as base64 for PDF embedding */
 async function loadLogoBase64(): Promise<string | null> {
   try {
@@ -135,76 +150,6 @@ function drawDonutChart(
   });
 }
 
-/** Draw a horizontal bar chart for completion % by project (replaces buggy area chart) */
-function drawHorizontalCompletionChart(
-  doc: jsPDF, x: number, y: number, width: number, height: number,
-  tasks: TaskRow[], title: string
-) {
-  // Group by project and compute completion rate
-  const projectMap = new Map<string, { total: number; done: number; overdue: number }>();
-  tasks.forEach((t) => {
-    const p = t.project || "Sem projeto";
-    const cur = projectMap.get(p) ?? { total: 0, done: 0, overdue: 0 };
-    cur.total += 1;
-    if (t.statusLabel === "Concluída" || t.statusLabel === "Done") cur.done += 1;
-    if (t.statusLabel === "Atrasada" || t.statusLabel === "Overdue") cur.overdue += 1;
-    projectMap.set(p, cur);
-  });
-
-  const data = Array.from(projectMap.entries())
-    .sort((a, b) => b[1].total - a[1].total)
-    .slice(0, 8)
-    .map(([name, { total, done, overdue }]) => ({
-      label: name.length > 22 ? name.slice(0, 21) + "…" : name,
-      pct: total > 0 ? Math.round((done / total) * 100) : 0,
-      overdue,
-      total,
-    }));
-
-  if (data.length === 0) return;
-
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 27, 75);
-  doc.text(title, x, y + 6);
-
-  const startY = y + 12;
-  const rowH = Math.min((height - 14) / data.length, 8);
-  const labelW = 52;
-  const barMaxW = width - labelW - 20;
-
-  data.forEach((d, i) => {
-    const ry = startY + i * rowH;
-
-    // Label
-    doc.setFontSize(6);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(50, 50, 70);
-    doc.text(d.label, x, ry + rowH * 0.65);
-
-    // Background track
-    const bx = x + labelW;
-    const bh = rowH * 0.55;
-    const by = ry + rowH * 0.2;
-    doc.setFillColor(230, 230, 240);
-    doc.roundedRect(bx, by, barMaxW, bh, 0.8, 0.8, "F");
-
-    // Completion bar (green)
-    if (d.pct > 0) {
-      const fillW = (d.pct / 100) * barMaxW;
-      const color: [number, number, number] = d.pct >= 80 ? [34, 197, 94] : d.pct >= 50 ? [250, 204, 21] : [239, 68, 68];
-      doc.setFillColor(...color);
-      doc.roundedRect(bx, by, fillW, bh, 0.8, 0.8, "F");
-    }
-
-    // Percentage label
-    doc.setFontSize(6);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(50, 50, 70);
-    doc.text(`${d.pct}%`, bx + barMaxW + 3, ry + rowH * 0.65);
-  });
-}
-
 function drawFooter(doc: jsPDF, pageW: number, now: string, generatedBy?: string) {
   const pageH = doc.internal.pageSize.getHeight();
   doc.setFontSize(7);
@@ -216,6 +161,42 @@ function drawFooter(doc: jsPDF, pageW: number, now: string, generatedBy?: string
   doc.text(`Página ${doc.getCurrentPageInfo().pageNumber}`, pageW - 14, pageH - 6, { align: "right" });
 }
 
+/** Draws a horizontal hours bar for contracted vs used */
+function drawClientHoursBar(
+  doc: jsPDF, x: number, y: number, width: number,
+  used: number, contracted: number, label: string
+) {
+  const pct = contracted > 0 ? Math.min(100, Math.round((used / contracted) * 100)) : 0;
+  const color: [number, number, number] =
+    pct >= 90 ? [239, 68, 68] : pct >= 70 ? [250, 204, 21] : [34, 197, 94];
+
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(50, 50, 70);
+  const shortLabel = label.length > 24 ? label.slice(0, 23) + "…" : label;
+  doc.text(shortLabel, x, y + 4);
+
+  const bx = x + 48;
+  const bw = width - 48 - 28;
+  doc.setFillColor(220, 220, 235);
+  doc.roundedRect(bx, y, bw, 4, 0.8, 0.8, "F");
+  if (pct > 0) {
+    doc.setFillColor(...color);
+    doc.roundedRect(bx, y, (pct / 100) * bw, 4, 0.8, 0.8, "F");
+  }
+
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(color[0], color[1], color[2]);
+  const hoursText = contracted > 0
+    ? `${Math.round(used)}h / ${Math.round(contracted)}h (${pct}%)`
+    : `${Math.round(used)}h`;
+  doc.text(hoursText, bx + bw + 3, y + 3.5);
+}
+
+/* ═══════════════════════════════════════════════
+ * EXPORT: Tasks PDF
+ * ═══════════════════════════════════════════════ */
 export async function exportTasksPDF({
   title = "Relatório de Tarefas",
   subtitle,
@@ -224,7 +205,6 @@ export async function exportTasksPDF({
   stats,
   generatedBy,
 }: ExportOptions) {
-  // Derive project-centric title when all tasks belong to one project
   const projectNames = new Set(tasks.map(t => t.project).filter(Boolean));
   const dynamicTitle = projectNames.size === 1
     ? `Relatório — ${[...projectNames][0]}`
@@ -238,10 +218,9 @@ export async function exportTasksPDF({
 
   const logo = await loadLogoBase64();
 
-  // Header bar — fundo escuro profissional
+  // Header bar
   doc.setFillColor(24, 22, 60);
   doc.rect(0, 0, pageW, 30, "F");
-  // Accent line
   doc.setFillColor(99, 102, 241);
   doc.rect(0, 30, pageW, 1.2, "F");
   doc.setTextColor(255, 255, 255);
@@ -264,7 +243,7 @@ export async function exportTasksPDF({
 
   let yPos = 38;
 
-  // Stats cards — cores sóbrias: verde=concluído, vermelho=atrasado
+  // Stats cards
   if (stats) {
     const cards = [
       { label: "Total", value: String(stats.total), color: [80, 85, 140] },
@@ -275,6 +254,9 @@ export async function exportTasksPDF({
     if (stats.totalHours) {
       cards.push({ label: "Horas Totais", value: stats.totalHours, color: [139, 92, 246] });
     }
+
+    // Cards section needs ~24mm
+    yPos = ensureSpace(doc, yPos, 24);
 
     const cardW = (pageW - 28 - (cards.length - 1) * 5) / cards.length;
     cards.forEach((card, i) => {
@@ -292,11 +274,12 @@ export async function exportTasksPDF({
     });
     yPos += 24;
 
-    // Charts section — only if there is data
     const hasAnyTask = stats.done > 0 || stats.pending > 0 || stats.overdue > 0;
 
     if (hasAnyTask) {
-      // Donut — Distribuição por Status
+      // Donut + Bar chart section needs ~52mm
+      yPos = ensureSpace(doc, yPos, 52);
+
       const chartData = [
         { label: "Concluído", value: stats.done, color: [34, 197, 94] },
         { label: "Andamento", value: stats.pending, color: [250, 204, 21] },
@@ -306,7 +289,7 @@ export async function exportTasksPDF({
       doc.text("Distribuição por Status", 14, yPos + 4);
       drawDonutChart(doc, 50, yPos + 26, 16, chartData);
 
-      // Bar chart — Tarefas por Responsável (só se houver dados)
+      // Bar chart — Tarefas por Responsável
       const consultantCounts = new Map<string, number>();
       tasks.forEach((t) => {
         const c = t.consultant || "Não atribuído";
@@ -316,7 +299,7 @@ export async function exportTasksPDF({
         .sort((a, b) => b[1] - a[1])
         .slice(0, 6)
         .map((e, i) => ({
-          label: e[0],
+          label: e[0].length > 10 ? e[0].slice(0, 9) + "…" : e[0],
           value: e[1],
           color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21], [239, 68, 68], [99, 102, 241]][i % 6],
         }));
@@ -327,7 +310,7 @@ export async function exportTasksPDF({
 
       yPos += 52;
 
-      // Pulso de Produtividade — Horizontal completion by project (como o gráfico da tela)
+      // Productivity pulse — horizontal completion by project
       const projectCounts = new Map<string, { done: number; pending: number; overdue: number }>();
       tasks.forEach((t) => {
         const p = t.project || "Sem projeto";
@@ -343,6 +326,10 @@ export async function exportTasksPDF({
         .slice(0, 8);
 
       if (productivityData.length > 0) {
+        const sectionH = 10 + productivityData.length * 7 + 6;
+        // Ensure the ENTIRE productivity section (title + bars) fits on one page
+        yPos = ensureSpace(doc, yPos, sectionH);
+
         doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
         doc.text("Pulso de Produtividade — % Conclusão por Projeto", 14, yPos + 4);
 
@@ -356,18 +343,15 @@ export async function exportTasksPDF({
           const pct = total > 0 ? Math.round((s.done / total) * 100) : 0;
           const ry = startY + i * rowH;
 
-          // Label — nome truncado
           doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(50, 50, 70);
           const shortName = name.length > 28 ? name.slice(0, 27) + "…" : name;
           doc.text(shortName, 14, ry + rowH * 0.65);
 
-          // Track de fundo
           const bx = 14 + labelW;
           const bh = rowH * 0.5;
           const by = ry + rowH * 0.18;
           doc.setFillColor(225, 225, 240); doc.roundedRect(bx, by, barMaxW, bh, 0.7, 0.7, "F");
 
-          // Barra de conclusão
           if (pct > 0) {
             const fillW = (pct / 100) * barMaxW;
             const color: [number, number, number] = pct >= 80 ? [34, 197, 94] : pct >= 50 ? [250, 204, 21] : [239, 68, 68];
@@ -375,19 +359,20 @@ export async function exportTasksPDF({
             doc.roundedRect(bx, by, fillW, bh, 0.7, 0.7, "F");
           }
 
-          // % label
           doc.setFontSize(6); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 70);
           doc.text(`${pct}%`, bx + barMaxW + 3, ry + rowH * 0.65);
         });
 
-        yPos += 10 + productivityData.length * rowH + 6;
+        yPos += sectionH;
       }
     } else {
       yPos += 4;
     }
   }
 
-  // Table
+  // Table — autoTable handles its own page breaks, but we ensure header+first rows stay together
+  yPos = ensureSpace(doc, yPos, 30); // at least header + 2 rows
+
   const tableBody = tasks.map((t) => [
     t.title, t.project, t.consultant, t.statusLabel, t.deadlineLabel, t.durationLabel,
   ]);
@@ -417,7 +402,6 @@ export async function exportTasksPDF({
     },
     margin: { left: 14, right: 14 },
     didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
-    /* Cor de status condicional: verde=concluído, vermelho=atrasado */
     didParseCell: (data: any) => {
       if (data.section === "body" && data.column.index === 3) {
         const val = String(data.cell.raw ?? "").toLowerCase();
@@ -435,27 +419,9 @@ export async function exportTasksPDF({
   doc.save(fileName);
 }
 
-type AnalyticsExportOptions = {
-  generatedBy?: string;
-  userName?: string;
-  period?: string;
-  fileName?: string;
-  projects: Array<{
-    name: string;
-    totalTasks: number;
-    doneTasks: number;
-    overdueTasks: number;
-    hours: number;
-    hoursContracted?: number;
-  }>;
-  totals: {
-    projects: number;
-    tasks: number;
-    done: number;
-    overdue: number;
-    hours: number;
-  };
-};
+/* ═══════════════════════════════════════════════
+ * EXPORT: Client PDF
+ * ═══════════════════════════════════════════════ */
 
 type ClientExportOptions = {
   clientName: string;
@@ -471,38 +437,6 @@ type ClientExportOptions = {
     hoursContracted: number;
   }>;
 };
-
-/** Draws a horizontal hours bar for contracted vs used */
-function drawClientHoursBar(
-  doc: jsPDF, x: number, y: number, width: number,
-  used: number, contracted: number, label: string
-) {
-  const pct = contracted > 0 ? Math.min(100, Math.round((used / contracted) * 100)) : 0;
-  const color: [number, number, number] =
-    pct >= 90 ? [239, 68, 68] : pct >= 70 ? [250, 204, 21] : [34, 197, 94];
-
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(50, 50, 70);
-  doc.text(label, x, y + 4);
-
-  const bx = x + 48;
-  const bw = width - 48 - 28;
-  doc.setFillColor(220, 220, 235);
-  doc.roundedRect(bx, y, bw, 4, 0.8, 0.8, "F");
-  if (pct > 0) {
-    doc.setFillColor(...color);
-    doc.roundedRect(bx, y, (pct / 100) * bw, 4, 0.8, 0.8, "F");
-  }
-
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(color[0], color[1], color[2]);
-  const hoursText = contracted > 0
-    ? `${Math.round(used)}h / ${Math.round(contracted)}h (${pct}%)`
-    : `${Math.round(used)}h`;
-  doc.text(hoursText, bx + bw + 3, y + 3.5);
-}
 
 export async function exportClientPDF({
   clientName,
@@ -543,6 +477,9 @@ export async function exportClientPDF({
   const totalHours = projects.reduce((s, p) => s + p.hours, 0);
   const totalContr = projects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
 
+  // Cards need ~22mm
+  yPos = ensureSpace(doc, yPos, 22);
+
   const cards = [
     { label: "Projetos",    value: String(projects.length),       color: [99, 102, 241]  as [number,number,number] },
     { label: "Tarefas",     value: String(totalTasks),            color: [59, 130, 246]  as [number,number,number] },
@@ -566,7 +503,9 @@ export async function exportClientPDF({
   });
   yPos += 22;
 
-  // Completion donut
+  // Donut needs ~52mm
+  yPos = ensureSpace(doc, yPos, 52);
+
   const completionData = [
     { label: "Concluídas", value: totalDone,                          color: [34, 197, 94]  },
     { label: "Andamento",  value: totalTasks - totalDone - totalOver, color: [250, 204, 21] },
@@ -580,17 +519,24 @@ export async function exportClientPDF({
 
   // Hours progress bars per project
   if (totalContr > 0) {
+    const hoursH = 6 + projects.length * 8 + 4;
+    yPos = ensureSpace(doc, yPos, hoursH);
+
     doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
     doc.text("Consumo de Horas Contratadas", 14, yPos);
     yPos += 6;
     projects.forEach((p) => {
+      // Check each bar individually for page breaks
+      yPos = ensureSpace(doc, yPos, 10);
       drawClientHoursBar(doc, 14, yPos, pageW - 28, p.hours, p.hoursContracted, p.name);
       yPos += 8;
     });
     yPos += 4;
   }
 
-  // Projects table
+  // Projects table — ensure header + first rows fit
+  yPos = ensureSpace(doc, yPos, 30);
+
   const tableBody = projects.map((p) => {
     const completion = p.totalTasks > 0 ? Math.round((p.doneTasks / p.totalTasks) * 100) : 0;
     const hoursLeft  = p.hoursContracted > 0 ? Math.round(p.hoursContracted - p.hours) : "—";
@@ -631,6 +577,32 @@ export async function exportClientPDF({
   doc.save(safeFileName);
 }
 
+/* ═══════════════════════════════════════════════
+ * EXPORT: Analytics PDF
+ * ═══════════════════════════════════════════════ */
+
+type AnalyticsExportOptions = {
+  generatedBy?: string;
+  userName?: string;
+  period?: string;
+  fileName?: string;
+  projects: Array<{
+    name: string;
+    totalTasks: number;
+    doneTasks: number;
+    overdueTasks: number;
+    hours: number;
+    hoursContracted?: number;
+  }>;
+  totals: {
+    projects: number;
+    tasks: number;
+    done: number;
+    overdue: number;
+    hours: number;
+  };
+};
+
 export async function exportAnalyticsPDF({
   userName,
   period,
@@ -669,7 +641,9 @@ export async function exportAnalyticsPDF({
 
   let yPos = 34;
 
-  // Totals
+  // Cards need ~22mm
+  yPos = ensureSpace(doc, yPos, 22);
+
   const cards = [
     { label: "Projetos", value: String(totals.projects), color: [99, 102, 241] },
     { label: "Tarefas", value: String(totals.tasks), color: [59, 130, 246] },
@@ -693,7 +667,9 @@ export async function exportAnalyticsPDF({
   });
   yPos += 22;
 
-  // Charts — completion donut + hours bar
+  // Donut needs ~50mm
+  yPos = ensureSpace(doc, yPos, 50);
+
   const completionData = [
     { label: "Concluídas", value: totals.done, color: [34, 197, 94] },
     { label: "Pendentes", value: totals.tasks - totals.done - totals.overdue, color: [250, 204, 21] },
@@ -708,7 +684,9 @@ export async function exportAnalyticsPDF({
 
   yPos += 50;
 
-  // Projects table
+  // Table — ensure header + first rows fit
+  yPos = ensureSpace(doc, yPos, 30);
+
   const tableBody = projects.map((p) => {
     const completion = p.totalTasks > 0 ? Math.round((p.doneTasks / p.totalTasks) * 100) : 0;
     return [p.name, String(p.totalTasks), String(p.doneTasks), String(p.overdueTasks), `${Math.round(p.hours)}h`, `${completion}%`];
