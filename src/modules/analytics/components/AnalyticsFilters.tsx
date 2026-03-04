@@ -359,10 +359,8 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
                   <CustomSelect
                     value={filters.consultant}
                     onChange={(v) => onChange({ ...filters, consultant: v })}
-                    options={isAdmin
-                      ? consultants.map((c) => ({ value: c, label: c }))
-                      : consultants.slice(0, 1).map((c) => ({ value: c, label: "Só meu" }))
-                    }
+                    options={consultants.map((c) => ({ value: c, label: c }))}
+                    
                     placeholder="Todos os consultores"
                     icon={User}
                   />
