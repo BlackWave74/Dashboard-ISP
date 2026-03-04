@@ -777,3 +777,64 @@ body {
   background: hsl(var(--ana-amber) / 0.12);
   border: 1px solid hsl(var(--ana-amber) / 0.25);
 }
+
+/* ===== @media print — garante que tudo aparece ao imprimir (Ctrl+P) ===== */
+@media print {
+  /* Força cores e backgrounds */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Mostra elementos que ficam escondidos */
+  body, html {
+    overflow: visible !important;
+    max-width: 100% !important;
+  }
+
+  /* Sidebar e overlays somem */
+  [data-sidebar], .sidebar, nav, header,
+  [role="dialog"], [data-radix-popper-content-wrapper],
+  .fixed, .sticky {
+    display: none !important;
+  }
+
+  /* Conteúdo principal ocupa tudo */
+  main, [role="main"], .flex-1 {
+    margin: 0 !important;
+    padding: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Cards e seções colapsáveis ficam visíveis */
+  [data-state="closed"] > [data-collapsible-content],
+  [data-state="closed"] > div,
+  details:not([open]) > *:not(summary) {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Backgrounds dos cards */
+  .rounded-2xl, .rounded-xl, .rounded-lg {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+  }
+
+  /* Textos legíveis */
+  p, span, h1, h2, h3, h4, h5, h6, td, th, li, label {
+    color: #1a1a2e !important;
+  }
+
+  /* Quebra de página inteligente */
+  .rounded-2xl, .rounded-xl, section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
