@@ -98,16 +98,20 @@ const formatLastUpdated = (timestamp: number | null) => {
   return `Atualizado há ${hours}h${rest ? ` ${rest} min` : ""}`;
 };
 
-const normalizeTask = (task: TaskRecord, durationSeconds?: number): TaskView => {
+const normalizeTask = (task: TaskRecord, durationSeconds?: number, projectNameById?: Map<string, string>): TaskView => {
   const title = normalizeTaskTitle(pickField(task, ["title", "nome", "name"], "Tarefa sem título"));
   const projectId = pickField(task, ["project_id", "projectId"], "").trim();
   const projectFromJoin =
     task.projects && typeof task.projects === "object"
       ? pickField(task.projects as TaskRecord, ["name"], "")
       : "";
-  // Prioritize the joined project name (accurate) over loose task fields (often partial/client names)
+  // 1. Use join name (most accurate)
+  // 2. Use lookup map (resolves via other tasks with same project_id)
+  // 3. Fallback to loose fields
+  const projectFromMap = projectId && projectNameById ? (projectNameById.get(projectId) ?? "") : "";
   const project =
     projectFromJoin ||
+    projectFromMap ||
     pickField(task, ["project", "projeto", "project_name", "group_name", "group"], "") ||
     (projectId ? `Projeto #${projectId}` : "Projeto indefinido");
   const consultant = pickField(task, ["responsible_name", "consultant", "owner", "responsavel"], "Sem consultor");
@@ -281,15 +285,29 @@ export default function TarefasPage() {
     return map;
   }, [times]);
 
+  // Build a project_id → name lookup from tasks that have the join data
+  // This prevents phantom projects when some tasks fall back to group_name
+  const projectNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    tasks.forEach((task) => {
+      const pid = task.project_id != null ? String(task.project_id) : null;
+      const joinName = task.projects && typeof task.projects === "object"
+        ? String((task.projects as any).name ?? "").trim()
+        : "";
+      if (pid && joinName) map.set(pid, joinName);
+    });
+    return map;
+  }, [tasks]);
+
   // Normalize tasks
   const normalizedTasks = useMemo(() => {
     return tasks.map((task) => {
       const rawId = task["id"] ?? task["task_id"];
       const taskId = rawId === undefined || rawId === null ? undefined : String(rawId);
       const seconds = taskId ? durationByTaskId[taskId] : undefined;
-      return normalizeTask(task, seconds);
+      return normalizeTask(task, seconds, projectNameById);
     });
-  }, [tasks, durationByTaskId]);
+  }, [tasks, durationByTaskId, projectNameById]);
 
   // Status alerts now handled globally via DashboardLayout → AssistantReminder
 
