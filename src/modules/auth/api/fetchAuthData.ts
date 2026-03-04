@@ -104,6 +104,25 @@ export const fetchAccessibleProjects = async (
   return null;
 };
 
+/** Fetch the user's display name from the users table */
+export const fetchUserName = async (
+  accessToken: string,
+  authUserId: string
+): Promise<string | null> => {
+  try {
+    const res = await fetch(
+      `${base()}/rest/v1/users?auth_user_id=eq.${authUserId}&select=name&limit=1`,
+      { headers: headers(accessToken) }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    const name = rows?.[0]?.name;
+    return name && name.trim() ? name.trim() : null;
+  } catch {
+    return null;
+  }
+};
+
 /** Fetch cliente_id and client name from users + clientes tables */
 export const fetchClienteInfo = async (
   accessToken: string,
