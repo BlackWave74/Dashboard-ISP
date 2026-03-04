@@ -152,9 +152,23 @@ function DashboardInner() {
     });
   }, [tasks, isAdmin, accessibleProjectNames, companyName]);
 
+  // For non-admin users, further filter by consultant name so they only see their own tasks
+  const userScopedTasks = useMemo(() => {
+    if (isAdmin) return accessFilteredTasks;
+    const userName = session?.name;
+    if (!userName) return accessFilteredTasks;
+    const me = norm(userName);
+    return accessFilteredTasks.filter((t) => {
+      const responsible = norm(
+        String(t.responsible_name ?? t.consultant ?? t.owner ?? t.responsavel ?? "")
+      );
+      return responsible && (responsible.includes(me) || me.includes(responsible));
+    });
+  }, [accessFilteredTasks, isAdmin, session?.name]);
+
   const notifTasks = useMemo(
-    () => accessFilteredTasks.map(toNotifTask),
-    [accessFilteredTasks]
+    () => userScopedTasks.map(toNotifTask),
+    [userScopedTasks]
   );
 
   // Status change alerts via the Assistant widget
