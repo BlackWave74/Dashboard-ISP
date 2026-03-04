@@ -312,53 +312,42 @@ export default function TarefasPage() {
   // Status alerts now handled globally via DashboardLayout → AssistantReminder
 
   // Filter by accessible projects (non-admin users only see assigned projects)
-  // Filter by accessible projects (non-admin users only see assigned projects)
   const companyName = session?.company?.trim();
   const accessibleProjectNames = session?.accessibleProjectNames;
+  const accessibleProjectIds = session?.accessibleProjectIds;
   const projectFilteredTasks = useMemo(() => {
     // Admins, gerentes, coordenadores see everything
     if (isAdmin) return normalizedTasks;
 
-    const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
+    const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
     const hasCompanyName = !!companyName;
 
     // Consultor/cliente sem nenhuma restrição configurada → mostra vazio (seguro por padrão)
-    // Admin e gerente já retornaram acima; aqui só chegam roles restritas
-    if (!hasExplicitNames && !hasCompanyName) return [];
+    if (!hasExplicitIds && !hasCompanyName) return [];
 
-    // Normalize project names for flexible matching
-    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const allowedNames = hasExplicitNames
-      ? accessibleProjectNames!.map(norm)
-      : null;
-    const needle = hasCompanyName ? norm(companyName!) : null;
-
-    const getProjectName = (task: TaskView): string => {
-      const fromJoin =
-        typeof task.raw.projects === "object" && task.raw.projects !== null
-          ? String((task.raw.projects as TaskRecord)["name"] ?? "")
-          : "";
-      return norm(fromJoin || task.project || "");
-    };
+    // Use project IDs for exact matching (prevents substring false positives)
+    const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds!) : null;
 
     const filtered = normalizedTasks.filter((task) => {
-      const projectNorm = getProjectName(task);
+      // Check by exact project ID match
+      const pid = Number(task.raw.project_id);
+      if (allowedIds && pid && allowedIds.has(pid)) return true;
 
-      // Check by explicit project name (from Lovable Cloud projects table)
-      if (allowedNames) {
-        const match = allowedNames.some(
-          (name) => projectNorm === name || projectNorm.includes(name) || name.includes(projectNorm)
-        );
-        if (match) return true;
+      // Fallback: company name matching for tasks without explicit project_id mapping
+      if (hasCompanyName && pid) {
+        const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const projectName = norm(task.project || "");
+        const needle = norm(companyName!);
+        // Only match if the project name starts with or contains the company as a segment
+        // e.g. "DS Tech <> ISP Consulte" matches company "ISP Consulte" via the <> pattern
+        if (projectName.includes(needle) && projectName !== needle) return true;
       }
-      // Check by company name prefix (client-based scoping)
-      if (needle && projectNorm.includes(needle)) return true;
 
       return false;
     });
 
     return filtered;
-  }, [normalizedTasks, isAdmin, accessibleProjectNames, companyName]);
+  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
   const scopedTasks = projectFilteredTasks;
