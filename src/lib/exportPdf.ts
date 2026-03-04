@@ -326,7 +326,12 @@ export async function exportTasksPDF({
       });
 
       const productivityData = Array.from(projectCounts.entries())
-        .sort((a, b) => (b[1].done + b[1].pending + b[1].overdue) - (a[1].done + a[1].pending + a[1].overdue))
+        .map(([name, s]) => {
+          const total = s.done + s.pending + s.overdue;
+          const pct = total > 0 ? Math.round((s.done / total) * 100) : 0;
+          return [name, s, pct] as [string, typeof s, number];
+        })
+        .sort((a, b) => b[2] - a[2])
         .slice(0, 8);
 
       if (productivityData.length > 0) {
@@ -336,17 +341,14 @@ export async function exportTasksPDF({
 
         doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
         doc.text("Pulso de Produtividade — % Conclusão por Projeto", 14, yPos + 4);
-        doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(120, 120, 140);
-        doc.text("Verde ≥80%  ·  Amarelo ≥50%  ·  Vermelho <50%", 14, yPos + 9);
 
-        const startY = yPos + 14;
+        const startY = yPos + 8;
         const rowH = 8;
         const labelW = 58;
         const barMaxW = pageW - 28 - labelW - 28;
 
-        productivityData.forEach(([name, s], i) => {
+        productivityData.forEach(([name, s, pct], i) => {
           const total = s.done + s.pending + s.overdue;
-          const pct = total > 0 ? Math.round((s.done / total) * 100) : 0;
           const ry = startY + i * rowH;
 
           // Row background for alternating
@@ -376,9 +378,6 @@ export async function exportTasksPDF({
           doc.setTextColor(...pctColor);
           doc.text(`${pct}%`, bx + barMaxW + 4, ry + rowH * 0.6);
 
-          // Small task count
-          doc.setFontSize(5.5); doc.setFont("helvetica", "normal"); doc.setTextColor(150, 150, 170);
-          doc.text(`${s.done}/${total}`, bx + barMaxW + 4, ry + rowH * 0.9);
         });
 
         yPos += sectionH;
