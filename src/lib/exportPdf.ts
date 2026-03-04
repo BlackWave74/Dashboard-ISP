@@ -55,20 +55,6 @@ async function loadLogoBase64(): Promise<string | null> {
   }
 }
 
-function drawLogo(doc: jsPDF, logo: string, pageW: number) {
-  try {
-    const h = 10;
-    const w = h * 3.6;
-    const x = pageW - w - 10;
-    const y = (28 - h) / 2;
-    doc.addImage(logo, "PNG", x, y, w, h);
-  } catch {
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text("ISP Consulte", pageW - 14, 13, { align: "right" });
-  }
-}
-
 function drawPageBg(doc: jsPDF) {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -78,7 +64,7 @@ function drawPageBg(doc: jsPDF) {
 
 function drawFooter(doc: jsPDF, pageW: number, now: string, generatedBy?: string) {
   const pageH = doc.internal.pageSize.getHeight();
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   doc.setTextColor(150, 150, 180);
   const footer = generatedBy
     ? `ISP Consulte — Gerado por ${generatedBy} em ${now}`
@@ -87,25 +73,27 @@ function drawFooter(doc: jsPDF, pageW: number, now: string, generatedBy?: string
   doc.text(`Página ${doc.getCurrentPageInfo().pageNumber}`, pageW - 14, pageH - 6, { align: "right" });
 }
 
+const HEADER_H = 22;
+
 function drawPageHeader(doc: jsPDF, logo: string | null, pageW: number, reportTitle: string) {
   doc.setFillColor(24, 22, 60);
-  doc.rect(0, 0, pageW, 18, "F");
+  doc.rect(0, 0, pageW, HEADER_H, "F");
   doc.setFillColor(99, 102, 241);
-  doc.rect(0, 18, pageW, 0.8, "F");
-  doc.setFontSize(8);
+  doc.rect(0, HEADER_H, pageW, 0.8, "F");
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(200, 200, 230);
-  doc.text(reportTitle, 14, 11);
+  doc.text(reportTitle, 14, HEADER_H / 2 + 2);
   if (logo) {
     try {
-      const h = 7;
+      const h = 12;
       const w = h * 3.6;
-      doc.addImage(logo, "PNG", pageW - w - 10, (18 - h) / 2, w, h);
+      doc.addImage(logo, "PNG", pageW - w - 10, (HEADER_H - h) / 2, w, h);
     } catch {}
   } else {
-    doc.setFontSize(7);
+    doc.setFontSize(9);
     doc.setTextColor(180, 180, 210);
-    doc.text("ISP Consulte", pageW - 14, 11, { align: "right" });
+    doc.text("ISP Consulte", pageW - 14, HEADER_H / 2 + 2, { align: "right" });
   }
 }
 
@@ -119,7 +107,7 @@ function drawBarChart(
   const chartH = height - labelH - 10;
   const barW = (width - barGap * (data.length + 1)) / data.length;
 
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(200, 200, 230);
   doc.text(title, x, y + 6);
@@ -132,11 +120,11 @@ function drawBarChart(
     const by = titleYEnd + 4 + (chartH - 4 - bh);
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
     doc.roundedRect(bx, by, barW, bh, 1, 1, "F");
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(d.color[0], d.color[1], d.color[2]);
     doc.text(String(d.value), bx + barW / 2, by - 2.5, { align: "center" });
-    doc.setFontSize(6.5);
+    doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(160, 160, 190);
     const maxLabelLen = Math.max(12, Math.floor(barW / 1.4));
@@ -173,10 +161,10 @@ function drawDonutChart(
 
   const legendX = cx + r + 6;
   data.forEach((d, i) => {
-    const ly = cy - r + i * 10 + 2;
+    const ly = cy - r + i * 11 + 2;
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
     doc.roundedRect(legendX, ly, 4, 4, 0.5, 0.5, "F");
-    doc.setFontSize(6);
+    doc.setFontSize(7.5);
     doc.setTextColor(180, 180, 210);
     const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
     doc.text(`${d.label} (${pct}%)`, legendX + 6, ly + 3.5);
@@ -191,7 +179,7 @@ function drawClientHoursBar(
   const color: [number, number, number] =
     pct >= 90 ? [239, 68, 68] : pct >= 70 ? [250, 204, 21] : [34, 197, 94];
 
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(180, 180, 210);
   const shortLabel = label.length > 24 ? label.slice(0, 23) + "…" : label;
@@ -206,7 +194,7 @@ function drawClientHoursBar(
     doc.roundedRect(bx, y, (pct / 100) * bw, 4, 0.8, 0.8, "F");
   }
 
-  doc.setFontSize(6.5);
+  doc.setFontSize(7.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(color[0], color[1], color[2]);
   const hoursText = contracted > 0
@@ -238,16 +226,16 @@ function drawCoverPage(
   // Logo — large centered
   if (logo) {
     try {
-      const logoH = 18;
+      const logoH = 22;
       const logoW = logoH * 3.6;
-      doc.addImage(logo, "PNG", (pageW - logoW) / 2, 30, logoW, logoH);
+      doc.addImage(logo, "PNG", (pageW - logoW) / 2, 26, logoW, logoH);
     } catch {}
   }
 
   const centerX = pageW / 2;
 
   // Report title
-  doc.setFontSize(28);
+  doc.setFontSize(30);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
   doc.text(reportTitle, centerX, 72, { align: "center" });
@@ -258,17 +246,17 @@ function drawCoverPage(
   doc.roundedRect(centerX - lineW / 2, 78, lineW, 1.5, 0.5, 0.5, "F");
 
   // Metadata
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(180, 180, 210);
   doc.text(now, centerX, 88, { align: "center" });
   if (generatedBy) {
-    doc.text(`Gerado por ${generatedBy}`, centerX, 96, { align: "center" });
+    doc.text(`Gerado por ${generatedBy}`, centerX, 97, { align: "center" });
   }
 
   // Stats cards (mini summary)
   if (stats) {
-    const cardY = 112;
+    const cardY = 114;
     const cards = [
       { label: "Total", value: String(stats.total), color: [80, 85, 140] as number[] },
       { label: "Concluídas", value: String(stats.done), color: [34, 197, 94] as number[] },
@@ -278,7 +266,7 @@ function drawCoverPage(
     if (stats.totalHours) {
       cards.push({ label: "Horas", value: stats.totalHours, color: [139, 92, 246] });
     }
-    const cardW = 38;
+    const cardW = 40;
     const gap = 6;
     const totalW = cards.length * cardW + (cards.length - 1) * gap;
     const startX = (pageW - totalW) / 2;
@@ -286,18 +274,18 @@ function drawCoverPage(
     cards.forEach((card, i) => {
       const x = startX + i * (cardW + gap);
       doc.setFillColor(card.color[0], card.color[1], card.color[2]);
-      doc.roundedRect(x, cardY, cardW, 24, 3, 3, "F");
+      doc.roundedRect(x, cardY, cardW, 26, 3, 3, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
+      doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
-      doc.text(card.value, x + cardW / 2, cardY + 12, { align: "center" });
-      doc.setFontSize(7);
+      doc.text(card.value, x + cardW / 2, cardY + 13, { align: "center" });
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(230, 230, 255);
-      doc.text(card.label, x + cardW / 2, cardY + 20, { align: "center" });
+      doc.text(card.label, x + cardW / 2, cardY + 22, { align: "center" });
     });
 
-    // Completion percentage big
+    // Insights box — bigger fonts
     if (stats.total > 0) {
       const completionPct = Math.round((stats.done / stats.total) * 100);
       const avgTasksPerProject = tasks
@@ -307,21 +295,21 @@ function drawCoverPage(
           })()
         : 0;
 
-      const insightY = cardY + 38;
+      const insightY = cardY + 40;
       doc.setFillColor(28, 26, 56);
-      doc.roundedRect(centerX - 90, insightY, 180, 32, 4, 4, "F");
+      doc.roundedRect(centerX - 95, insightY, 190, 38, 4, 4, "F");
       doc.setDrawColor(99, 102, 241);
       doc.setLineWidth(0.3);
-      doc.roundedRect(centerX - 90, insightY, 180, 32, 4, 4, "S");
+      doc.roundedRect(centerX - 95, insightY, 190, 38, 4, 4, "S");
 
-      doc.setFontSize(8);
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(200, 200, 230);
-      doc.text("Insights do Relatório", centerX, insightY + 7, { align: "center" });
+      doc.setTextColor(220, 220, 240);
+      doc.text("Insights do Relatório", centerX, insightY + 9, { align: "center" });
 
-      doc.setFontSize(7.5);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(160, 160, 190);
+      doc.setTextColor(180, 180, 210);
 
       const insights: string[] = [];
       insights.push(`Taxa de conclusão geral: ${completionPct}%`);
@@ -336,7 +324,7 @@ function drawCoverPage(
       }
 
       insights.forEach((line, i) => {
-        doc.text(`• ${line}`, centerX - 78, insightY + 14 + i * 6);
+        doc.text(`• ${line}`, centerX - 82, insightY + 17 + i * 7);
       });
     }
   }
@@ -344,71 +332,15 @@ function drawCoverPage(
   // Bottom decoration
   doc.setFillColor(99, 102, 241);
   doc.rect(0, pageH - 3, pageW, 3, "F");
-  doc.setFontSize(7);
-  doc.setTextColor(100, 100, 140);
-  doc.text("ISP Consulte — Documento Confidencial", centerX, pageH - 8, { align: "center" });
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 160);
+  doc.text("Relatório gerado pelo time da ISP Consulte. Todos os direitos reservados.", centerX, pageH - 8, { align: "center" });
 }
 
 /* ═══════════════════════════════════════════════
- * PAGE 2: Table of Contents
+ * TABLE START Y — below header
  * ═══════════════════════════════════════════════ */
-function drawTOCPage(
-  doc: jsPDF, logo: string | null, pageW: number, reportTitle: string,
-  sections: { title: string; page: number }[]
-) {
-  doc.addPage();
-  drawPageBg(doc);
-  drawPageHeader(doc, logo, pageW, reportTitle);
-
-  const centerX = pageW / 2;
-  let y = 34;
-
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text("Sumário", centerX, y, { align: "center" });
-  y += 4;
-
-  // Decorative line
-  doc.setFillColor(99, 102, 241);
-  doc.roundedRect(centerX - 20, y, 40, 1, 0.5, 0.5, "F");
-  y += 10;
-
-  const maxContentW = pageW - 80;
-  const startX = 40;
-
-  sections.forEach((section, i) => {
-    const isProjectSection = section.title.startsWith("  ");
-    const label = section.title.trim();
-    const pageNum = String(section.page);
-
-    if (isProjectSection) {
-      doc.setFontSize(8.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(160, 160, 190);
-      const indentX = startX + 8;
-      doc.text(`• ${label}`, indentX, y);
-      doc.text(pageNum, startX + maxContentW, y, { align: "right" });
-    } else {
-      if (i > 0) y += 3;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(220, 220, 240);
-      doc.text(label, startX, y);
-      doc.text(pageNum, startX + maxContentW, y, { align: "right" });
-
-      // Dotted line
-      doc.setDrawColor(60, 58, 90);
-      doc.setLineWidth(0.2);
-      doc.setLineDashPattern([1, 2], 0);
-      const textW = doc.getTextWidth(label);
-      const numW = doc.getTextWidth(pageNum);
-      doc.line(startX + textW + 4, y - 1, startX + maxContentW - numW - 4, y - 1);
-      doc.setLineDashPattern([], 0);
-    }
-    y += 8;
-  });
-}
+const TABLE_START_Y = HEADER_H + 8;
 
 /* ═══════════════════════════════════════════════
  * EXPORT: Tasks PDF (enhanced)
@@ -445,33 +377,18 @@ export async function exportTasksPDF({
   const sortedProjects = Array.from(projectGroups.entries())
     .sort((a, b) => b[1].length - a[1].length);
 
-  // Build TOC sections — we'll fill page numbers after rendering
-  const tocSections: { title: string; page: number }[] = [
-    { title: "Capa Executiva", page: 1 },
-    { title: "Sumário", page: 2 },
-    { title: "Resumo Visual", page: 3 },
-  ];
-
-  // Estimate pages for charts (page 3) + projects
-  let estimatedPage = 4;
-  if (sortedProjects.length > 1) {
-    sortedProjects.forEach(([name]) => {
-      tocSections.push({ title: `  ${name}`, page: estimatedPage });
-      estimatedPage++;
-    });
-  } else {
-    tocSections.push({ title: "Tabela de Tarefas", page: estimatedPage });
-  }
-
-  // ── PAGE 2: TOC ──
-  drawTOCPage(doc, logo, pageW, dynamicTitle, tocSections);
-
-  // ── PAGE 3: Charts / Visual Summary ──
+  // ── PAGE 2: Charts / Visual Summary ──
   doc.addPage();
   drawPageBg(doc);
   drawPageHeader(doc, logo, pageW, dynamicTitle);
 
-  let yPos = 24;
+  // Section title
+  let yPos = TABLE_START_Y;
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("Relatório em Gráficos", 14, yPos);
+  yPos += 8;
 
   if (stats) {
     // KPI cards
@@ -491,10 +408,10 @@ export async function exportTasksPDF({
       doc.setFillColor(card.color[0], card.color[1], card.color[2]);
       doc.roundedRect(x, yPos, cardW, 18, 2.5, 2.5, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(15);
+      doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.text(card.value, x + cardW / 2, yPos + 9, { align: "center" });
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(230, 230, 255);
       doc.text(card.label, x + cardW / 2, yPos + 15, { align: "center" });
@@ -513,7 +430,7 @@ export async function exportTasksPDF({
         { label: "Andamento", value: stats.pending, color: [250, 204, 21] },
         { label: "Atrasado", value: stats.overdue, color: [239, 68, 68] },
       ];
-      doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
+      doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
       doc.text("Distribuição por Status", 14, yPos + 4);
       drawDonutChart(doc, 50, yPos + 22, 14, chartData);
 
@@ -538,7 +455,7 @@ export async function exportTasksPDF({
 
       yPos += chartSectionH + 2;
 
-      // Productivity pulse
+      // Productivity pulse — show up to 10 projects
       const projectCounts = new Map<string, { done: number; pending: number; overdue: number }>();
       tasks.forEach((t) => {
         const p = t.project || "Sem projeto";
@@ -560,19 +477,19 @@ export async function exportTasksPDF({
           const totalA = a[1].done + a[1].pending + a[1].overdue;
           return totalB - totalA;
         })
-        .slice(0, 8);
+        .slice(0, 10);
 
       if (productivityData.length > 0) {
-        const sectionH = 16 + productivityData.length * 8 + 6;
+        const rowH = 9;
+        const sectionH = 16 + productivityData.length * rowH + 6;
         yPos = ensureSpace(doc, yPos, sectionH);
 
-        doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
+        doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
         doc.text("Pulso de Produtividade — % Conclusão por Projeto", 14, yPos + 4);
 
-        const startY = yPos + 8;
-        const rowH = 8;
+        const startY = yPos + 10;
         const labelW = 72;
-        const barMaxW = pageW - 28 - labelW - 28;
+        const barMaxW = pageW - 28 - labelW - 30;
 
         productivityData.forEach(([name, s, pct], i) => {
           const ry = startY + i * rowH;
@@ -580,7 +497,7 @@ export async function exportTasksPDF({
             doc.setFillColor(28, 26, 56);
             doc.roundedRect(12, ry - 1, pageW - 24, rowH, 1, 1, "F");
           }
-          doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(180, 180, 210);
+          doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(180, 180, 210);
           const shortName = name.length > 38 ? name.slice(0, 37) + "…" : name;
           doc.text(shortName, 14, ry + rowH * 0.55);
           const bx = 14 + labelW;
@@ -593,7 +510,7 @@ export async function exportTasksPDF({
             doc.setFillColor(...color);
             doc.roundedRect(bx, by, fillW, bh, 1, 1, "F");
           }
-          doc.setFontSize(7); doc.setFont("helvetica", "bold");
+          doc.setFontSize(8); doc.setFont("helvetica", "bold");
           const pctColor: [number, number, number] = pct >= 80 ? [34, 160, 80] : pct >= 50 ? [180, 150, 20] : [220, 50, 50];
           doc.setTextColor(...pctColor);
           doc.text(`${pct}%`, bx + barMaxW + 4, ry + rowH * 0.6);
@@ -601,29 +518,12 @@ export async function exportTasksPDF({
 
         yPos += sectionH;
       }
-
-      // Velocity insight text
-      yPos = ensureSpace(doc, yPos, 20);
-      doc.setFillColor(28, 26, 56);
-      doc.roundedRect(14, yPos, pageW - 28, 16, 2, 2, "F");
-      doc.setDrawColor(99, 102, 241);
-      doc.setLineWidth(0.2);
-      doc.roundedRect(14, yPos, pageW - 28, 16, 2, 2, "S");
-      doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
-      doc.text("Velocidade de Entrega", 20, yPos + 5);
-      doc.setFont("helvetica", "normal"); doc.setTextColor(160, 160, 190); doc.setFontSize(7);
-      const avgPerProject = sortedProjects.length > 0
-        ? Math.round(stats.done / sortedProjects.length) : 0;
-      const velocityText = stats.overdue === 0
-        ? `Todas as tarefas dentro do prazo. Média de ${avgPerProject} conclusões por projeto. Desempenho exemplar.`
-        : `${stats.done} tarefas concluídas com ${stats.overdue} pendência${stats.overdue > 1 ? "s" : ""} de prazo. Média de ${avgPerProject} conclusões por projeto.`;
-      doc.text(velocityText, 20, yPos + 11);
     }
   }
 
   drawFooter(doc, pageW, now, generatedBy);
 
-  // ── PAGES 4+: Tasks grouped by project ──
+  // ── PAGES 3+: Tasks grouped by project ──
   if (sortedProjects.length > 1) {
     // Multiple projects — one section per project
     sortedProjects.forEach(([projectName, projectTasks]) => {
@@ -631,12 +531,12 @@ export async function exportTasksPDF({
       drawPageBg(doc);
       drawPageHeader(doc, logo, pageW, dynamicTitle);
 
-      let py = 24;
+      let py = TABLE_START_Y;
 
       // Project title bar
       doc.setFillColor(30, 27, 75);
       doc.roundedRect(14, py, pageW - 28, 14, 2, 2, "F");
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
       doc.text(projectName, 20, py + 9);
@@ -644,10 +544,9 @@ export async function exportTasksPDF({
       // Mini stats for this project
       const pDone = projectTasks.filter(t => t.statusLabel === "Concluído").length;
       const pOverdue = projectTasks.filter(t => t.statusLabel === "Atrasado").length;
-      const pPending = projectTasks.length - pDone - pOverdue;
       const pPct = projectTasks.length > 0 ? Math.round((pDone / projectTasks.length) * 100) : 0;
 
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(180, 180, 210);
       const miniStats = `${projectTasks.length} tarefas · ${pDone} concluídas · ${pOverdue} atrasadas · ${pPct}% conclusão`;
@@ -665,19 +564,19 @@ export async function exportTasksPDF({
         head: [["Tarefa", "Responsável", "Status", "Prazo", "Duração"]],
         body: tableBody,
         theme: "grid",
-        styles: { fontSize: 7.5, cellPadding: 3.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.15, fillColor: [22, 20, 48] },
+        styles: { fontSize: 8.5, cellPadding: 3.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.15, fillColor: [22, 20, 48] },
         headStyles: {
-          fillColor: [24, 22, 60], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "center", cellPadding: 4,
+          fillColor: [24, 22, 60], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5, halign: "center", cellPadding: 4,
         },
         alternateRowStyles: { fillColor: [28, 26, 56] },
         columnStyles: {
           0: { cellWidth: "auto", fontStyle: "bold", halign: "left" },
-          1: { halign: "center", cellWidth: 34 },
-          2: { halign: "center", cellWidth: 24 },
-          3: { halign: "center", cellWidth: 24 },
-          4: { halign: "center", cellWidth: 20 },
+          1: { halign: "center", cellWidth: 42 },
+          2: { halign: "center", cellWidth: 30 },
+          3: { halign: "center", cellWidth: 26 },
+          4: { halign: "center", cellWidth: 22 },
         },
-        margin: { left: 14, right: 14 },
+        margin: { left: 14, right: 14, top: TABLE_START_Y },
         willDrawPage: (data: any) => {
           if (data.pageNumber > 1) drawPageBg(doc);
           drawPageHeader(doc, logo, pageW, dynamicTitle);
@@ -708,24 +607,24 @@ export async function exportTasksPDF({
     ]);
 
     autoTable(doc, {
-      startY: 24,
+      startY: TABLE_START_Y,
       head: [["Tarefa", "Projeto", "Responsável", "Status", "Prazo", "Duração"]],
       body: tableBody,
       theme: "grid",
-      styles: { fontSize: 7.5, cellPadding: 3.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.15, fillColor: [22, 20, 48] },
+      styles: { fontSize: 8.5, cellPadding: 3.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.15, fillColor: [22, 20, 48] },
       headStyles: {
-        fillColor: [24, 22, 60], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "center", cellPadding: 4,
+        fillColor: [24, 22, 60], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5, halign: "center", cellPadding: 4,
       },
       alternateRowStyles: { fillColor: [28, 26, 56] },
       columnStyles: {
         0: { cellWidth: "auto", fontStyle: "bold", halign: "left" },
-        1: { halign: "center", cellWidth: 44 },
-        2: { halign: "center", cellWidth: 34 },
-        3: { halign: "center", cellWidth: 24 },
-        4: { halign: "center", cellWidth: 24 },
-        5: { halign: "center", cellWidth: 20 },
+        1: { halign: "center", cellWidth: 38 },
+        2: { halign: "center", cellWidth: 42 },
+        3: { halign: "center", cellWidth: 30 },
+        4: { halign: "center", cellWidth: 26 },
+        5: { halign: "center", cellWidth: 22 },
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, top: TABLE_START_Y },
       willDrawPage: (data: any) => {
         if (data.pageNumber > 1) drawPageBg(doc);
         drawPageHeader(doc, logo, pageW, dynamicTitle);
@@ -745,9 +644,6 @@ export async function exportTasksPDF({
 
     drawFooter(doc, pageW, now, generatedBy);
   }
-
-  // Update TOC page numbers — approximate (TOC was pre-rendered)
-  // Note: jsPDF doesn't support editing previous pages easily, so TOC pages are estimated
 
   doc.save(fileName);
 }
@@ -801,21 +697,17 @@ export async function exportClientPDF({
     totalHours: `${Math.round(totalHours)}h`,
   });
 
-  // ── PAGE 2: TOC ──
-  const tocSections: { title: string; page: number }[] = [
-    { title: "Capa Executiva", page: 1 },
-    { title: "Sumário", page: 2 },
-    { title: "Resumo Visual", page: 3 },
-    { title: "Tabela de Projetos", page: 4 },
-  ];
-  drawTOCPage(doc, logo, pageW, reportTitle, tocSections);
-
-  // ── PAGE 3: Charts ──
+  // ── PAGE 2: Charts ──
   doc.addPage();
   drawPageBg(doc);
   drawPageHeader(doc, logo, pageW, reportTitle);
 
-  let yPos = 24;
+  let yPos = TABLE_START_Y;
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("Relatório em Gráficos", 14, yPos);
+  yPos += 8;
 
   // Cards
   const cards = [
@@ -832,10 +724,10 @@ export async function exportClientPDF({
     doc.setFillColor(...card.color);
     doc.roundedRect(x, yPos, cardW, 16, 2, 2, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(13);
+    doc.setFontSize(15);
     doc.setFont("helvetica", "bold");
     doc.text(card.value, x + cardW / 2, yPos + 8, { align: "center" });
-    doc.setFontSize(6.5);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(card.label, x + cardW / 2, yPos + 13, { align: "center" });
   });
@@ -848,7 +740,7 @@ export async function exportClientPDF({
     { label: "Andamento", value: totalTasks - totalDone - totalOver, color: [250, 204, 21] },
     { label: "Atrasadas", value: totalOver, color: [239, 68, 68] },
   ];
-  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
+  doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
   doc.text("Status das Tarefas", 14, yPos + 4);
   drawDonutChart(doc, 50, yPos + 26, 16, completionData);
   yPos += 52;
@@ -857,7 +749,7 @@ export async function exportClientPDF({
   if (totalContr > 0) {
     const hoursH = 6 + projects.length * 8 + 4;
     yPos = ensureSpace(doc, yPos, hoursH);
-    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
+    doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
     doc.text("Consumo de Horas Contratadas", 14, yPos);
     yPos += 6;
     projects.forEach((p) => {
@@ -869,7 +761,7 @@ export async function exportClientPDF({
 
   drawFooter(doc, pageW, now, generatedBy);
 
-  // ── PAGE 4: Projects table ──
+  // ── PAGE 3: Projects table ──
   doc.addPage();
   drawPageBg(doc);
   drawPageHeader(doc, logo, pageW, reportTitle);
@@ -887,12 +779,12 @@ export async function exportClientPDF({
   });
 
   autoTable(doc, {
-    startY: 24,
+    startY: TABLE_START_Y,
     head: [["Projeto", "Tarefas", "Concluídas", "Atrasadas", "Horas Usadas", "Contratadas", "Restam", "Conclusão"]],
     body: tableBody,
     theme: "grid",
-    styles: { fontSize: 7.5, cellPadding: 2.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.2, fillColor: [22, 20, 48] },
-    headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5 },
+    styles: { fontSize: 8.5, cellPadding: 2.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.2, fillColor: [22, 20, 48] },
+    headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5 },
     alternateRowStyles: { fillColor: [28, 26, 56] },
     columnStyles: {
       0: { cellWidth: "auto", fontStyle: "bold" },
@@ -904,7 +796,7 @@ export async function exportClientPDF({
       6: { halign: "center", cellWidth: 18 },
       7: { halign: "center", cellWidth: 20 },
     },
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: TABLE_START_Y },
     willDrawPage: (data: any) => {
       if (data.pageNumber > 1) drawPageBg(doc);
       drawPageHeader(doc, logo, pageW, reportTitle);
@@ -965,21 +857,17 @@ export async function exportAnalyticsPDF({
     totalHours: `${Math.round(totals.hours)}h`,
   });
 
-  // ── PAGE 2: TOC ──
-  const tocSections = [
-    { title: "Capa Executiva", page: 1 },
-    { title: "Sumário", page: 2 },
-    { title: "Resumo Visual", page: 3 },
-    { title: "Tabela de Projetos", page: 4 },
-  ];
-  drawTOCPage(doc, logo, pageW, reportTitle, tocSections);
-
-  // ── PAGE 3: Charts ──
+  // ── PAGE 2: Charts ──
   doc.addPage();
   drawPageBg(doc);
   drawPageHeader(doc, logo, pageW, reportTitle);
 
-  let yPos = 24;
+  let yPos = TABLE_START_Y;
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("Relatório em Gráficos", 14, yPos);
+  yPos += 8;
 
   // Cards
   const cards = [
@@ -996,10 +884,10 @@ export async function exportAnalyticsPDF({
     doc.setFillColor(card.color[0], card.color[1], card.color[2]);
     doc.roundedRect(x, yPos, cardW, 16, 2, 2, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text(card.value, x + cardW / 2, yPos + 8, { align: "center" });
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(card.label, x + cardW / 2, yPos + 13, { align: "center" });
   });
@@ -1007,52 +895,34 @@ export async function exportAnalyticsPDF({
 
   // Donut
   yPos = ensureSpace(doc, yPos, 50);
-  const completionData = [
+  const completionData2 = [
     { label: "Concluídas", value: totals.done, color: [34, 197, 94] },
     { label: "Pendentes", value: totals.tasks - totals.done - totals.overdue, color: [250, 204, 21] },
     { label: "Atrasadas", value: totals.overdue, color: [239, 68, 68] },
   ];
-  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
+  doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
   doc.text("Status Geral", 14, yPos + 4);
-  drawDonutChart(doc, 50, yPos + 26, 16, completionData);
-  yPos += 50;
-
-  // Velocity insight
-  yPos = ensureSpace(doc, yPos, 20);
-  doc.setFillColor(28, 26, 56);
-  doc.roundedRect(14, yPos, pageW - 28, 16, 2, 2, "F");
-  doc.setDrawColor(99, 102, 241);
-  doc.setLineWidth(0.2);
-  doc.roundedRect(14, yPos, pageW - 28, 16, 2, 2, "S");
-  doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
-  doc.text("Velocidade de Entrega", 20, yPos + 5);
-  doc.setFont("helvetica", "normal"); doc.setTextColor(160, 160, 190); doc.setFontSize(7);
-  const pctDone = totals.tasks > 0 ? Math.round((totals.done / totals.tasks) * 100) : 0;
-  const avgPerProj = totals.projects > 0 ? Math.round(totals.tasks / totals.projects) : 0;
-  const velText = totals.overdue === 0
-    ? `Taxa de conclusão: ${pctDone}%. Todas as tarefas dentro do prazo. Média de ${avgPerProj} tarefas por projeto.`
-    : `Taxa de conclusão: ${pctDone}%. ${totals.overdue} tarefa${totals.overdue > 1 ? "s" : ""} atrasada${totals.overdue > 1 ? "s" : ""}. Média de ${avgPerProj} tarefas por projeto.`;
-  doc.text(velText, 20, yPos + 11);
+  drawDonutChart(doc, 50, yPos + 26, 16, completionData2);
 
   drawFooter(doc, pageW, now, generatedBy);
 
-  // ── PAGE 4: Projects table ──
+  // ── PAGE 3: Projects table ──
   doc.addPage();
   drawPageBg(doc);
   drawPageHeader(doc, logo, pageW, reportTitle);
 
-  const tableBody = projects.map((p) => {
+  const tableBody2 = projects.map((p) => {
     const completion = p.totalTasks > 0 ? Math.round((p.doneTasks / p.totalTasks) * 100) : 0;
     return [p.name, String(p.totalTasks), String(p.doneTasks), String(p.overdueTasks), `${Math.round(p.hours)}h`, `${completion}%`];
   });
 
   autoTable(doc, {
-    startY: 24,
+    startY: TABLE_START_Y,
     head: [["Projeto", "Tarefas", "Concluídas", "Atrasadas", "Horas", "Conclusão"]],
-    body: tableBody,
+    body: tableBody2,
     theme: "grid",
-    styles: { fontSize: 8, cellPadding: 3, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.2, fillColor: [22, 20, 48] },
-    headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+    styles: { fontSize: 9, cellPadding: 3, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.2, fillColor: [22, 20, 48] },
+    headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 9 },
     alternateRowStyles: { fillColor: [28, 26, 56] },
     columnStyles: {
       0: { cellWidth: "auto", fontStyle: "bold" },
@@ -1062,7 +932,7 @@ export async function exportAnalyticsPDF({
       4: { halign: "center", cellWidth: 20 },
       5: { halign: "center", cellWidth: 22 },
     },
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: TABLE_START_Y },
     willDrawPage: (data: any) => {
       if (data.pageNumber > 1) drawPageBg(doc);
       drawPageHeader(doc, logo, pageW, reportTitle);
