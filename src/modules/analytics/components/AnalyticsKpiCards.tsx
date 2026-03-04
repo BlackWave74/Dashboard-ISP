@@ -20,37 +20,37 @@ function AnalyticsKpiCardsInner({ clients, activeProjects, totalHours, totalTask
     {
       label: "Meus Projetos",
       value: clients.toLocaleString("pt-BR"),
-      sub: "com atividade vinculada",
+      sub: activeProjects > 0 ? `${activeProjects} com atividade recente` : "Nenhum ativo no período",
       icon: Briefcase,
       accent: "hsl(262 83% 58%)",
     },
     {
       label: "Horas Alocadas",
       value: `${Math.round(totalHours).toLocaleString("pt-BR")}h`,
-      sub: `~${activeProjects > 0 ? Math.round(totalHours / activeProjects) : 0}h por projeto`,
+      sub: activeProjects > 0 ? `~${Math.round(totalHours / activeProjects)}h por projeto` : "Sem registro de horas",
       icon: Clock,
       accent: "hsl(200 80% 55%)",
     },
     {
       label: "Concluídas",
       value: doneCount.toLocaleString("pt-BR"),
-      sub: `${completionPct}% do total`,
+      sub: completionPct >= 80 ? `${completionPct}% — Excelente ritmo!` : completionPct >= 50 ? `${completionPct}% — Bom progresso` : `${completionPct}% — Atenção necessária`,
       icon: CheckCircle2,
       accent: "hsl(160 84% 39%)",
     },
     {
       label: "Em Andamento",
       value: pendingCount.toLocaleString("pt-BR"),
-      sub: `${totalTasks > 0 ? Math.round((pendingCount / totalTasks) * 100) : 0}% do total`,
+      sub: pendingCount > 0 ? `${totalTasks > 0 ? Math.round((pendingCount / totalTasks) * 100) : 0}% aguardando conclusão` : "Nenhuma pendente",
       icon: TrendingUp,
       accent: "hsl(270 80% 55%)",
     },
     {
       label: "Atrasadas",
       value: overdueCount.toLocaleString("pt-BR"),
-      sub: `${totalTasks > 0 ? Math.round((overdueCount / totalTasks) * 100) : 0}% do total`,
+      sub: overdueCount > 0 ? `${Math.round((overdueCount / Math.max(totalTasks, 1)) * 100)}% — Priorizar resolução` : "Nenhum atraso ✓",
       icon: AlertTriangle,
-      accent: "hsl(0 84% 60%)",
+      accent: overdueCount > 0 ? "hsl(0 84% 60%)" : "hsl(160 84% 39%)",
     },
   ];
 

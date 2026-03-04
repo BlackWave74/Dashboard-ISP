@@ -103,7 +103,7 @@ function AnalyticsPerformanceChartInner({ times }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <div>
           <h3 className="text-lg font-bold text-white/90">Horas Registradas</h3>
-          <p className="text-xs text-white/30 mt-0.5">Evolução ao longo do tempo</p>
+          <p className="text-xs text-white/30 mt-0.5">Visualize a evolução do esforço ao longo do tempo — detecte picos de demanda e períodos ociosos</p>
         </div>
         <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1">
           {periodOptions.map((p) => (

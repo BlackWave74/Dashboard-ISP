@@ -672,11 +672,11 @@ export default function TarefasPage() {
 
         {/* ═══ KPI CARDS ═══ */}
         <motion.div variants={stagger} initial="initial" animate="animate" className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-5">
-          <KpiCard icon={Layers} label="Total de Tarefas" value={stats.total} color="purple" delay={0} loading={loading} />
-          <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0.05} loading={loading} />
-          <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.1} loading={loading} />
-          <KpiCard icon={CheckCircle2} label="Concluídas" value={stats.done} color="green" delay={0.15} loading={loading} />
-          <KpiCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="red" delay={0.2} loading={loading} />
+          <KpiCard icon={Layers} label="Total de Tarefas" value={stats.total} color="purple" delay={0} loading={loading} sub={`${uniqueProjects.size} projeto${uniqueProjects.size !== 1 ? "s" : ""} ativo${uniqueProjects.size !== 1 ? "s" : ""}`} />
+          <KpiCard icon={Timer} label="Horas Alocadas" value={`${totalHoursLabel}h`} color="blue" delay={0.05} loading={loading} sub={stats.total > 0 ? `~${(totalHours / Math.max(stats.total, 1)).toFixed(1)}h por tarefa` : "Sem dados"} />
+          <KpiCard icon={Hourglass} label="Em Andamento" value={stats.pending} color="yellow" delay={0.1} loading={loading} sub={stats.total > 0 ? `${Math.round((stats.pending / stats.total) * 100)}% do total` : "Nenhuma"} />
+          <KpiCard icon={CheckCircle2} label="Concluídas" value={stats.done} color="green" delay={0.15} loading={loading} sub={stats.total > 0 ? `${pctDone}% de conclusão` : "Nenhuma"} />
+          <KpiCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="red" delay={0.2} loading={loading} sub={stats.overdue > 0 ? `Requer ação imediata` : "Tudo em dia ✓"} />
         </motion.div>
 
         {/* ═══ MAIN DASHBOARD: Collapsible 3-column ═══ */}
@@ -1164,6 +1164,7 @@ type KpiCardProps = {
   color: "yellow" | "purple" | "blue" | "green" | "red";
   delay?: number;
   loading?: boolean;
+  sub?: string;
 };
 
 const colorMap = {
@@ -1174,7 +1175,7 @@ const colorMap = {
   red: { icon: "bg-rose-500/15 text-rose-400", glow: "hover:border-rose-500/30 hover:shadow-[0_0_20px_rgba(244,63,94,0.08)]" },
 };
 
-function KpiCard({ icon: Icon, label, value, color, delay = 0, loading: isLoading }: KpiCardProps) {
+function KpiCard({ icon: Icon, label, value, color, delay = 0, loading: isLoading, sub }: KpiCardProps) {
   const c = colorMap[color];
   return (
     <motion.div
@@ -1191,7 +1192,10 @@ function KpiCard({ icon: Icon, label, value, color, delay = 0, loading: isLoadin
         {isLoading ? (
           <div className="h-5 w-12 rounded bg-white/[0.06] animate-pulse mt-1" />
         ) : (
-          <p className="text-lg sm:text-xl font-extrabold text-[hsl(var(--task-text))] leading-tight">{value}</p>
+          <>
+            <p className="text-lg sm:text-xl font-extrabold text-[hsl(var(--task-text))] leading-tight">{value}</p>
+            {sub && <p className="text-[9px] text-[hsl(var(--task-text-muted)/0.6)] mt-0.5 truncate">{sub}</p>}
+          </>
         )}
       </div>
     </motion.div>
