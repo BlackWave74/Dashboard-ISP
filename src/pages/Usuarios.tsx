@@ -458,8 +458,19 @@ export default function UsuariosPage() {
 
   /* ─── Dropdown helpers ─── */
   const areaOptions = ALL_AREAS.map(a => ({ value: a.value, label: a.label }));
-  const projectOptions = api.projects.map(p => ({ value: p.id, label: p.name }));
-  const clienteOptions = api.clientes.filter(c => c.Ativo).map(c => ({ value: c.cliente_id, label: c.nome }));
+  const projectOptions = useMemo(() =>
+    [...api.projects]
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+      .map(p => ({ value: p.id, label: p.name })),
+    [api.projects]
+  );
+  const clienteOptions = useMemo(() =>
+    api.clientes
+      .filter(c => c.Ativo)
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+      .map(c => ({ value: c.cliente_id, label: c.nome })),
+    [api.clientes]
+  );
 
   const toggleInList = <T extends string | number>(val: T, list: T[], setter: (v: T[]) => void) => {
     setter(list.includes(val) ? list.filter(v => v !== val) : [...list, val]);
