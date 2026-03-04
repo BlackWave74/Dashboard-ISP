@@ -41,7 +41,7 @@ const ROLE_TO_PERFIL: Record<string, string> = {
   cliente: "Cliente",
 };
 
-const VALID_AREAS = new Set(["home", "tarefas", "analiticas", "comodato", "integracoes", "usuarios"]);
+const VALID_AREAS = new Set(["home", "tarefas", "analiticas", "calendario", "gamificacao", "ferramentas", "comodato", "integracoes", "usuarios", "suporte"]);
 
 /** Structured log helper */
 function log(level: "info" | "warn" | "error", action: string, msg: string, meta?: Record<string, unknown>) {
