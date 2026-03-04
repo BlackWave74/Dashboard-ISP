@@ -125,38 +125,38 @@ export default function AnaliticasPage() {
   const initialLoading = loading && allTasks.length === 0;
 
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
-  const accessibleProjectNames = session?.accessibleProjectNames;
+  const accessibleProjectIds = session?.accessibleProjectIds;
 
   // Filter tasks by project access for non-admin users
   const companyName = session?.company?.trim()?.toLowerCase();
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return allTasks;
 
-    const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
+    const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
     const hasCompanyName = !!companyName;
 
-    if (!hasExplicitNames && !hasCompanyName) return [];
+    if (!hasExplicitIds && !hasCompanyName) return [];
 
-    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const allowedNames = hasExplicitNames ? accessibleProjectNames!.map(norm) : null;
-    const needle = hasCompanyName ? norm(companyName!) : null;
+    // Use project IDs for exact matching (prevents substring false positives)
+    const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds!) : null;
 
     const filtered = allTasks.filter((t) => {
-      const projectNorm = norm(String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? ""));
+      const pid = Number(t.project_id);
+      if (allowedIds && pid && allowedIds.has(pid)) return true;
 
-      if (allowedNames) {
-        const match = allowedNames.some(
-          (name) => projectNorm === name || projectNorm.includes(name) || name.includes(projectNorm)
-        );
-        if (match) return true;
+      // Fallback: company name matching
+      if (hasCompanyName && pid) {
+        const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const projectName = norm(String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? ""));
+        const needle = norm(companyName!);
+        if (projectName.includes(needle) && projectName !== needle) return true;
       }
-      if (needle && projectNorm.includes(needle)) return true;
 
       return false;
     });
 
     return filtered;
-  }, [allTasks, isAdmin, accessibleProjectNames, companyName]);
+  }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
 
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)

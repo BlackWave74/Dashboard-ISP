@@ -97,7 +97,7 @@ function DashboardInner() {
     session?.role === "coordenador";
 
   const companyName = session?.company?.trim();
-  const accessibleProjectNames = session?.accessibleProjectNames;
+  const accessibleProjectIds = session?.accessibleProjectIds;
 
   // Track presence for the logged-in user so admins can see who's online
   // We use email as the presence key since it's always available in the session
@@ -123,34 +123,26 @@ function DashboardInner() {
   const accessFilteredTasks = useMemo(() => {
     if (isAdmin) return tasks;
 
-    const hasExplicitNames = accessibleProjectNames && accessibleProjectNames.length > 0;
+    const hasExplicitIds = accessibleProjectIds && accessibleProjectIds.length > 0;
     const hasCompanyName = !!companyName;
 
-    if (!hasExplicitNames && !hasCompanyName) return [];
+    if (!hasExplicitIds && !hasCompanyName) return [];
 
-    const allowedNames = hasExplicitNames ? accessibleProjectNames!.map(norm) : null;
-    const needle = hasCompanyName ? norm(companyName!) : null;
+    const allowedIds = hasExplicitIds ? new Set(accessibleProjectIds!) : null;
 
     return tasks.filter((t) => {
-      const projectNorm = norm(
-        String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? "")
-      );
+      const pid = Number(t.project_id);
+      if (allowedIds && pid && allowedIds.has(pid)) return true;
 
-      if (allowedNames) {
-        const match = allowedNames.some(
-          (name) =>
-            projectNorm === name ||
-            projectNorm.includes(name) ||
-            name.includes(projectNorm)
-        );
-        if (match) return true;
+      if (hasCompanyName && pid) {
+        const projectName = norm(String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? ""));
+        const needle = norm(companyName!);
+        if (projectName.includes(needle) && projectName !== needle) return true;
       }
-
-      if (needle && projectNorm.includes(needle)) return true;
 
       return false;
     });
-  }, [tasks, isAdmin, accessibleProjectNames, companyName]);
+  }, [tasks, isAdmin, accessibleProjectIds, companyName]);
 
   // For non-admin users, further filter by consultant name so they only see their own tasks
   const userScopedTasks = useMemo(() => {
