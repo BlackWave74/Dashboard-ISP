@@ -168,10 +168,11 @@ function DashboardInner() {
       })),
     [notifTasks]
   );
-  const { alert: statusAlert, dismissAlert } = useTaskStatusAlerts(statusAlertData, !loading);
+  const userId = session?.email || "";
+  const { alert: statusAlert, dismissAlert } = useTaskStatusAlerts(statusAlertData, !loading, userId);
 
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications(notifTasks, session?.name, session?.role);
+    useNotifications(notifTasks, session?.name, session?.role, userId);
 
   if (loadingSession) {
     return (

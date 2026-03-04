@@ -9,25 +9,32 @@ export type StatusAlert = {
   timestamp: number;
 };
 
-const STORAGE_KEY = "task_status_snapshot";
-
 /**
  * Detects tasks that became overdue since the last check.
  * Returns alerts to be consumed by the AssistantReminder widget.
+ * userId is used to namespace localStorage and prevent cross-user data leakage.
  */
 export function useTaskStatusAlerts(
   tasks: TaskStatusEntry[],
-  enabled: boolean = true
+  enabled: boolean = true,
+  userId?: string,
 ) {
   const initialLoad = useRef(true);
   const [alert, setAlert] = useState<StatusAlert | null>(null);
+  const storageKey = userId ? `task_status_snapshot_${userId}` : "task_status_snapshot";
 
   const dismissAlert = useCallback(() => setAlert(null), []);
 
+  // Reset on user change
   useEffect(() => {
-    if (!enabled || tasks.length === 0) return;
+    initialLoad.current = true;
+    setAlert(null);
+  }, [userId]);
 
-    const prevSnapshot = storage.get<Record<string, string>>(STORAGE_KEY, {});
+  useEffect(() => {
+    if (!enabled || tasks.length === 0 || !userId) return;
+
+    const prevSnapshot = storage.get<Record<string, string>>(storageKey, {});
     const currentSnapshot: Record<string, string> = {};
 
     const newlyOverdue: TaskStatusEntry[] = [];
@@ -41,7 +48,7 @@ export function useTaskStatusAlerts(
       }
     });
 
-    storage.set(STORAGE_KEY, currentSnapshot);
+    storage.set(storageKey, currentSnapshot);
 
     if (initialLoad.current) {
       initialLoad.current = false;
@@ -60,7 +67,7 @@ export function useTaskStatusAlerts(
         timestamp: Date.now(),
       });
     }
-  }, [tasks, enabled]);
+  }, [tasks, enabled, userId, storageKey]);
 
   return { alert, dismissAlert };
 }
