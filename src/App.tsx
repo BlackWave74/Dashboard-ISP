@@ -26,7 +26,16 @@ const GamificacaoPage = lazy(() => import("./pages/Gamificacao"));
 const AdminDiagnosticoPage = lazy(() => import("./pages/AdminDiagnostico"));
 const FerramentasPage = lazy(() => import("./pages/Ferramentas"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      gcTime: 10 * 60 * 1000,   // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
   <ErrorBoundary>
