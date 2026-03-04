@@ -1,20 +1,28 @@
-import { useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { storage } from "@/modules/shared/storage";
 
 type TaskStatusEntry = { id: string | number; status: string; title: string; project: string };
 
+export type StatusAlert = {
+  message: string;
+  count: number;
+  timestamp: number;
+};
+
 const STORAGE_KEY = "task_status_snapshot";
 
 /**
- * Detects tasks that became overdue since the last check and shows toast alerts.
- * Runs on each data refresh, comparing current statuses with the previous snapshot.
+ * Detects tasks that became overdue since the last check.
+ * Returns alerts to be consumed by the AssistantReminder widget.
  */
 export function useTaskStatusAlerts(
   tasks: TaskStatusEntry[],
   enabled: boolean = true
 ) {
   const initialLoad = useRef(true);
+  const [alert, setAlert] = useState<StatusAlert | null>(null);
+
+  const dismissAlert = useCallback(() => setAlert(null), []);
 
   useEffect(() => {
     if (!enabled || tasks.length === 0) return;
@@ -28,13 +36,11 @@ export function useTaskStatusAlerts(
       const key = String(t.id);
       currentSnapshot[key] = t.status;
 
-      // Only alert after initial load (not on first page render)
       if (!initialLoad.current && prevSnapshot[key] && prevSnapshot[key] !== "overdue" && t.status === "overdue") {
         newlyOverdue.push(t);
       }
     });
 
-    // Save current snapshot
     storage.set(STORAGE_KEY, currentSnapshot);
 
     if (initialLoad.current) {
@@ -42,18 +48,16 @@ export function useTaskStatusAlerts(
       return;
     }
 
-    // Show alerts for newly overdue tasks (max 3 to avoid spam)
-    newlyOverdue.slice(0, 3).forEach((t) => {
-      toast.warning(`Tarefa atrasada: "${t.title}"`, {
-        description: t.project || undefined,
-        duration: 8000,
-      });
-    });
-
-    if (newlyOverdue.length > 3) {
-      toast.warning(`+${newlyOverdue.length - 3} tarefas ficaram atrasadas`, {
-        duration: 6000,
+    if (newlyOverdue.length > 0) {
+      const names = newlyOverdue.slice(0, 3).map((t) => `"${t.title}"`).join(", ");
+      const extra = newlyOverdue.length > 3 ? ` e mais ${newlyOverdue.length - 3}` : "";
+      setAlert({
+        message: `Atenção! ${newlyOverdue.length === 1 ? "Uma tarefa ficou atrasada" : `${newlyOverdue.length} tarefas ficaram atrasadas`}: ${names}${extra}. Confira suas tarefas para não perder os prazos! ⚠️`,
+        count: newlyOverdue.length,
+        timestamp: Date.now(),
       });
     }
   }, [tasks, enabled]);
+
+  return { alert, dismissAlert };
 }
