@@ -105,9 +105,10 @@ const normalizeTask = (task: TaskRecord, durationSeconds?: number): TaskView => 
     task.projects && typeof task.projects === "object"
       ? pickField(task.projects as TaskRecord, ["name"], "")
       : "";
+  // Prioritize the joined project name (accurate) over loose task fields (often partial/client names)
   const project =
-    pickField(task, ["project", "projeto", "project_name", "group_name", "group"], "") ||
     projectFromJoin ||
+    pickField(task, ["project", "projeto", "project_name", "group_name", "group"], "") ||
     (projectId ? `Projeto #${projectId}` : "Projeto indefinido");
   const consultant = pickField(task, ["responsible_name", "consultant", "owner", "responsavel"], "Sem consultor");
   const description = pickField(task, ["description", "descricao"], "Sem descrição");
