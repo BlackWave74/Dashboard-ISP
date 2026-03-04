@@ -109,7 +109,7 @@ function drawBarChart(
   });
 }
 
-/** Draw a donut chart */
+/** Draw a donut chart — high resolution */
 function drawDonutChart(
   doc: jsPDF, cx: number, cy: number, r: number,
   data: { label: string; value: number; color: number[] }[]
@@ -117,30 +117,27 @@ function drawDonutChart(
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return;
 
+  const inner = r * 0.55;
+
   let startAngle = -Math.PI / 2;
   data.forEach((d) => {
     const sliceAngle = (d.value / total) * 2 * Math.PI;
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
-    const points: number[][] = [[cx, cy]];
-    const steps = Math.max(8, Math.ceil(sliceAngle * 20));
-    for (let s = 0; s <= steps; s++) {
-      const a = startAngle + (s / steps) * sliceAngle;
-      points.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-    }
-    for (let s = 1; s < points.length - 1; s++) {
-      doc.triangle(points[0][0], points[0][1], points[s][0], points[s][1], points[s + 1][0], points[s + 1][1], "F");
+    // Use many steps for smooth arcs
+    const steps = Math.max(40, Math.ceil(sliceAngle * 80));
+    for (let s = 0; s < steps; s++) {
+      const a1 = startAngle + (s / steps) * sliceAngle;
+      const a2 = startAngle + ((s + 1) / steps) * sliceAngle;
+      // Draw a quad (two triangles) for the ring segment
+      const ox1 = cx + r * Math.cos(a1), oy1 = cy + r * Math.sin(a1);
+      const ox2 = cx + r * Math.cos(a2), oy2 = cy + r * Math.sin(a2);
+      const ix1 = cx + inner * Math.cos(a1), iy1 = cy + inner * Math.sin(a1);
+      const ix2 = cx + inner * Math.cos(a2), iy2 = cy + inner * Math.sin(a2);
+      doc.triangle(ox1, oy1, ox2, oy2, ix1, iy1, "F");
+      doc.triangle(ix1, iy1, ox2, oy2, ix2, iy2, "F");
     }
     startAngle += sliceAngle;
   });
-
-  doc.setFillColor(18, 16, 42); // match dark page bg
-  const inner = r * 0.55;
-  const cSteps = 40;
-  for (let s = 0; s < cSteps; s++) {
-    const a1 = (s / cSteps) * 2 * Math.PI;
-    const a2 = ((s + 1) / cSteps) * 2 * Math.PI;
-    doc.triangle(cx, cy, cx + inner * Math.cos(a1), cy + inner * Math.sin(a1), cx + inner * Math.cos(a2), cy + inner * Math.sin(a2), "F");
-  }
 
   const legendX = cx + r + 6;
   data.forEach((d, i) => {
