@@ -87,20 +87,22 @@ function drawBarChart(
   doc.setTextColor(30, 27, 75);
   doc.text(title, x, y + 6);
 
+  const titleYEnd = y + 10; // spacing below title so numbers don't touch it
+
   data.forEach((d, i) => {
     const bx = x + barGap + i * (barW + barGap);
-    const bh = (d.value / maxVal) * chartH;
-    const by = y + 10 + (chartH - bh);
+    const bh = (d.value / maxVal) * (chartH - 4); // slightly shorter bars to add top padding
+    const by = titleYEnd + 4 + (chartH - 4 - bh);
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
     doc.roundedRect(bx, by, barW, bh, 1, 1, "F");
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(d.color[0], d.color[1], d.color[2]);
-    doc.text(String(d.value), bx + barW / 2, by - 2, { align: "center" });
+    doc.text(String(d.value), bx + barW / 2, by - 2.5, { align: "center" });
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 120);
-    const label = d.label.length > 10 ? d.label.slice(0, 9) + "…" : d.label;
+    const label = d.label.length > 12 ? d.label.slice(0, 11) + "…" : d.label;
     doc.text(label, bx + barW / 2, y + 10 + chartH + 6, { align: "center" });
   });
 }
@@ -289,7 +291,7 @@ export async function exportTasksPDF({
       doc.text("Distribuição por Status", 14, yPos + 4);
       drawDonutChart(doc, 50, yPos + 26, 16, chartData);
 
-      // Bar chart — Tarefas por Responsável
+      // Bar chart — Tarefas por Responsável (top 4 to avoid name truncation)
       const consultantCounts = new Map<string, number>();
       tasks.forEach((t) => {
         const c = t.consultant || "Não atribuído";
@@ -297,11 +299,11 @@ export async function exportTasksPDF({
       });
       const topConsultants = Array.from(consultantCounts.entries())
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
+        .slice(0, 4)
         .map((e, i) => ({
-          label: e[0].length > 10 ? e[0].slice(0, 9) + "…" : e[0],
+          label: e[0].length > 12 ? e[0].slice(0, 11) + "…" : e[0],
           value: e[1],
-          color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21], [239, 68, 68], [99, 102, 241]][i % 6],
+          color: [[59, 130, 246], [139, 92, 246], [34, 197, 94], [250, 204, 21]][i % 4],
         }));
 
       if (topConsultants.length > 0) {
@@ -326,41 +328,55 @@ export async function exportTasksPDF({
         .slice(0, 8);
 
       if (productivityData.length > 0) {
-        const sectionH = 10 + productivityData.length * 7 + 6;
+        const sectionH = 16 + productivityData.length * 8 + 6;
         // Ensure the ENTIRE productivity section (title + bars) fits on one page
         yPos = ensureSpace(doc, yPos, sectionH);
 
         doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
         doc.text("Pulso de Produtividade — % Conclusão por Projeto", 14, yPos + 4);
+        doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(120, 120, 140);
+        doc.text("Verde ≥80%  ·  Amarelo ≥50%  ·  Vermelho <50%", 14, yPos + 9);
 
-        const startY = yPos + 10;
-        const rowH = 7;
+        const startY = yPos + 14;
+        const rowH = 8;
         const labelW = 58;
-        const barMaxW = pageW - 28 - labelW - 22;
+        const barMaxW = pageW - 28 - labelW - 28;
 
         productivityData.forEach(([name, s], i) => {
           const total = s.done + s.pending + s.overdue;
           const pct = total > 0 ? Math.round((s.done / total) * 100) : 0;
           const ry = startY + i * rowH;
 
-          doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(50, 50, 70);
+          // Row background for alternating
+          if (i % 2 === 0) {
+            doc.setFillColor(245, 245, 255);
+            doc.roundedRect(12, ry - 1, pageW - 24, rowH, 1, 1, "F");
+          }
+
+          doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(50, 50, 70);
           const shortName = name.length > 28 ? name.slice(0, 27) + "…" : name;
-          doc.text(shortName, 14, ry + rowH * 0.65);
+          doc.text(shortName, 14, ry + rowH * 0.55);
 
           const bx = 14 + labelW;
-          const bh = rowH * 0.5;
-          const by = ry + rowH * 0.18;
-          doc.setFillColor(225, 225, 240); doc.roundedRect(bx, by, barMaxW, bh, 0.7, 0.7, "F");
+          const bh = rowH * 0.45;
+          const by = ry + rowH * 0.2;
+          doc.setFillColor(225, 225, 240); doc.roundedRect(bx, by, barMaxW, bh, 1, 1, "F");
 
           if (pct > 0) {
             const fillW = (pct / 100) * barMaxW;
             const color: [number, number, number] = pct >= 80 ? [34, 197, 94] : pct >= 50 ? [250, 204, 21] : [239, 68, 68];
             doc.setFillColor(...color);
-            doc.roundedRect(bx, by, fillW, bh, 0.7, 0.7, "F");
+            doc.roundedRect(bx, by, fillW, bh, 1, 1, "F");
           }
 
-          doc.setFontSize(6); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 70);
-          doc.text(`${pct}%`, bx + barMaxW + 3, ry + rowH * 0.65);
+          doc.setFontSize(7); doc.setFont("helvetica", "bold");
+          const pctColor: [number, number, number] = pct >= 80 ? [34, 160, 80] : pct >= 50 ? [180, 150, 20] : [220, 50, 50];
+          doc.setTextColor(...pctColor);
+          doc.text(`${pct}%`, bx + barMaxW + 4, ry + rowH * 0.6);
+
+          // Small task count
+          doc.setFontSize(5.5); doc.setFont("helvetica", "normal"); doc.setTextColor(150, 150, 170);
+          doc.text(`${s.done}/${total}`, bx + barMaxW + 4, ry + rowH * 0.9);
         });
 
         yPos += sectionH;

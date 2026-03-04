@@ -510,8 +510,16 @@ export default function AnaliticasPage() {
         <ExportPDFModal
           title="Exportar Relatório de Analíticas"
           onClose={() => setShowExportModal(false)}
-          onExport={async (_sel: PDFExportSelection) => {
-            const projectRows = projectsWithContracted.map((p) => ({
+          taskIntegrityData={projectsWithContracted.map((p) => ({
+            title: p.projectName || "",
+            project: p.projectName || "",
+            consultant: "",
+            deadlineLabel: "",
+            durationLabel: p.hoursUsed > 0 ? `${Math.round(p.hoursUsed)}h` : "",
+            statusKey: p.tasksOverdue > 0 ? "overdue" : p.tasksDone > 0 ? "done" : "pending",
+          }))}
+          onExport={async (_sel: PDFExportSelection, incompleteAction) => {
+            let projectRows = projectsWithContracted.map((p) => ({
               name: p.projectName,
               totalTasks: p.tasksDone + p.tasksPending + p.tasksOverdue,
               doneTasks: p.tasksDone,
@@ -519,13 +527,21 @@ export default function AnaliticasPage() {
               hours: p.hoursUsed,
               hoursContracted: p.hoursContracted,
             }));
+
+            // Apply incomplete filter if user chose to exclude
+            if (incompleteAction === "exclude") {
+              projectRows = projectRows.filter((p) => p.name && p.name.trim() !== "");
+            } else if (incompleteAction === "only-incomplete") {
+              projectRows = projectRows.filter((p) => !p.name || p.name.trim() === "");
+            }
+
             await exportAnalyticsPDF({
               userName: effectiveUser,
               period: `Últimos ${periodDays} dias`,
               generatedBy: userName || undefined,
               projects: projectRows,
               totals: {
-                projects: projectsWithContracted.length,
+                projects: projectRows.length,
                 tasks: userTaskCount,
                 done: totalDone,
                 overdue: totalOverdue,
