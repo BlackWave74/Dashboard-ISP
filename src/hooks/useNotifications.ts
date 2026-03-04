@@ -20,6 +20,8 @@ export type AppNotification = {
 };
 
 const STORAGE_KEY = "app_notifications_read";
+const STORAGE_TIMESTAMP_KEY = "app_notifications_read_ts";
+const DAILY_RESET_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const makeId = (type: string, title: string) =>
   `${type}::${title}`.replace(/\s+/g, "_").slice(0, 80);
@@ -34,6 +36,24 @@ type TaskLike = {
 };
 
 /**
+ * Check if readIds should be reset (daily cleanup)
+ */
+function getCleanReadIds(): Set<string> {
+  const lastReset = storage.get<number>(STORAGE_TIMESTAMP_KEY, 0);
+  const now = Date.now();
+
+  // If more than 24h since last reset, clear everything
+  if (now - lastReset > DAILY_RESET_MS) {
+    storage.set(STORAGE_KEY, []);
+    storage.set(STORAGE_TIMESTAMP_KEY, now);
+    return new Set();
+  }
+
+  const saved = storage.get<string[]>(STORAGE_KEY, []);
+  return new Set(saved);
+}
+
+/**
  * Notification hook with role-based filtering:
  * - Admin/gerente/coordenador: see ALL tasks, with own tasks highlighted
  * - Consultor/cliente: see ONLY own tasks
@@ -43,10 +63,7 @@ export function useNotifications(
   userName?: string,
   userRole?: string
 ) {
-  const [readIds, setReadIds] = useState<Set<string>>(() => {
-    const saved = storage.get<string[]>(STORAGE_KEY, []);
-    return new Set(saved);
-  });
+  const [readIds, setReadIds] = useState<Set<string>>(() => getCleanReadIds());
 
   const persistRead = useCallback((ids: Set<string>) => {
     storage.set(STORAGE_KEY, [...ids]);
@@ -61,8 +78,6 @@ export function useNotifications(
       if (!userName) return false;
       const consultant = (task.consultant || "").trim().toLowerCase();
       const user = userName.trim().toLowerCase();
-      // Se não há consultor definido na tarefa, NÃO consideramos como própria
-      // para não-privilegiados (evita falsos positivos)
       if (!consultant) return isPrivileged;
       return consultant === user || consultant.includes(user) || user.includes(consultant);
     };
@@ -103,15 +118,17 @@ export function useNotifications(
         deadlineDate !== undefined &&
         deadlineDate.getTime() - now <= ONE_WEEK_MS;
 
+      // Use deadline as timestamp when available for meaningful "time ago"
+      const taskTimestamp = deadlineDate?.getTime() ?? now;
+
       if (isOverdue) {
-        // Atrasada com prazo definido
         const id = makeId("overdue", title);
         items.push({
           id,
           type: "overdue",
           title: own ? "⚠️ Sua tarefa está atrasada" : "Tarefa atrasada",
           message: `"${title}"${dateStr ? ` — prazo era ${dateStr}` : ""}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
-          timestamp: deadlineDate?.getTime() ?? now,
+          timestamp: taskTimestamp,
           read: readIds.has(id),
           projectName: project,
           daysRemaining,
@@ -119,14 +136,13 @@ export function useNotifications(
           isOwnTask: own,
         });
       } else if (deadlineDate && isWithinWeek) {
-        // Prazo próximo (dentro de 7 dias)
         const id = makeId("soon", title);
         items.push({
           id,
           type: "deadline_soon",
           title: own ? "📅 Prazo se aproximando" : "Prazo se aproximando",
           message: `Tarefa "${title}" deve ser concluída até ${dateStr}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
-          timestamp: deadlineDate.getTime(),
+          timestamp: taskTimestamp,
           read: readIds.has(id),
           projectName: project,
           daysRemaining,
@@ -134,14 +150,13 @@ export function useNotifications(
           isOwnTask: own,
         });
       } else {
-        // Tarefa aberta sem prazo iminente (em andamento normal)
         const id = makeId("open", title);
         items.push({
           id,
           type: "new_assignment",
           title: own ? "📋 Sua tarefa em andamento" : "Tarefa em andamento",
           message: `"${title}"${dateStr ? ` — prazo: ${dateStr}` : " — sem prazo definido"}.${!own && task.consultant ? ` (${task.consultant})` : ""}`,
-          timestamp: now,
+          timestamp: taskTimestamp,
           read: readIds.has(id),
           projectName: project,
           daysRemaining,
@@ -182,6 +197,18 @@ export function useNotifications(
           });
         }
       });
+    }
+
+    // Clean up stale readIds — remove IDs that no longer match any current notification
+    const currentIds = new Set(items.map((item) => item.id));
+    const staleIds = [...readIds].filter((id) => !currentIds.has(id));
+    if (staleIds.length > 0) {
+      const cleaned = new Set([...readIds].filter((id) => currentIds.has(id)));
+      // Defer state update to avoid render-during-render
+      setTimeout(() => {
+        setReadIds(cleaned);
+        storage.set(STORAGE_KEY, [...cleaned]);
+      }, 0);
     }
 
     // Sort: project alerts first, then own tasks, then unread, then by timestamp desc
