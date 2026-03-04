@@ -361,9 +361,7 @@ export function TaskFilters({
                   <CustomSelect
                     value={consultant}
                     onChange={setConsultant}
-                    options={consultantOptions.length === 1
-                      ? [{ value: consultantOptions[0], label: "Só meu" }]
-                      : consultantOptions.map(o => ({ value: o, label: o }))
+                    options={consultantOptions.map(o => ({ value: o, label: o }))
                     }
                     placeholder="Todos consultores"
                     icon={User}
