@@ -473,7 +473,7 @@ export async function exportTasksPDF({
           const totalA = a[1].done + a[1].pending + a[1].overdue;
           return totalB - totalA;
         })
-        .slice(0, 10);
+        .slice(0, 8);
 
       if (productivityData.length > 0) {
         const rowH = 9;
