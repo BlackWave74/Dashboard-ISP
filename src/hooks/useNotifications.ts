@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from "react";
 import { storage } from "@/modules/shared/storage";
 
 export type AppNotification = {
-  /** When type is "project_alert", links to a project with accumulated overdue tasks */
   overdueProjectCount?: number;
   id: string;
   type: "overdue" | "deadline_soon" | "new_assignment" | "info" | "project_alert";
@@ -11,17 +10,12 @@ export type AppNotification = {
   timestamp: number;
   read: boolean;
   projectName?: string;
-  /** Days remaining until deadline (negative = overdue) */
   daysRemaining?: number;
-  /** Formatted deadline date string */
   deadlineDateStr?: string;
-  /** Whether this task is assigned to the current user */
   isOwnTask?: boolean;
 };
 
-const STORAGE_KEY = "app_notifications_read";
-const STORAGE_TIMESTAMP_KEY = "app_notifications_read_ts";
-const DAILY_RESET_MS = 24 * 60 * 60 * 1000; // 24 hours
+const DAILY_RESET_MS = 24 * 60 * 60 * 1000;
 
 const makeId = (type: string, title: string) =>
   `${type}::${title}`.replace(/\s+/g, "_").slice(0, 80);
@@ -35,21 +29,26 @@ type TaskLike = {
   consultant?: string;
 };
 
-/**
- * Check if readIds should be reset (daily cleanup)
- */
-function getCleanReadIds(): Set<string> {
-  const lastReset = storage.get<number>(STORAGE_TIMESTAMP_KEY, 0);
+function getStorageKeys(userId?: string) {
+  const suffix = userId ? `_${userId}` : "";
+  return {
+    readKey: `app_notifications_read${suffix}`,
+    tsKey: `app_notifications_read_ts${suffix}`,
+  };
+}
+
+function getCleanReadIds(userId?: string): Set<string> {
+  const { readKey, tsKey } = getStorageKeys(userId);
+  const lastReset = storage.get<number>(tsKey, 0);
   const now = Date.now();
 
-  // If more than 24h since last reset, clear everything
   if (now - lastReset > DAILY_RESET_MS) {
-    storage.set(STORAGE_KEY, []);
-    storage.set(STORAGE_TIMESTAMP_KEY, now);
+    storage.set(readKey, []);
+    storage.set(tsKey, now);
     return new Set();
   }
 
-  const saved = storage.get<string[]>(STORAGE_KEY, []);
+  const saved = storage.get<string[]>(readKey, []);
   return new Set(saved);
 }
 
@@ -57,17 +56,21 @@ function getCleanReadIds(): Set<string> {
  * Notification hook with role-based filtering:
  * - Admin/gerente/coordenador: see ALL tasks, with own tasks highlighted
  * - Consultor/cliente: see ONLY own tasks
+ * userId is used to namespace localStorage per user session.
  */
 export function useNotifications(
   tasks: TaskLike[],
   userName?: string,
-  userRole?: string
+  userRole?: string,
+  userId?: string,
 ) {
-  const [readIds, setReadIds] = useState<Set<string>>(() => getCleanReadIds());
+  const [readIds, setReadIds] = useState<Set<string>>(() => getCleanReadIds(userId));
+
+  const { readKey } = getStorageKeys(userId);
 
   const persistRead = useCallback((ids: Set<string>) => {
-    storage.set(STORAGE_KEY, [...ids]);
-  }, []);
+    storage.set(readKey, [...ids]);
+  }, [readKey]);
 
   const notifications = useMemo<AppNotification[]>(() => {
     const now = Date.now();
@@ -104,7 +107,6 @@ export function useNotifications(
       const project = task.project || "";
       const own = isOwnTask(task);
 
-      // Skip done tasks
       if (task.statusKey === "done") return;
 
       const deadlineDate = task.deadlineDate;
@@ -118,7 +120,6 @@ export function useNotifications(
         deadlineDate !== undefined &&
         deadlineDate.getTime() - now <= ONE_WEEK_MS;
 
-      // Use deadline as timestamp when available for meaningful "time ago"
       const taskTimestamp = deadlineDate?.getTime() ?? now;
 
       if (isOverdue) {
@@ -166,7 +167,7 @@ export function useNotifications(
       }
     });
 
-    // ── Smart project alerts (admin only): aggregate overdue tasks per project ──
+    // Smart project alerts (admin only)
     if (isPrivileged) {
       const overdueByProject: Record<string, number> = {};
       visibleTasks.forEach((task) => {
@@ -199,15 +200,14 @@ export function useNotifications(
       });
     }
 
-    // Clean up stale readIds — remove IDs that no longer match any current notification
+    // Clean up stale readIds
     const currentIds = new Set(items.map((item) => item.id));
     const staleIds = [...readIds].filter((id) => !currentIds.has(id));
     if (staleIds.length > 0) {
       const cleaned = new Set([...readIds].filter((id) => currentIds.has(id)));
-      // Defer state update to avoid render-during-render
       setTimeout(() => {
         setReadIds(cleaned);
-        storage.set(STORAGE_KEY, [...cleaned]);
+        storage.set(readKey, [...cleaned]);
       }, 0);
     }
 
@@ -222,7 +222,7 @@ export function useNotifications(
     });
 
     return items.slice(0, 50);
-  }, [tasks, readIds, userName, userRole]);
+  }, [tasks, readIds, userName, userRole, readKey]);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
