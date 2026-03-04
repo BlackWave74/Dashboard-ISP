@@ -11,6 +11,7 @@ import { useTrackPresence } from "@/hooks/useUserPresence";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/NotificationBell";
 import AssistantReminder from "@/components/AssistantReminder";
+import { useTaskStatusAlerts } from "@/hooks/useTaskStatusAlerts";
 import MobileHeader from "@/components/MobileHeader";
 import {
   parseDateValue,
@@ -156,6 +157,19 @@ function DashboardInner() {
     [accessFilteredTasks]
   );
 
+  // Status change alerts via the Assistant widget
+  const statusAlertData = useMemo(
+    () =>
+      notifTasks.map((t) => ({
+        id: t.title || "",
+        status: t.statusKey || "",
+        title: t.title || "",
+        project: t.project || "",
+      })),
+    [notifTasks]
+  );
+  const { alert: statusAlert, dismissAlert } = useTaskStatusAlerts(statusAlertData, !loading);
+
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications(notifTasks, session?.name, session?.role);
 
@@ -254,7 +268,7 @@ function DashboardInner() {
       </main>
 
       {/* Virtual Assistant Reminder */}
-      <AssistantReminder notifTasks={notifTasks} />
+      <AssistantReminder notifTasks={notifTasks} statusAlert={statusAlert} onDismissAlert={dismissAlert} />
     </div>
   );
 }

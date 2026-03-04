@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { storage } from "@/modules/shared/storage";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import { useTaskStatusAlerts } from "@/hooks/useTaskStatusAlerts";
 import { usePageSEO } from "@/hooks/usePageSEO";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import DataErrorCard from "@/components/ui/DataErrorCard";
@@ -281,17 +280,7 @@ export default function TarefasPage() {
     });
   }, [tasks, durationByTaskId]);
 
-  // Detect status changes and show toast alerts
-  const statusAlertData = useMemo(() =>
-    normalizedTasks.map((t) => ({
-      id: t.raw.task_id ?? t.raw.id ?? t.title,
-      status: t.statusKey,
-      title: t.title,
-      project: t.project,
-    })),
-    [normalizedTasks]
-  );
-  useTaskStatusAlerts(statusAlertData, !loading);
+  // Status alerts now handled globally via DashboardLayout → AssistantReminder
 
   // Filter by accessible projects (non-admin users only see assigned projects)
   // Filter by accessible projects (non-admin users only see assigned projects)
