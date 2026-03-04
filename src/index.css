@@ -780,8 +780,8 @@ body {
 
 /* ===== @media print — garante que tudo aparece ao imprimir (Ctrl+P) ===== */
 @media print {
-  /* Força cores e backgrounds */
-  * {
+  /* Força cores e backgrounds a aparecerem na impressão */
+  *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
@@ -791,6 +791,7 @@ body {
   body, html {
     overflow: visible !important;
     max-width: 100% !important;
+    background: hsl(234 45% 8%) !important;
   }
 
   /* Sidebar e overlays somem */
@@ -819,17 +820,9 @@ body {
     opacity: 1 !important;
   }
 
-  /* Backgrounds dos cards */
+  /* Preserva backgrounds dos cards (NÃO força branco) */
   .rounded-2xl, .rounded-xl, .rounded-lg {
-    background: white !important;
-    color: black !important;
-    border: 1px solid #ddd !important;
     box-shadow: none !important;
-  }
-
-  /* Textos legíveis */
-  p, span, h1, h2, h3, h4, h5, h6, td, th, li, label {
-    color: #1a1a2e !important;
   }
 
   /* Quebra de página inteligente */
