@@ -184,7 +184,10 @@ export function useAnalyticsData(
     tasksByProject.forEach((stats, pid) => {
       if (existingIds.has(pid)) return;
       const task = tasks.find((t) => Number(t.project_id) === pid);
-      const projectName = task?.projects?.name ?? task?.project_name ?? task?.project ?? task?.projeto ?? `Projeto ${pid}`;
+      const joinName = task?.projects && typeof task.projects === "object"
+        ? String((task.projects as any).name ?? "").trim()
+        : "";
+      const projectName = joinName || task?.project_name ?? task?.project ?? task?.projeto ?? `Projeto ${pid}`;
       const clientId = Number(task?.projects?.cliente_id ?? 0);
       const clientName = clientId ? sanitizeClientName(clientNameById.get(clientId) ?? "") : "";
       const totalTasks = stats.done + stats.pending + stats.overdue;

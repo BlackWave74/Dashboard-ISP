@@ -189,6 +189,19 @@ export default function AnaliticasPage() {
     return userName ? [userName] : [];
   }, [allTasks, isAdmin, userName]);
 
+  // Build project_id → name lookup from tasks with join data (prevents phantom projects)
+  const projectNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    allTasks.forEach((t) => {
+      const pid = Number(t.project_id);
+      const joinName = t.projects && typeof t.projects === "object"
+        ? String((t.projects as any).name ?? "").trim()
+        : "";
+      if (pid && joinName) map.set(pid, joinName);
+    });
+    return map;
+  }, [allTasks]);
+
   // Extract unique project options for the filter dropdown
   const projectOptions = useMemo(() => {
     const map = new Map<number, string>();
@@ -196,13 +209,17 @@ export default function AnaliticasPage() {
     source.forEach((t) => {
       const pid = Number(t.project_id);
       if (!pid) return;
-      const name = String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? `Projeto ${pid}`);
+      // Prioritize join name, then lookup map, then loose fields
+      const joinName = t.projects && typeof t.projects === "object"
+        ? String((t.projects as any).name ?? "").trim()
+        : "";
+      const name = joinName || projectNameById.get(pid) || String(t.project_name ?? t.project ?? t.projeto ?? `Projeto ${pid}`);
       if (!map.has(pid)) map.set(pid, name);
     });
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [allTasks, accessFilteredTasks, isAdmin]);
+  }, [allTasks, accessFilteredTasks, isAdmin, projectNameById]);
 
   // Apply status + project filter to user's tasks for display components
   const filteredTasks = useMemo(() => {
