@@ -581,6 +581,7 @@ export default function UsuariosPage() {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold">Nome *</label>
+                        <p className="text-[10px] text-amber-400/80 leading-tight">⚠ Use o mesmo nome cadastrado no Bitrix para que o filtro de tarefas funcione corretamente.</p>
                         <div className="flex gap-1">
                           <div className="relative flex-1 min-w-0">
                             <User className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
