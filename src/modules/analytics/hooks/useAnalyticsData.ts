@@ -187,7 +187,7 @@ export function useAnalyticsData(
       const joinName = task?.projects && typeof task.projects === "object"
         ? String((task.projects as any).name ?? "").trim()
         : "";
-      const projectName = joinName || task?.project_name ?? task?.project ?? task?.projeto ?? `Projeto ${pid}`;
+      const projectName = joinName || (task?.project_name ?? task?.project ?? task?.projeto ?? `Projeto ${pid}`);
       const clientId = Number(task?.projects?.cliente_id ?? 0);
       const clientName = clientId ? sanitizeClientName(clientNameById.get(clientId) ?? "") : "";
       const totalTasks = stats.done + stats.pending + stats.overdue;
