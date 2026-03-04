@@ -169,7 +169,7 @@ function DashboardInner() {
     [notifTasks]
   );
   const userId = session?.email || "";
-  const { alert: statusAlert, dismissAlert } = useTaskStatusAlerts(statusAlertData, !loading, userId);
+  const { alert: statusAlert, dismissAlert } = useTaskStatusAlerts(statusAlertData, !loading, userId, session?.role);
 
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications(notifTasks, session?.name, session?.role, userId);

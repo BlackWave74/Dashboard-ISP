@@ -18,6 +18,7 @@ export function useTaskStatusAlerts(
   tasks: TaskStatusEntry[],
   enabled: boolean = true,
   userId?: string,
+  userRole?: string,
 ) {
   const initialLoad = useRef(true);
   const [alert, setAlert] = useState<StatusAlert | null>(null);
@@ -56,18 +57,20 @@ export function useTaskStatusAlerts(
     }
 
     if (newlyOverdue.length > 0) {
-      const names = newlyOverdue.slice(0, 3).map((t) => `• "${t.title}"`).join("\n");
-      const extra = newlyOverdue.length > 3 ? `\ne mais ${newlyOverdue.length - 3} tarefa(s)` : "";
-      const heading = newlyOverdue.length === 1
-        ? "⚠️ Uma tarefa ficou atrasada:"
-        : `⚠️ ${newlyOverdue.length} tarefas ficaram atrasadas:`;
+      const isAdmin = userRole === "admin" || userRole === "gerente" || userRole === "coordenador";
+      const count = newlyOverdue.length;
+
+      const message = isAdmin
+        ? `⚠️ Existem ${count} tarefa(s) em atraso nos projetos.\n\nVerifique-as clicando no botão abaixo. Lembre-se: somos um time! Em caso de dificuldade, mobilize a equipe. Juntos vamos crescer! 💪`
+        : `⚠️ Você possui ${count} tarefa(s) em atraso.\n\nConfira suas tarefas para não perder os prazos! Tome cuidado para não perder o foco e, sempre que precisar, solicite apoio ao seu time. Somos um time e vamos crescer juntos! 💪`;
+
       setAlert({
-        message: `${heading}\n\n${names}${extra}\n\nConfira suas tarefas para não perder os prazos!`,
-        count: newlyOverdue.length,
+        message,
+        count,
         timestamp: Date.now(),
       });
     }
-  }, [tasks, enabled, userId, storageKey]);
+  }, [tasks, enabled, userId, userRole, storageKey]);
 
   return { alert, dismissAlert };
 }
