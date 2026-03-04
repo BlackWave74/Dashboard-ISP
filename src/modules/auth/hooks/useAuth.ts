@@ -6,6 +6,7 @@ import {
   fetchAllowedAreas,
   fetchAccessibleProjects,
   fetchClienteInfo,
+  fetchUserName,
 } from "@/modules/auth/api/fetchAuthData";
 
 /** Sync auth session to the supabaseExt client so Realtime/Presence works */
@@ -71,15 +72,16 @@ const buildSession = async (
   const expiresIn = Number(data?.expires_in ?? 0);
   const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
 
-  const [role, allowedAreas, accessibleProjects, clienteInfo] = await Promise.all([
+  const [role, allowedAreas, accessibleProjects, clienteInfo, dbName] = await Promise.all([
     fetchUserRole(data?.access_token, user?.id, metaObj),
     fetchAllowedAreas(data?.access_token, user?.id),
     fetchAccessibleProjects(data?.access_token, user?.id),
     fetchClienteInfo(data?.access_token, user?.id),
+    fetchUserName(data?.access_token, user?.id),
   ]);
 
   return {
-    name: metadata.name || user?.email || storedSession?.name || "Usuário",
+    name: dbName || metadata.name || user?.email || storedSession?.name || "Usuário",
     email: user?.email ?? fallbackEmail,
     role,
     company: clienteInfo.clienteName ?? clientName ?? storedSession?.company ?? null,
@@ -165,12 +167,14 @@ export function useAuth() {
               const userData = await userRes.json();
               const userId = userData?.id;
               if (userId) {
-                const [accessibleProjects, clienteInfo] = await Promise.all([
+                const [accessibleProjects, clienteInfo, dbName] = await Promise.all([
                   fetchAccessibleProjects(saved.accessToken, userId),
                   fetchClienteInfo(saved.accessToken, userId),
+                  fetchUserName(saved.accessToken, userId),
                 ]);
                 const updated: AuthSession = {
                   ...saved,
+                  name: dbName || saved.name,
                   accessibleProjectIds: accessibleProjects?.ids ?? null,
                   accessibleProjectNames: accessibleProjects?.names ?? null,
                   company: clienteInfo.clienteName ?? saved.company ?? null,
