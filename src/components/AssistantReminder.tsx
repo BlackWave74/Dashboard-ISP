@@ -4,114 +4,135 @@ import { X, ArrowRight, FileText } from "lucide-react";
 import assistantAvatar from "@/assets/assistant-avatar.png";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
+import type { AccessArea } from "@/modules/auth/hooks/useAuth";
 import WeeklyReportModal from "@/components/WeeklyReportModal";
 import type { TaskView } from "@/modules/tasks/types";
 import {
-  parseDateValue,
-  isDeadlineSoon,
-  normalizeTaskTitle,
-  deadlineColor,
-  formatDatePtBR,
-  formatDurationHHMM,
   type TaskStatusKey,
 } from "@/modules/tasks/utils";
 
 /* ─── Messages by role category ─── */
 
-const STAFF_MESSAGES = [
+type MessageItem = {
+  text: string;
+  cta: string;
+  link: string;
+  isReport?: boolean;
+  requiredArea?: AccessArea; // area the user must have access to
+};
+
+const STAFF_MESSAGES: MessageItem[] = [
   {
     text: "Lembre-se de revisar suas tarefas e, se precisar de ajuda, acione nossa equipe! Juntos, somos mais fortes! 💪",
     cta: "Ver Tarefas",
     link: "/tarefas",
+    requiredArea: "tarefas",
   },
   {
     text: "Que tal dar uma olhada nas suas analíticas? Acompanhar os números ajuda a tomar decisões mais inteligentes! 📊",
     cta: "Ver Analíticas",
     link: "/analiticas",
+    requiredArea: "analiticas",
   },
   {
     text: "Você sabia que pode exportar relatórios em PDF? Mantenha sua equipe informada com dados atualizados! 📄",
     cta: "Ver Ferramentas",
     link: "/ferramentas",
+    requiredArea: "ferramentas",
   },
   {
     text: "Confira o ranking de produtividade! Veja quem está se destacando e motive a equipe! 🏆",
     cta: "Ver Ranking",
     link: "/gamificacao",
+    requiredArea: "gamificacao",
   },
   {
     text: "Mantenha suas tarefas em dia! Tarefas organizadas = menos estresse e mais resultados. 🎯",
     cta: "Ver Tarefas",
     link: "/tarefas",
+    requiredArea: "tarefas",
   },
   {
     text: "Verifique os prazos das tarefas da sua equipe. Antecipar atrasos é a chave para entregas de qualidade! ⏰",
     cta: "Ver Tarefas",
     link: "/tarefas",
+    requiredArea: "tarefas",
   },
   {
     text: "Já verificou as integrações hoje? Manter tudo conectado garante que nada fique para trás! 🔗",
     cta: "Ver Integrações",
     link: "/integracoes",
+    requiredArea: "integracoes",
   },
   {
     text: "Acompanhe as horas alocadas nos projetos. Entender o investimento de tempo é essencial para o planejamento! ⏱️",
     cta: "Ver Analíticas",
     link: "/analiticas",
+    requiredArea: "analiticas",
   },
   {
     text: "Dica: use o calendário para ter uma visão geral dos prazos da semana. Organização faz toda a diferença! 📅",
     cta: "Ver Calendário",
     link: "/calendario",
+    requiredArea: "calendario",
   },
   {
     text: "Precisa de ajuda? Nossa equipe de suporte está sempre pronta para auxiliar você! 🤝",
     cta: "Abrir Suporte",
     link: "/suporte",
+    requiredArea: "suporte",
   },
   {
     text: "Bora tirar um relatório semanal? Veja o progresso de todos os projetos em um só lugar! 📋",
     cta: "Gerar Relatório",
     link: "__weekly_report__",
     isReport: true,
+    requiredArea: "tarefas",
   },
 ];
 
-const CLIENT_MESSAGES = [
+const CLIENT_MESSAGES: MessageItem[] = [
   {
-    text: "O sistema evolui em parceria! Compartilhe suas sugestões de melhorias ou relate problemas ao seu consultor. Juntos somos mais fortes! Vamos crescer juntos! 🤝",
+    text: "O sistema evolui em parceria! Compartilhe suas sugestões de melhorias ou relate problemas ao seu consultor. Juntos somos mais fortes! 🤝",
     cta: "Falar com Suporte",
     link: "/suporte",
+    requiredArea: "suporte",
   },
   {
     text: "Acompanhe o progresso das suas tarefas em tempo real! Tudo atualizado automaticamente para sua comodidade. ✅",
     cta: "Ver Tarefas",
     link: "/tarefas",
+    requiredArea: "tarefas",
   },
   {
     text: "Sua opinião é muito importante para nós! Conte ao seu consultor como podemos melhorar ainda mais. 💡",
     cta: "Falar com Suporte",
     link: "/suporte",
+    requiredArea: "suporte",
   },
   {
     text: "Estamos sempre trabalhando para entregar o melhor resultado. Confira as últimas atualizações! 🚀",
     cta: "Ver Tarefas",
     link: "/tarefas",
+    requiredArea: "tarefas",
   },
   {
     text: "Ficou com dúvida? Fale com nosso suporte — estamos aqui para ajudar você a alcançar os melhores resultados! 💬",
     cta: "Falar com Suporte",
     link: "/suporte",
+    requiredArea: "suporte",
   },
   {
     text: "Transparência é nosso compromisso! Acompanhe cada etapa do seu projeto diretamente no painel. 🔍",
     cta: "Ver Tarefas",
     link: "/tarefas",
+    requiredArea: "tarefas",
   },
   {
     text: "Obrigado por confiar na ISP Consulte! Seu sucesso é o nosso sucesso. Estamos juntos nessa jornada! 🌟",
     cta: "Ver Tarefas",
     link: "/tarefas",
+    requiredArea: "tarefas",
   },
 ];
 
@@ -124,14 +145,8 @@ type NotifTask = {
   consultant?: string;
 };
 
-type MessageItem = {
-  text: string;
-  cta: string;
-  link: string;
-  isReport?: boolean;
-};
-
 const INTERVAL_MS = 5 * 60 * 1000;
+const AUTO_DISMISS_MS = 45_000; // auto-hide after 45s
 const DISMISS_KEY = "assistant-reminder-dismissed";
 
 type Props = {
@@ -139,7 +154,7 @@ type Props = {
 };
 
 export default function AssistantReminder({ notifTasks }: Props) {
-  const { session } = useAuth();
+  const { session, canAccess } = useAuth();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [messageIdx, setMessageIdx] = useState(0);
@@ -147,7 +162,15 @@ export default function AssistantReminder({ notifTasks }: Props) {
 
   const role = session?.role;
   const isClient = role === "cliente";
-  const messages: MessageItem[] = isClient ? CLIENT_MESSAGES : STAFF_MESSAGES;
+
+  // Filter messages to only those the user has access to
+  const messages = useMemo(() => {
+    const pool = isClient ? CLIENT_MESSAGES : STAFF_MESSAGES;
+    return pool.filter((msg) => {
+      if (!msg.requiredArea) return true;
+      return canAccess(msg.requiredArea);
+    });
+  }, [isClient, canAccess]);
 
   // Convert notifTasks to TaskView-like objects for the report modal
   const reportTasks = useMemo<TaskView[]>(() => {
@@ -168,6 +191,7 @@ export default function AssistantReminder({ notifTasks }: Props) {
   }, [notifTasks]);
 
   const show = useCallback(() => {
+    if (messages.length === 0) return;
     const lastDismissed = localStorage.getItem(DISMISS_KEY);
     if (lastDismissed) {
       const elapsed = Date.now() - Number(lastDismissed);
@@ -194,6 +218,7 @@ export default function AssistantReminder({ notifTasks }: Props) {
     [dismiss, navigate]
   );
 
+  // Show/hide cycle
   useEffect(() => {
     const initialTimer = setTimeout(show, 30_000);
     const interval = setInterval(show, INTERVAL_MS);
@@ -203,9 +228,17 @@ export default function AssistantReminder({ notifTasks }: Props) {
     };
   }, [show]);
 
-  if (!session) return null;
+  // Auto-dismiss after AUTO_DISMISS_MS
+  useEffect(() => {
+    if (!visible) return;
+    const timer = setTimeout(dismiss, AUTO_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [visible, dismiss]);
 
-  const msg = messages[messageIdx];
+  if (!session || messages.length === 0) return null;
+
+  const msg = messages[messageIdx % messages.length];
+  if (!msg) return null;
   const label = isClient ? "ISP Parceiro" : "ISP Assistente";
 
   return (
@@ -247,7 +280,6 @@ export default function AssistantReminder({ notifTasks }: Props) {
                       alt="Assistente"
                       className="h-10 w-10 rounded-full object-cover"
                       onError={(e) => {
-                        // Fallback to emoji if image not found
                         e.currentTarget.style.display = "none";
                         e.currentTarget.parentElement!.innerHTML = '<span style="font-size:24px">🤖</span>';
                       }}
@@ -281,6 +313,14 @@ export default function AssistantReminder({ notifTasks }: Props) {
                   </button>
                 </div>
               </div>
+
+              {/* Auto-dismiss progress bar */}
+              <motion.div
+                className="h-[2px] bg-primary/40"
+                initial={{ width: "100%" }}
+                animate={{ width: "0%" }}
+                transition={{ duration: AUTO_DISMISS_MS / 1000, ease: "linear" }}
+              />
 
               <motion.div
                 className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full opacity-[0.04]"
