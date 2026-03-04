@@ -105,6 +105,7 @@ export default function Calendario() {
   usePageSEO("/calendario");
   const { session } = useAuth();
   const { tasks } = useTasks({ accessToken: session?.accessToken, period: "all" });
+  const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -112,21 +113,34 @@ export default function Calendario() {
   const [selectedDay, setSelectedDay] = useState(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
 
   const calendarTasks = useMemo<CalendarTask[]>(() => {
+    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const userName = session?.name ? norm(session.name) : "";
+
     return tasks
       .map((t) => {
         const deadline = parseDateValue(t.deadline) ?? parseDateValue(t.due_date) ?? parseDateValue(t.dueDate);
         if (!deadline) return null;
+
+        const consultant = String(t.responsible_name ?? t.consultant ?? t.owner ?? t.responsavel ?? "");
+
+        // For non-admin users, only show their own tasks
+        if (!isAdmin && userName) {
+          const responsible = norm(consultant);
+          if (!responsible || (!responsible.includes(userName) && !userName.includes(responsible))) {
+            return null;
+          }
+        }
 
         return {
           title: normalizeTaskTitle(String(t.title ?? t.nome ?? t.name ?? "Tarefa")),
           project: String(t.projects?.name ?? t.project_name ?? t.project ?? ""),
           statusKey: getTaskStatusKey(t),
           deadline,
-          consultant: String(t.responsible_name ?? t.consultant ?? t.owner ?? t.responsavel ?? ""),
+          consultant,
         };
       })
       .filter(Boolean) as CalendarTask[];
-  }, [tasks]);
+  }, [tasks, isAdmin, session?.name]);
 
   const tasksMap = useMemo(() => {
     const map = new Map<string, CalendarTask[]>();
