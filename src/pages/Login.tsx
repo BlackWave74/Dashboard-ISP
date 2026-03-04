@@ -260,8 +260,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <footer className="login-footer">
-        <p>Desenvolvido pelo time <span className="login-overview-highlight">ISP Consulte</span></p>
-        <p>São Paulo, Brasil · Todos os direitos reservados · {new Date().getFullYear()}</p>
+        <p>© {new Date().getFullYear()} <span className="login-overview-highlight">ISP Consulte</span>. Todos os direitos reservados.</p>
       </footer>
     </div>
   );
