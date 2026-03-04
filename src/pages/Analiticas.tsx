@@ -513,9 +513,9 @@ export default function AnaliticasPage() {
           taskIntegrityData={projectsWithContracted.map((p) => ({
             title: p.projectName || "",
             project: p.projectName || "",
-            consultant: "",
-            deadlineLabel: "",
-            durationLabel: p.hoursUsed > 0 ? `${Math.round(p.hoursUsed)}h` : "",
+            consultant: "n/a",
+            deadlineLabel: "n/a",
+            durationLabel: p.hoursUsed > 0 ? `${Math.round(p.hoursUsed)}h` : "sem registro",
             statusKey: p.tasksOverdue > 0 ? "overdue" : p.tasksDone > 0 ? "done" : "pending",
           }))}
           onExport={async (_sel: PDFExportSelection, incompleteAction) => {
