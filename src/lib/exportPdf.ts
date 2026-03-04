@@ -384,11 +384,7 @@ export async function exportTasksPDF({
 
   // Section title
   let yPos = TABLE_START_Y;
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text("Relatório em Gráficos", 14, yPos);
-  yPos += 8;
+  yPos += 2;
 
   if (stats) {
     // KPI cards
@@ -703,11 +699,7 @@ export async function exportClientPDF({
   drawPageHeader(doc, logo, pageW, reportTitle);
 
   let yPos = TABLE_START_Y;
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text("Relatório em Gráficos", 14, yPos);
-  yPos += 8;
+  yPos += 2;
 
   // Cards
   const cards = [
@@ -863,11 +855,7 @@ export async function exportAnalyticsPDF({
   drawPageHeader(doc, logo, pageW, reportTitle);
 
   let yPos = TABLE_START_Y;
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text("Relatório em Gráficos", 14, yPos);
-  yPos += 8;
+  yPos += 2;
 
   // Cards
   const cards = [
