@@ -331,7 +331,11 @@ export async function exportTasksPDF({
           const pct = total > 0 ? Math.round((s.done / total) * 100) : 0;
           return [name, s, pct] as [string, typeof s, number];
         })
-        .sort((a, b) => b[2] - a[2])
+        .sort((a, b) => {
+          const totalB = b[1].done + b[1].pending + b[1].overdue;
+          const totalA = a[1].done + a[1].pending + a[1].overdue;
+          return totalB - totalA; // mais tarefas primeiro
+        })
         .slice(0, 8);
 
       if (productivityData.length > 0) {
