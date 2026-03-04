@@ -340,6 +340,7 @@ export default function AnalyticsProjectList({
   myProjectIds,
   isAdmin,
 }: Props) {
+  const [sectionOpen, setSectionOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -411,12 +412,17 @@ export default function AnalyticsProjectList({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4 }}
-      className="space-y-4"
+      className="overflow-hidden rounded-2xl border border-white/[0.06]"
+      style={{ background: "linear-gradient(145deg, hsl(270 50% 14% / 0.7), hsl(234 45% 10% / 0.5))" }}
     >
-      {/* ── Cabeçalho ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* ── Section toggle header ── */}
+      <button
+        onClick={() => setSectionOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-5 py-4 transition hover:bg-white/[0.02]"
+      >
         <div className="flex items-center gap-2.5">
-          <h3 className="text-xl font-bold text-white/90">Projetos por Cliente</h3>
+          <Building2 className="h-5 w-5 text-[hsl(262_83%_65%)]" />
+          <h3 className="text-base font-bold text-white/90">Projetos por Cliente</h3>
           <span className="rounded-full border border-white/[0.08] bg-white/[0.05] px-2.5 py-0.5 text-xs font-bold text-white/45">
             {filtered.length}
           </span>
@@ -424,274 +430,282 @@ export default function AnalyticsProjectList({
             {totalGroups} cliente{totalGroups !== 1 ? "s" : ""}
           </span>
         </div>
-
-        {/* Filtros rápidos */}
-        <div className="flex gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
-          {filtersConfig.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
-                filter === f.key
-                  ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg shadow-[hsl(262_83%_58%/0.25)]"
-                  : "text-white/30 hover:text-white/55"
-              }`}
-            >
-              {f.label}
-              <span className="opacity-50">{f.count}</span>
-            </button>
-          ))}
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] transition hover:border-white/[0.1]">
+          {sectionOpen
+            ? <ChevronUp className="h-4 w-4 text-white/40" />
+            : <ChevronDown className="h-4 w-4 text-white/40" />
+          }
         </div>
-      </div>
+      </button>
 
-      {/* ── Barra de busca ── */}
-      <div className="relative">
-        {/* Ícone lupa — absolutamente posicionado, não interativo */}
-        <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center" aria-hidden>
-          <Search className="h-4 w-4 text-white/30" />
-        </span>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por cliente ou projeto..."
-          className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-10 text-sm text-white/80 placeholder-white/25 outline-none transition focus:border-[hsl(262_83%_58%/0.45)] focus:bg-white/[0.06] focus:ring-2 focus:ring-[hsl(262_83%_58%/0.1)]"
-        />
-        {search && (
-          <button
-            onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/30 transition hover:text-white/60"
-            aria-label="Limpar busca"
+      {/* ── Collapsible content ── */}
+      <AnimatePresence initial={false}>
+        {sectionOpen && (
+          <motion.div
+            key="section-content"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
           >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* ── Lista de clientes ── */}
-      {groupedFiltered.size === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <FolderOpen className="h-10 w-10 text-white/15" />
-          <p className="text-sm text-white/30">
-            {search ? `Nenhum resultado para "${search}"` : "Nenhum projeto encontrado."}
-          </p>
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="text-xs text-[hsl(262_83%_68%)] hover:text-white transition"
-            >
-              Limpar busca
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {[...groupedFiltered.entries()].map(([groupKey, { displayLabel, projects: clientProjects, labelsByProject }]) => {
-            const isExpanded = expandedClients.has(groupKey);
-
-            // Métricas agregadas do cliente
-            const totalHours      = clientProjects.reduce((s, p) => s + p.hoursUsed, 0);
-            const totalContracted = clientProjects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
-            const activeCount     = clientProjects.filter((p) => p.isActive).length;
-            const overdueCount    = clientProjects.reduce((s, p) => s + p.tasksOverdue, 0);
-            const doneCount       = clientProjects.reduce((s, p) => s + p.tasksDone, 0);
-            const totalTasks      = clientProjects.reduce((s, p) => s + p.tasksDone + p.tasksPending + p.tasksOverdue, 0);
-            const hoursPct        = totalContracted > 0 ? Math.min(100, Math.round((totalHours / totalContracted) * 100)) : 0;
-            const hoursBarColor   =
-              hoursPct >= 90 ? "hsl(0 84% 60%)" :
-              hoursPct >= 70 ? "hsl(43 97% 52%)" :
-              "hsl(160 84% 39%)";
-
-            // Projeto único cujo clientLabel == projectLabel → não repetir sub-label
-            const isSingleSelf =
-              clientProjects.length === 1 &&
-              labelsByProject.get(clientProjects[0].projectId) === displayLabel;
-
-            // Saúde do cliente: verde, amarelo ou vermelho
-            const overdueRatio = totalTasks > 0 ? overdueCount / totalTasks : 0;
-            const healthColor =
-              overdueRatio > 0.3 ? "hsl(0 84% 60%)" :
-              overdueRatio > 0.1 ? "hsl(43 97% 52%)" :
-              "hsl(160 84% 39%)";
-
-            return (
-              <div
-                key={groupKey}
-                className="overflow-hidden rounded-2xl border border-white/[0.07] transition-shadow hover:shadow-md hover:shadow-black/20"
-                style={{ background: "linear-gradient(160deg, hsl(270 50% 10% / 0.8), hsl(234 45% 7% / 0.65))" }}
-              >
-                {/* ── Cabeçalho do accordion ── */}
-                <button
-                  onClick={() => toggleExpand(groupKey)}
-                  className="group flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-white/[0.02]"
-                >
-                  {/* Ícone + indicador de saúde */}
-                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[hsl(262_83%_58%/0.22)] bg-[hsl(262_83%_58%/0.08)]">
-                    <Building2 className="h-5 w-5 text-[hsl(262_83%_65%)]" />
-                    {/* Bolinha de saúde */}
-                    <span
-                      className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[hsl(234_45%_8%)]"
-                      style={{ background: healthColor }}
-                    />
-                  </div>
-
-                  {/* Conteúdo principal */}
-                  <div className="flex flex-1 flex-col gap-2 min-w-0">
-                    {/* Nome + badges */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="truncate text-base font-bold text-white/90 max-w-[260px]">
-                        {displayLabel}
-                      </span>
-                      <span className="rounded-full border border-white/[0.07] bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-bold text-white/40">
-                        {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
-                      </span>
-                      {activeCount > 0 && (
-                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
-                          {activeCount} ativo{activeCount !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {overdueCount > 0 && (
-                        <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-0.5 text-[11px] font-bold text-red-400">
-                          {overdueCount} atrasada{overdueCount !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {/* Alerta de horas: badge laranja quando > 80% consumido */}
-                      {totalContracted > 0 && hoursPct >= 80 && (
-                        <span
-                          className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
-                            hoursPct >= 100
-                              ? "border-red-500/30 bg-red-500/15 text-red-400"
-                              : "border-amber-500/30 bg-amber-500/15 text-amber-400"
-                          }`}
-                        >
-                          <AlertTriangle className="h-3 w-3" />
-                          {hoursPct >= 100 ? "Horas esgotadas" : `${hoursPct}% das horas`}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Linha de stats */}
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400/60" />
-                        <span className="text-xs font-bold text-emerald-400/70">{doneCount}</span>
-                        <span className="text-[10px] text-white/25">concluídas</span>
-                      </div>
-                      {overdueCount > 0 && (
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle className="h-3.5 w-3.5 text-red-400/60" />
-                          <span className="text-xs font-bold text-red-400/70">{overdueCount}</span>
-                          <span className="text-[10px] text-white/25">atrasadas</span>
-                        </div>
-                      )}
-
-                      {/* Barra de horas */}
-                      <div className="flex items-center gap-2 min-w-[140px] flex-1 max-w-[220px]">
-                        <Clock className="h-3 w-3 shrink-0 text-white/20" />
-                        <span className="text-xs font-bold text-white/40 shrink-0">{Math.round(totalHours)}h</span>
-                        {totalContracted > 0 && (
-                          <>
-                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-                              <div
-                                className="h-full rounded-full transition-all duration-700"
-                                style={{ width: `${hoursPct}%`, background: hoursBarColor }}
-                              />
-                            </div>
-                            <span className="text-[10px] font-bold text-white/30 shrink-0">/{Math.round(totalContracted)}h</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Direita: botões de ação + chevron */}
-                  <div className="flex shrink-0 items-center gap-2">
-                    {/* Exportar PDF do cliente */}
+            <div className="space-y-4 border-t border-white/[0.05] px-5 py-4">
+              {/* Filtros rápidos */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
+                  {filtersConfig.map((f) => (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void exportClientPDF({
-                          clientName: displayLabel,
-                          generatedBy: undefined,
-                          projects: clientProjects.map((p) => ({
-                            name: labelsByProject.get(p.projectId) ?? p.projectName,
-                            totalTasks: p.tasksDone + p.tasksPending + p.tasksOverdue,
-                            doneTasks: p.tasksDone,
-                            overdueTasks: p.tasksOverdue,
-                            hours: p.hoursUsed,
-                            hoursContracted: p.hoursContracted || 0,
-                          })),
-                        });
-                      }}
-                      className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-1.5 text-xs font-bold text-white/30 transition hover:border-emerald-500/30 hover:bg-emerald-500/[0.07] hover:text-emerald-400"
-                      title="Exportar relatório deste cliente em PDF"
+                      key={f.key}
+                      onClick={() => setFilter(f.key)}
+                      className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
+                        filter === f.key
+                          ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(234_89%_64%)] text-white shadow-lg shadow-[hsl(262_83%_58%/0.25)]"
+                          : "text-white/30 hover:text-white/55"
+                      }`}
                     >
-                      <FileDown className="h-3.5 w-3.5" />
+                      {f.label}
+                      <span className="opacity-50">{f.count}</span>
                     </button>
-                    {isAdmin && onEditClientHours && !isSingleSelf && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditClientHours(displayLabel, clientProjects);
-                        }}
-                        className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/35 transition hover:border-[hsl(262_83%_58%/0.35)] hover:bg-[hsl(262_83%_58%/0.07)] hover:text-[hsl(262_83%_68%)]"
-                        title="Definir horas para todos os projetos deste cliente"
-                      >
-                        <Clock className="h-3.5 w-3.5" />
-                        Horas
-                      </button>
-                    )}
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] transition group-hover:border-white/[0.1]">
-                      {isExpanded
-                        ? <ChevronUp   className="h-4 w-4 text-white/40 transition group-hover:text-white/65" />
-                        : <ChevronDown className="h-4 w-4 text-white/40 transition group-hover:text-white/65" />
-                      }
-                    </div>
-                  </div>
-                </button>
-
-                {/* ── Projetos (colapsável) ── */}
-                <AnimatePresence initial={false}>
-                  {isExpanded && (
-                    <motion.div
-                      key="content"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.22, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div
-                        className="grid gap-3 border-t border-white/[0.05] p-4"
-                        style={{
-                          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))",
-                        }}
-                      >
-                        {clientProjects.map((p) => (
-                          <ProjectCard
-                            key={p.projectId}
-                            project={p}
-                            projectLabel={
-                              isSingleSelf
-                                ? p.projectName
-                                : (labelsByProject.get(p.projectId) ?? p.projectName)
-                            }
-                            onToggleFavorite={onToggleFavorite}
-                            onClick={onProjectClick}
-                            onEditHours={onEditHours}
-                            isMine={myProjectIds?.has(p.projectId)}
-                            isAdmin={isAdmin}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  ))}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+
+              {/* Barra de busca */}
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center" aria-hidden>
+                  <Search className="h-4 w-4 text-white/30" />
+                </span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por cliente ou projeto..."
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-10 text-sm text-white/80 placeholder-white/25 outline-none transition focus:border-[hsl(262_83%_58%/0.45)] focus:bg-white/[0.06] focus:ring-2 focus:ring-[hsl(262_83%_58%/0.1)]"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/30 transition hover:text-white/60"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Lista de clientes */}
+              {groupedFiltered.size === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+                  <FolderOpen className="h-10 w-10 text-white/15" />
+                  <p className="text-sm text-white/30">
+                    {search ? `Nenhum resultado para "${search}"` : "Nenhum projeto encontrado."}
+                  </p>
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="text-xs text-[hsl(262_83%_68%)] hover:text-white transition"
+                    >
+                      Limpar busca
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {[...groupedFiltered.entries()].map(([groupKey, { displayLabel, projects: clientProjects, labelsByProject }]) => {
+                    const isExpanded = expandedClients.has(groupKey);
+
+                    const totalHours      = clientProjects.reduce((s, p) => s + p.hoursUsed, 0);
+                    const totalContracted = clientProjects.reduce((s, p) => s + (p.hoursContracted || 0), 0);
+                    const activeCount     = clientProjects.filter((p) => p.isActive).length;
+                    const overdueCount    = clientProjects.reduce((s, p) => s + p.tasksOverdue, 0);
+                    const doneCount       = clientProjects.reduce((s, p) => s + p.tasksDone, 0);
+                    const totalTasks      = clientProjects.reduce((s, p) => s + p.tasksDone + p.tasksPending + p.tasksOverdue, 0);
+                    const hoursPct        = totalContracted > 0 ? Math.min(100, Math.round((totalHours / totalContracted) * 100)) : 0;
+                    const hoursBarColor   =
+                      hoursPct >= 90 ? "hsl(0 84% 60%)" :
+                      hoursPct >= 70 ? "hsl(43 97% 52%)" :
+                      "hsl(160 84% 39%)";
+
+                    const isSingleSelf =
+                      clientProjects.length === 1 &&
+                      labelsByProject.get(clientProjects[0].projectId) === displayLabel;
+
+                    const overdueRatio = totalTasks > 0 ? overdueCount / totalTasks : 0;
+                    const healthColor =
+                      overdueRatio > 0.3 ? "hsl(0 84% 60%)" :
+                      overdueRatio > 0.1 ? "hsl(43 97% 52%)" :
+                      "hsl(160 84% 39%)";
+
+                    return (
+                      <div
+                        key={groupKey}
+                        className="overflow-hidden rounded-2xl border border-white/[0.07] transition-shadow hover:shadow-md hover:shadow-black/20"
+                        style={{ background: "linear-gradient(160deg, hsl(270 50% 10% / 0.8), hsl(234 45% 7% / 0.65))" }}
+                      >
+                        <button
+                          onClick={() => toggleExpand(groupKey)}
+                          className="group flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-white/[0.02]"
+                        >
+                          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[hsl(262_83%_58%/0.22)] bg-[hsl(262_83%_58%/0.08)]">
+                            <Building2 className="h-5 w-5 text-[hsl(262_83%_65%)]" />
+                            <span
+                              className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[hsl(234_45%_8%)]"
+                              style={{ background: healthColor }}
+                            />
+                          </div>
+
+                          <div className="flex flex-1 flex-col gap-2 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="truncate text-base font-bold text-white/90 max-w-[260px]">
+                                {displayLabel}
+                              </span>
+                              <span className="rounded-full border border-white/[0.07] bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-bold text-white/40">
+                                {clientProjects.length} projeto{clientProjects.length !== 1 ? "s" : ""}
+                              </span>
+                              {activeCount > 0 && (
+                                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+                                  {activeCount} ativo{activeCount !== 1 ? "s" : ""}
+                                </span>
+                              )}
+                              {overdueCount > 0 && (
+                                <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-0.5 text-[11px] font-bold text-red-400">
+                                  {overdueCount} atrasada{overdueCount !== 1 ? "s" : ""}
+                                </span>
+                              )}
+                              {totalContracted > 0 && hoursPct >= 80 && (
+                                <span
+                                  className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                                    hoursPct >= 100
+                                      ? "border-red-500/30 bg-red-500/15 text-red-400"
+                                      : "border-amber-500/30 bg-amber-500/15 text-amber-400"
+                                  }`}
+                                >
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {hoursPct >= 100 ? "Horas esgotadas" : `${hoursPct}% das horas`}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400/60" />
+                                <span className="text-xs font-bold text-emerald-400/70">{doneCount}</span>
+                                <span className="text-[10px] text-white/25">concluídas</span>
+                              </div>
+                              {overdueCount > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-red-400/60" />
+                                  <span className="text-xs font-bold text-red-400/70">{overdueCount}</span>
+                                  <span className="text-[10px] text-white/25">atrasadas</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 min-w-[140px] flex-1 max-w-[220px]">
+                                <Clock className="h-3 w-3 shrink-0 text-white/20" />
+                                <span className="text-xs font-bold text-white/40 shrink-0">{Math.round(totalHours)}h</span>
+                                {totalContracted > 0 && (
+                                  <>
+                                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-700"
+                                        style={{ width: `${hoursPct}%`, background: hoursBarColor }}
+                                      />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white/30 shrink-0">/{Math.round(totalContracted)}h</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void exportClientPDF({
+                                  clientName: displayLabel,
+                                  generatedBy: undefined,
+                                  projects: clientProjects.map((p) => ({
+                                    name: labelsByProject.get(p.projectId) ?? p.projectName,
+                                    totalTasks: p.tasksDone + p.tasksPending + p.tasksOverdue,
+                                    doneTasks: p.tasksDone,
+                                    overdueTasks: p.tasksOverdue,
+                                    hours: p.hoursUsed,
+                                    hoursContracted: p.hoursContracted || 0,
+                                  })),
+                                });
+                              }}
+                              className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-1.5 text-xs font-bold text-white/30 transition hover:border-emerald-500/30 hover:bg-emerald-500/[0.07] hover:text-emerald-400"
+                              title="Exportar relatório deste cliente em PDF"
+                            >
+                              <FileDown className="h-3.5 w-3.5" />
+                            </button>
+                            {isAdmin && onEditClientHours && !isSingleSelf && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditClientHours(displayLabel, clientProjects);
+                                }}
+                                className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/35 transition hover:border-[hsl(262_83%_58%/0.35)] hover:bg-[hsl(262_83%_58%/0.07)] hover:text-[hsl(262_83%_68%)]"
+                                title="Definir horas para todos os projetos deste cliente"
+                              >
+                                <Clock className="h-3.5 w-3.5" />
+                                Horas
+                              </button>
+                            )}
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] transition group-hover:border-white/[0.1]">
+                              {isExpanded
+                                ? <ChevronUp className="h-4 w-4 text-white/40 transition group-hover:text-white/65" />
+                                : <ChevronDown className="h-4 w-4 text-white/40 transition group-hover:text-white/65" />
+                              }
+                            </div>
+                          </div>
+                        </button>
+
+                        <AnimatePresence initial={false}>
+                          {isExpanded && (
+                            <motion.div
+                              key="content"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.22, ease: "easeInOut" }}
+                              className="overflow-hidden"
+                            >
+                              <div
+                                className="grid gap-3 border-t border-white/[0.05] p-4"
+                                style={{
+                                  gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))",
+                                }}
+                              >
+                                {clientProjects.map((p) => (
+                                  <ProjectCard
+                                    key={p.projectId}
+                                    project={p}
+                                    projectLabel={
+                                      isSingleSelf
+                                        ? p.projectName
+                                        : (labelsByProject.get(p.projectId) ?? p.projectName)
+                                    }
+                                    onToggleFavorite={onToggleFavorite}
+                                    onClick={onProjectClick}
+                                    onEditHours={onEditHours}
+                                    isMine={myProjectIds?.has(p.projectId)}
+                                    isAdmin={isAdmin}
+                                  />
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, Clock, ChevronDown, ChevronUp, Info, X } from "lucide-react";
+import { AlertTriangle, Clock, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Info, X } from "lucide-react";
 import type { TaskRecord } from "@/modules/tasks/types";
 
 type Props = {
@@ -12,7 +12,7 @@ const PAGE_SIZE = 10;
 
 export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
   const [expanded, setExpanded] = useState(true);
-  const [showAll, setShowAll] = useState(false);
+  const [page, setPage] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
 
   const pendingTasks = useMemo(() => {
@@ -37,9 +37,14 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
       });
   }, [tasks, classifyTask]);
 
-  const visible = showAll ? pendingTasks : pendingTasks.slice(0, PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(pendingTasks.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const visible = pendingTasks.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
   const overdueCount = pendingTasks.filter((t) => t._status === "overdue").length;
   const pendingCount = pendingTasks.filter((t) => t._status === "pending").length;
+
+  // Reset page when tasks change
+  useMemo(() => { if (page >= totalPages) setPage(0); }, [pendingTasks.length]);
 
   if (pendingTasks.length === 0) return null;
 
@@ -169,14 +174,31 @@ export default function AnalyticsPendingTasks({ tasks, classifyTask }: Props) {
                 );
               })}
 
-              {pendingTasks.length > PAGE_SIZE && (
-                <div className="border-t border-white/[0.03] px-5 py-3 text-center">
-                  <button
-                    onClick={() => setShowAll((v) => !v)}
-                    className="text-[11px] font-semibold text-[hsl(262_83%_58%)] transition hover:underline"
-                  >
-                    {showAll ? "Mostrar menos" : `Ver todas (${pendingTasks.length})`}
-                  </button>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-white/[0.03] px-5 py-3">
+                  <span className="text-[11px] text-white/30">
+                    {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, pendingTasks.length)} de {pendingTasks.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={safePage === 0}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.03] text-white/40 transition hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-30 disabled:hover:bg-transparent"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="px-2 text-[11px] font-bold text-white/50">
+                      {safePage + 1} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                      disabled={safePage >= totalPages - 1}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.03] text-white/40 transition hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-30 disabled:hover:bg-transparent"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
