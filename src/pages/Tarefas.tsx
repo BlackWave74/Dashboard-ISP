@@ -190,6 +190,16 @@ export default function TarefasPage() {
   const [deadlineTo, setDeadlineTo] = useState(savedFilters.deadlineTo || "");
   const [consultant, setConsultant] = useState(savedFilters.consultant || "all");
   const [project, setProject] = useState(savedFilters.project || "all");
+
+  // Auto-filter "só meu" when navigating from alert CTA
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("filterMine") === "true" && session?.name) {
+      setConsultant(session.name);
+      // Clean URL without reload
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [session?.name]);
   const [page, setPage] = useState(1);
   const [chartSlide, setChartSlide] = useState(0);
   const [showCharts, setShowCharts] = useState(true);
@@ -667,7 +677,7 @@ export default function TarefasPage() {
             dateTo={dateTo} setDateTo={setDateTo}
             deadlineTo={deadlineTo} setDeadlineTo={setDeadlineTo}
             consultant={consultant} setConsultant={setConsultant}
-            consultantOptions={isAdmin ? consultantOptions : []}
+            consultantOptions={isAdmin ? consultantOptions : (session?.name ? [session.name] : [])}
             searchRef={searchInputRef}
             project={effectiveProjectFilter} setProject={setProject}
             projectOptions={projectOptions}

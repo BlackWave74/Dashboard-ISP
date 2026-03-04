@@ -352,14 +352,17 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
                 </div>
               )}
 
-              {/* Consultant – admin only */}
-              {isAdmin && consultants.length > 1 && (
+              {/* Consultant filter */}
+              {(isAdmin ? consultants.length > 1 : consultants.length > 0) && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Consultor</label>
                   <CustomSelect
                     value={filters.consultant}
                     onChange={(v) => onChange({ ...filters, consultant: v })}
-                    options={consultants.map((c) => ({ value: c, label: c }))}
+                    options={isAdmin
+                      ? consultants.map((c) => ({ value: c, label: c }))
+                      : consultants.slice(0, 1).map((c) => ({ value: c, label: "Só meu" }))
+                    }
                     placeholder="Todos os consultores"
                     icon={User}
                   />

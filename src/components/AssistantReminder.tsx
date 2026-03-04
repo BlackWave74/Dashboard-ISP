@@ -100,10 +100,11 @@ export default function AssistantReminder({ notifTasks, statusAlert, onDismissAl
   // When a statusAlert arrives, immediately show it via the assistant
   useEffect(() => {
     if (statusAlert && statusAlert.count > 0) {
+      const isAdminRole = role === "admin" || role === "gerente" || role === "coordenador";
       setActiveAlert({
         text: statusAlert.message,
         cta: "Ver Tarefas",
-        link: "/tarefas",
+        link: isAdminRole ? "/tarefas" : "/tarefas?filterMine=true",
         isAlert: true,
       });
       setVisible(true);

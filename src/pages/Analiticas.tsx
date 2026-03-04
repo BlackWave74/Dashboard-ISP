@@ -175,16 +175,19 @@ export default function AnaliticasPage() {
     userTasks,
   } = useAnalyticsData(accessFilteredTasks, projectHours, times, effectiveUser);
 
-  // Extract unique consultant names for admin filter
+  // Extract unique consultant names for filter
   const consultants = useMemo(() => {
-    if (!isAdmin) return [];
-    const set = new Set<string>();
-    allTasks.forEach((t) => {
-      const name = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? "").trim();
-      if (name) set.add(name);
-    });
-    return [...set].sort();
-  }, [allTasks, isAdmin]);
+    if (isAdmin) {
+      const set = new Set<string>();
+      allTasks.forEach((t) => {
+        const name = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? "").trim();
+        if (name) set.add(name);
+      });
+      return [...set].sort();
+    }
+    // Non-admin: only show own name
+    return userName ? [userName] : [];
+  }, [allTasks, isAdmin, userName]);
 
   // Extract unique project options for the filter dropdown
   const projectOptions = useMemo(() => {
