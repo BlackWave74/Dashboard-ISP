@@ -35,6 +35,7 @@ function ensureSpace(doc: jsPDF, currentY: number, neededHeight: number, margin 
   const available = pageH - margin - currentY;
   if (neededHeight > available && currentY > margin + 32) {
     doc.addPage();
+    drawPageBg(doc);
     return margin;
   }
   return currentY;
@@ -84,7 +85,7 @@ function drawBarChart(
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 27, 75);
+  doc.setTextColor(200, 200, 230);
   doc.text(title, x, y + 6);
 
   const titleYEnd = y + 10; // spacing below title so numbers don't touch it
@@ -101,7 +102,7 @@ function drawBarChart(
     doc.text(String(d.value), bx + barW / 2, by - 2.5, { align: "center" });
     doc.setFontSize(5.5);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 100, 120);
+    doc.setTextColor(160, 160, 190);
     const maxLabelLen = Math.max(8, Math.floor(barW / 1.8));
     const label = d.label.length > maxLabelLen ? d.label.slice(0, maxLabelLen - 1) + "…" : d.label;
     doc.text(label, bx + barW / 2, y + 10 + chartH + 6, { align: "center" });
@@ -132,7 +133,7 @@ function drawDonutChart(
     startAngle += sliceAngle;
   });
 
-  doc.setFillColor(255, 255, 255);
+  doc.setFillColor(18, 16, 42); // match dark page bg
   const inner = r * 0.55;
   const cSteps = 40;
   for (let s = 0; s < cSteps; s++) {
@@ -147,16 +148,24 @@ function drawDonutChart(
     doc.setFillColor(d.color[0], d.color[1], d.color[2]);
     doc.roundedRect(legendX, ly, 4, 4, 0.5, 0.5, "F");
     doc.setFontSize(6);
-    doc.setTextColor(60, 60, 80);
+    doc.setTextColor(180, 180, 210);
     const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
     doc.text(`${d.label} (${pct}%)`, legendX + 6, ly + 3.5);
   });
 }
 
+/** Paint the entire page with the dark background */
+function drawPageBg(doc: jsPDF) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  doc.setFillColor(18, 16, 42); // dark indigo matching the app
+  doc.rect(0, 0, pageW, pageH, "F");
+}
+
 function drawFooter(doc: jsPDF, pageW: number, now: string, generatedBy?: string) {
   const pageH = doc.internal.pageSize.getHeight();
   doc.setFontSize(7);
-  doc.setTextColor(150, 150, 170);
+  doc.setTextColor(150, 150, 180);
   const footer = generatedBy
     ? `ISP Consulte — Gerado por ${generatedBy} em ${now}`
     : `ISP Consulte — ${now}`;
@@ -175,13 +184,13 @@ function drawClientHoursBar(
 
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(50, 50, 70);
+  doc.setTextColor(180, 180, 210);
   const shortLabel = label.length > 24 ? label.slice(0, 23) + "…" : label;
   doc.text(shortLabel, x, y + 4);
 
   const bx = x + 48;
   const bw = width - 48 - 28;
-  doc.setFillColor(220, 220, 235);
+  doc.setFillColor(40, 38, 70);
   doc.roundedRect(bx, y, bw, 4, 0.8, 0.8, "F");
   if (pct > 0) {
     doc.setFillColor(...color);
@@ -220,6 +229,9 @@ export async function exportTasksPDF({
   });
 
   const logo = await loadLogoBase64();
+
+  // Dark page background
+  drawPageBg(doc);
 
   // Header bar
   doc.setFillColor(24, 22, 60);
@@ -289,7 +301,7 @@ export async function exportTasksPDF({
         { label: "Andamento", value: stats.pending, color: [250, 204, 21] },
         { label: "Atrasado", value: stats.overdue, color: [239, 68, 68] },
       ];
-      doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+      doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
       doc.text("Distribuição por Status", 14, yPos + 4);
       drawDonutChart(doc, 50, yPos + 22, 14, chartData);
 
@@ -343,7 +355,7 @@ export async function exportTasksPDF({
         // Ensure the ENTIRE productivity section (title + bars) fits on one page
         yPos = ensureSpace(doc, yPos, sectionH);
 
-        doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+        doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
         doc.text("Pulso de Produtividade — % Conclusão por Projeto", 14, yPos + 4);
 
         const startY = yPos + 8;
@@ -357,18 +369,18 @@ export async function exportTasksPDF({
 
           // Row background for alternating
           if (i % 2 === 0) {
-            doc.setFillColor(245, 245, 255);
+            doc.setFillColor(28, 26, 56);
             doc.roundedRect(12, ry - 1, pageW - 24, rowH, 1, 1, "F");
           }
 
-          doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(50, 50, 70);
+          doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(180, 180, 210);
           const shortName = name.length > 28 ? name.slice(0, 27) + "…" : name;
           doc.text(shortName, 14, ry + rowH * 0.55);
 
           const bx = 14 + labelW;
           const bh = rowH * 0.45;
           const by = ry + rowH * 0.2;
-          doc.setFillColor(225, 225, 240); doc.roundedRect(bx, by, barMaxW, bh, 1, 1, "F");
+          doc.setFillColor(40, 38, 70); doc.roundedRect(bx, by, barMaxW, bh, 1, 1, "F");
 
           if (pct > 0) {
             const fillW = (pct / 100) * barMaxW;
@@ -403,7 +415,7 @@ export async function exportTasksPDF({
     head: [["Tarefa", "Projeto", "Responsável", "Status", "Prazo", "Duração"]],
     body: tableBody,
     theme: "grid",
-    styles: { fontSize: 7.5, cellPadding: 3.5, textColor: [30, 27, 75], lineColor: [210, 210, 225], lineWidth: 0.15 },
+    styles: { fontSize: 7.5, cellPadding: 3.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.15, fillColor: [22, 20, 48] },
     headStyles: {
       fillColor: [24, 22, 60],
       textColor: [255, 255, 255],
@@ -412,7 +424,7 @@ export async function exportTasksPDF({
       halign: "center",
       cellPadding: 4,
     },
-    alternateRowStyles: { fillColor: [248, 248, 255] },
+    alternateRowStyles: { fillColor: [28, 26, 56] },
     columnStyles: {
       0: { cellWidth: "auto", fontStyle: "bold", halign: "left" },
       1: { halign: "center", cellWidth: 44 },
@@ -422,7 +434,7 @@ export async function exportTasksPDF({
       5: { halign: "center", cellWidth: 20 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
+    didDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); drawFooter(doc, pageW, now, generatedBy); },
     didParseCell: (data: any) => {
       if (data.section === "body" && data.column.index === 3) {
         const val = String(data.cell.raw ?? "").toLowerCase();
@@ -474,6 +486,9 @@ export async function exportClientPDF({
 
   const logo = await loadLogoBase64();
   const safeFileName = fileName ?? `relatorio-${clientName.toLowerCase().replace(/[^a-z0-9]/g, "-")}.pdf`;
+
+  // Dark page background
+  drawPageBg(doc);
 
   // Header
   doc.setFillColor(30, 27, 75);
@@ -532,7 +547,7 @@ export async function exportClientPDF({
     { label: "Andamento",  value: totalTasks - totalDone - totalOver, color: [250, 204, 21] },
     { label: "Atrasadas",  value: totalOver,                          color: [239, 68, 68]  },
   ];
-  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
   doc.text("Status das Tarefas", 14, yPos + 4);
   drawDonutChart(doc, 50, yPos + 26, 16, completionData);
 
@@ -543,7 +558,7 @@ export async function exportClientPDF({
     const hoursH = 6 + projects.length * 8 + 4;
     yPos = ensureSpace(doc, yPos, hoursH);
 
-    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 27, 75);
+    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(200, 200, 230);
     doc.text("Consumo de Horas Contratadas", 14, yPos);
     yPos += 6;
     projects.forEach((p) => {
@@ -578,9 +593,9 @@ export async function exportClientPDF({
     head: [["Projeto", "Tarefas", "Concluídas", "Atrasadas", "Horas Usadas", "Contratadas", "Restam", "Conclusão"]],
     body: tableBody,
     theme: "grid",
-    styles: { fontSize: 7.5, cellPadding: 2.5, textColor: [30, 27, 75], lineColor: [200, 200, 220], lineWidth: 0.2 },
+    styles: { fontSize: 7.5, cellPadding: 2.5, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.2, fillColor: [22, 20, 48] },
     headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5 },
-    alternateRowStyles: { fillColor: [245, 245, 255] },
+    alternateRowStyles: { fillColor: [28, 26, 56] },
     columnStyles: {
       0: { cellWidth: "auto", fontStyle: "bold" },
       1: { halign: "center", cellWidth: 18 },
@@ -592,7 +607,7 @@ export async function exportClientPDF({
       7: { halign: "center", cellWidth: 20 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
+    didDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); drawFooter(doc, pageW, now, generatedBy); },
   });
 
   doc.save(safeFileName);
@@ -639,6 +654,9 @@ export async function exportAnalyticsPDF({
   });
 
   const logo = await loadLogoBase64();
+
+  // Dark page background
+  drawPageBg(doc);
 
   // Header
   doc.setFillColor(30, 27, 75);
@@ -699,7 +717,7 @@ export async function exportAnalyticsPDF({
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 27, 75);
+  doc.setTextColor(200, 200, 230);
   doc.text("Status Geral", 14, yPos + 4);
   drawDonutChart(doc, 50, yPos + 26, 16, completionData);
 
@@ -718,9 +736,9 @@ export async function exportAnalyticsPDF({
     head: [["Projeto", "Tarefas", "Concluídas", "Atrasadas", "Horas", "Conclusão"]],
     body: tableBody,
     theme: "grid",
-    styles: { fontSize: 8, cellPadding: 3, textColor: [30, 27, 75], lineColor: [200, 200, 220], lineWidth: 0.2 },
+    styles: { fontSize: 8, cellPadding: 3, textColor: [200, 200, 230], lineColor: [50, 48, 80], lineWidth: 0.2, fillColor: [22, 20, 48] },
     headStyles: { fillColor: [30, 27, 75], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
-    alternateRowStyles: { fillColor: [245, 245, 255] },
+    alternateRowStyles: { fillColor: [28, 26, 56] },
     columnStyles: {
       0: { cellWidth: "auto", fontStyle: "bold" },
       1: { halign: "center", cellWidth: 20 },
@@ -730,7 +748,7 @@ export async function exportAnalyticsPDF({
       5: { halign: "center", cellWidth: 22 },
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: () => drawFooter(doc, pageW, now, generatedBy),
+    didDrawPage: (data: any) => { if (data.pageNumber > 1) drawPageBg(doc); drawFooter(doc, pageW, now, generatedBy); },
   });
 
   doc.save(fileName);
