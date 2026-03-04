@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { storage } from "@/modules/shared/storage";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
@@ -67,13 +68,20 @@ export default function AnaliticasPage() {
   const accessToken = session?.accessToken;
   const userName = session?.name;
 
-  // Filters state
+  // Filters state — restored from localStorage
+  const FILTERS_KEY = "analiticas:filters";
+  const savedFilters = useMemo(() => storage.get<Partial<AnalyticsFilterState>>(FILTERS_KEY, {}), []);
   const [filters, setFilters] = useState<AnalyticsFilterState>({
-    period: "180d",
-    status: "all",
-    projectId: null,
-    consultant: "",
+    period: savedFilters.period || "180d",
+    status: savedFilters.status || "all",
+    projectId: savedFilters.projectId ?? null,
+    consultant: savedFilters.consultant || "",
   });
+
+  // Persist filters when they change
+  useEffect(() => {
+    storage.set(FILTERS_KEY, filters);
+  }, [filters]);
 
   const periodDays = PERIOD_DAYS[filters.period];
 
