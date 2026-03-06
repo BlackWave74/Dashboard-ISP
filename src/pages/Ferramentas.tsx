@@ -172,10 +172,10 @@ export default function FerramentasPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: "hsl(210 40% 96%)" }}>
-              Ferramentas
+              Criador de reuniões (Google Meet)
             </h1>
             <p className="mt-0.5 text-sm" style={{ color: "hsl(215 20% 52%)" }}>
-              Utilitários para facilitar o dia a dia da equipe
+              Crie reuniões no Google Meet com pauta, horário e participantes em um único fluxo
             </p>
           </div>
           <div className="ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
@@ -643,3 +643,4 @@ export default function FerramentasPage() {
     </div>
   );
 }
+
