@@ -286,7 +286,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
 
         {activeCount > 0 && (
           <button
-            onClick={() => { onChange({ period: "180d", status: "all", projectId: null, consultant: "" }); setSearchQuery(""); }}
+            onClick={() => { onChange({ period: "180d", status: "all", projectIds: [], consultant: "" }); setSearchQuery(""); }}
             className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
           >
             Limpar filtros
