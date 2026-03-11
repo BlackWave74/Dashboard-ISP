@@ -6,7 +6,7 @@ import type { ProjectAnalytics } from "../types";
 export type AnalyticsFilterState = {
   period: "30d" | "90d" | "180d" | "all";
   status: "all" | "done" | "pending" | "overdue";
-  projectId: number | null;
+  projectIds: number[];
   consultant: string;
 };
 
