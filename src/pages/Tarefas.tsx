@@ -412,7 +412,7 @@ export default function TarefasPage() {
   }, [searchScopedTasks]);
 
   const lockedProject = session?.role === "cliente" && session.company?.trim();
-  const effectiveProjectFilter = lockedProject ? session.company?.trim() ?? "all" : project;
+  const effectiveProjectFilter: string[] = lockedProject ? [session.company?.trim() ?? ""] : project;
 
   // Filtered tasks
   const filteredTasks = useMemo(() => {
