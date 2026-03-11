@@ -261,7 +261,7 @@ export default function TarefasPage() {
 
   const resetFilters = useCallback(() => {
     setSearch(""); setDebouncedSearch(""); setStatus("all"); setDeadline("all");
-    setPeriod("all"); setConsultant("all"); setProject("all");
+    setPeriod("all"); setConsultant("all"); setProject([]);
     setDateFrom(""); setDateTo(""); setDeadlineTo(""); setPage(1);
     requestAnimationFrame(() => { scrollToFilters(); searchInputRef.current?.focus(); });
   }, [scrollToFilters]);
