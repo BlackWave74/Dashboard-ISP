@@ -21,8 +21,8 @@ type TaskFiltersProps = {
   consultant: string;
   setConsultant: (value: string) => void;
   consultantOptions?: string[];
-  project: string;
-  setProject: (value: string) => void;
+  project: string[];
+  setProject: (value: string[]) => void;
   projectOptions?: string[];
   projectDisabled?: boolean;
   hasActiveFilters?: boolean;
