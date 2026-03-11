@@ -412,7 +412,7 @@ export function TaskFilters({
     (status !== "all" ? 1 : 0) +
     (period !== "all" ? 1 : 0) +
     (consultant !== "all" && consultant ? 1 : 0) +
-    (project !== "all" && project ? 1 : 0);
+    (project.length > 0 ? 1 : 0);
 
   return (
     <div className="space-y-2 flex flex-col items-center w-full">
