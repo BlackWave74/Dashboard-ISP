@@ -6,7 +6,7 @@ import type { ProjectAnalytics } from "../types";
 export type AnalyticsFilterState = {
   period: "30d" | "90d" | "180d" | "all";
   status: "all" | "done" | "pending" | "overdue";
-  projectId: number | null;
+  projectIds: number[];
   consultant: string;
 };
 
@@ -201,6 +201,175 @@ function CustomSelect({
   );
 }
 
+/* ── Multi-select dropdown for projects ── */
+function MultiSelectProjects({
+  value,
+  onChange,
+  options,
+  placeholder,
+  icon: Icon,
+  mineIds,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  mineIds?: Set<string>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  const isAll = value.length === 0;
+
+  const filtered = search.trim()
+    ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  const sortedOptions = mineIds
+    ? [...filtered].sort((a, b) => {
+        const aM = mineIds.has(a.value) ? 0 : 1;
+        const bM = mineIds.has(b.value) ? 0 : 1;
+        return aM - bM || a.label.localeCompare(b.label);
+      })
+    : filtered;
+
+  const toggleOption = (v: string) => {
+    if (value.includes(v)) {
+      onChange(value.filter((x) => x !== v));
+    } else {
+      onChange([...value, v]);
+    }
+  };
+
+  const displayLabel = isAll
+    ? placeholder
+    : value.length === 1
+      ? options.find((o) => o.value === value[0])?.label ?? placeholder
+      : `${value.length} projetos`;
+
+  const renderOption = (o: { value: string; label: string }, showDot?: boolean) => {
+    const isSelected = value.includes(o.value);
+    return (
+      <button
+        key={o.value}
+        onClick={(e) => { e.preventDefault(); toggleOption(o.value); }}
+        className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${
+          isSelected
+            ? "bg-[hsl(262_83%_58%/0.15)] text-white/90"
+            : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+        }`}
+      >
+        <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition ${
+          isSelected
+            ? "border-[hsl(262_83%_58%)] bg-[hsl(262_83%_58%)]"
+            : "border-white/20 bg-transparent"
+        }`}>
+          {isSelected && (
+            <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          )}
+        </span>
+        {showDot && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(262_83%_58%)]" />}
+        <span className="truncate">{o.label}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex h-9 min-w-[170px] items-center gap-2 rounded-xl border px-3 text-[12px] font-semibold transition-all ${
+          !isAll
+            ? "border-[hsl(262_83%_58%/0.4)] bg-[hsl(262_83%_58%/0.1)] text-white/80"
+            : "border-white/[0.08] bg-[hsl(260_30%_12%)] text-white/50"
+        } hover:border-white/[0.15]`}
+      >
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0 opacity-50" />}
+        <span className="flex-1 truncate text-left">{displayLabel}</span>
+        {!isAll && (
+          <span className="rounded-full bg-[hsl(262_83%_58%)] px-1.5 py-0.5 text-[10px] font-bold text-white">{value.length}</span>
+        )}
+        <ChevronDown className={`h-3 w-3 shrink-0 opacity-40 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full z-[200] mt-1 min-w-[260px] rounded-2xl border border-white/[0.08] shadow-xl shadow-black/50 overflow-hidden flex flex-col"
+            style={{ background: "hsl(260 30% 12%)", maxHeight: "300px" }}
+          >
+            {options.length > 5 && (
+              <div className="shrink-0 px-1.5 pt-1.5 pb-1 border-b border-white/[0.06]" style={{ background: "hsl(260 30% 12%)" }}>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-white/30" />
+                  <input
+                    ref={inputRef}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar..."
+                    className="h-8 w-full rounded-full border border-white/[0.08] bg-white/[0.04] pl-7 pr-3 text-[11px] text-white/70 outline-none focus:border-[hsl(262_83%_58%/0.4)] placeholder:text-white/25"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="overflow-y-auto flex-1 p-1.5">
+              <button
+                onClick={() => { onChange([]); setSearch(""); }}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${
+                  isAll ? "bg-[hsl(262_83%_58%/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                }`}
+              >
+                {placeholder}
+              </button>
+
+              {mineIds && sortedOptions.length > 0 && (
+                <>
+                  {sortedOptions.some(o => mineIds.has(o.value)) && (
+                    <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(262_83%_58%/0.6)]">Projetos que faço parte</div>
+                  )}
+                  {sortedOptions.filter(o => mineIds.has(o.value)).map((o) => renderOption(o, true))}
+                  {sortedOptions.some(o => !mineIds.has(o.value)) && (
+                    <div className="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-white/20">Outros</div>
+                  )}
+                  {sortedOptions.filter(o => !mineIds.has(o.value)).map((o) => renderOption(o))}
+                </>
+              )}
+
+              {!mineIds && sortedOptions.map((o) => renderOption(o))}
+
+              {sortedOptions.length === 0 && search.trim() && (
+                <p className="px-3 py-4 text-center text-[11px] text-white/30">Nenhum resultado</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function AnalyticsFilters({ filters, onChange, projects, consultants, isAdmin, myProjectIds, hideFilters = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,12 +377,16 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
   const activeCount =
     (filters.period !== "180d" ? 1 : 0) +
     (filters.status !== "all" ? 1 : 0) +
-    (filters.projectId !== null ? 1 : 0) +
+    (filters.projectIds.length > 0 ? 1 : 0) +
     (filters.consultant ? 1 : 0);
 
   // Search filters project list inline
   const handleSearchSelect = (projectId: number | null) => {
-    onChange({ ...filters, projectId });
+    if (projectId === null) {
+      onChange({ ...filters, projectIds: [] });
+    } else {
+      onChange({ ...filters, projectIds: [projectId] });
+    }
   };
 
   // Filter projects by search
@@ -286,7 +459,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
 
         {activeCount > 0 && (
           <button
-            onClick={() => { onChange({ period: "180d", status: "all", projectId: null, consultant: "" }); setSearchQuery(""); }}
+            onClick={() => { onChange({ period: "180d", status: "all", projectIds: [], consultant: "" }); setSearchQuery(""); }}
             className="text-[11px] font-semibold text-white/30 underline decoration-white/10 hover:text-white/50 transition"
           >
             Limpar filtros
@@ -341,9 +514,9 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
               {projects.length > 1 && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
-                  <CustomSelect
-                    value={filters.projectId !== null ? String(filters.projectId) : ""}
-                    onChange={(v) => onChange({ ...filters, projectId: v ? Number(v) : null })}
+                  <MultiSelectProjects
+                    value={filters.projectIds.map(String)}
+                    onChange={(vals) => onChange({ ...filters, projectIds: vals.map(Number) })}
                     options={projects.map((p) => ({ value: String(p.id), label: p.name }))}
                     placeholder="Todos os projetos"
                     icon={FolderKanban}

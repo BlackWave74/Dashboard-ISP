@@ -194,7 +194,12 @@ export default function TarefasPage() {
   const [dateTo, setDateTo] = useState(savedFilters.dateTo || "");
   const [deadlineTo, setDeadlineTo] = useState(savedFilters.deadlineTo || "");
   const [consultant, setConsultant] = useState(savedFilters.consultant || "all");
-  const [project, setProject] = useState(savedFilters.project || "all");
+  const [project, setProject] = useState<string[]>(() => {
+    const saved = savedFilters.project;
+    if (Array.isArray(saved)) return saved as string[];
+    if (saved && saved !== "all") return [saved];
+    return [];
+  });
 
   // Auto-filter "só meu" when navigating from alert CTA
   useEffect(() => {
@@ -252,11 +257,11 @@ export default function TarefasPage() {
   }, []);
 
   const hasActiveFilters =
-    !!search || status !== "all" || deadline !== "all" || period !== "all" || consultant !== "all" || project !== "all" || !!dateFrom || !!dateTo || !!deadlineTo;
+    !!search || status !== "all" || deadline !== "all" || period !== "all" || consultant !== "all" || project.length > 0 || !!dateFrom || !!dateTo || !!deadlineTo;
 
   const resetFilters = useCallback(() => {
     setSearch(""); setDebouncedSearch(""); setStatus("all"); setDeadline("all");
-    setPeriod("all"); setConsultant("all"); setProject("all");
+    setPeriod("all"); setConsultant("all"); setProject([]);
     setDateFrom(""); setDateTo(""); setDeadlineTo(""); setPage(1);
     requestAnimationFrame(() => { scrollToFilters(); searchInputRef.current?.focus(); });
   }, [scrollToFilters]);
@@ -407,7 +412,7 @@ export default function TarefasPage() {
   }, [searchScopedTasks]);
 
   const lockedProject = session?.role === "cliente" && session.company?.trim();
-  const effectiveProjectFilter = lockedProject ? session.company?.trim() ?? "all" : project;
+  const effectiveProjectFilter: string[] = lockedProject ? [session.company?.trim() ?? ""] : project;
 
   // Filtered tasks
   const filteredTasks = useMemo(() => {
@@ -440,7 +445,7 @@ export default function TarefasPage() {
       if (projectNormalized === "projeto indefinido") return false;
 
       const matchesConsultant = consultant === "all" || task.consultant.toLowerCase() === consultant.toLowerCase();
-      const matchesProject = effectiveProjectFilter === "all" || task.project.toLowerCase().includes(String(effectiveProjectFilter).toLowerCase());
+      const matchesProject = effectiveProjectFilter.length === 0 || effectiveProjectFilter.some(p => task.project.toLowerCase().includes(p.toLowerCase()));
       const matchesStatus =
         status === "all"
           ? true
@@ -991,7 +996,7 @@ export default function TarefasPage() {
                   barProjectsOverride={projectHoursData}
                   loading={loading}
                   onPickConsultant={(name) => setConsultant(name)}
-                  onPickProject={(name) => setProject(name)}
+                  onPickProject={(name) => setProject([name])}
                 />
               </motion.div>
             )}

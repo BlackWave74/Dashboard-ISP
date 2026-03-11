@@ -21,8 +21,8 @@ type TaskFiltersProps = {
   consultant: string;
   setConsultant: (value: string) => void;
   consultantOptions?: string[];
-  project: string;
-  setProject: (value: string) => void;
+  project: string[];
+  setProject: (value: string[]) => void;
   projectOptions?: string[];
   projectDisabled?: boolean;
   hasActiveFilters?: boolean;
@@ -88,7 +88,6 @@ function CustomSelect({
     ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
     : options;
 
-  // Sort: mine first if provided
   const sortedOptions = mineSet
     ? [...filtered].sort((a, b) => {
         const aM = mineSet.has(a.value) ? 0 : 1;
@@ -122,7 +121,6 @@ function CustomSelect({
             className="absolute right-0 top-full z-[200] mt-1 min-w-[220px] rounded-2xl border border-white/[0.08] shadow-xl shadow-black/50 overflow-hidden flex flex-col"
             style={{ background: "hsl(260 30% 12%)", maxHeight: "260px" }}
           >
-            {/* Search input — always visible, not scrollable */}
             {options.length > 5 && (
               <div className="shrink-0 px-1.5 pt-1.5 pb-1 border-b border-white/[0.06]" style={{ background: "hsl(260 30% 12%)" }}>
                 <div className="relative">
@@ -137,7 +135,6 @@ function CustomSelect({
                 </div>
               </div>
             )}
-            {/* Scrollable list area */}
             <div className="overflow-y-auto flex-1 p-1.5">
               <button
                 onClick={() => { onChange("all"); setOpen(false); setSearch(""); }}
@@ -148,7 +145,6 @@ function CustomSelect({
                 {placeholder}
               </button>
 
-              {/* Mine first if provided */}
               {mineSet && sortedOptions.length > 0 && (
                 <>
                   {sortedOptions.some(o => mineSet.has(o.value)) && (
@@ -187,7 +183,6 @@ function CustomSelect({
                 </>
               )}
 
-              {/* Normal list when no mineSet */}
               {!mineSet && sortedOptions.map((o) => (
                 <button
                   key={o.value}
@@ -201,6 +196,176 @@ function CustomSelect({
                   <span className="truncate">{o.label}</span>
                 </button>
               ))}
+
+              {sortedOptions.length === 0 && search.trim() && (
+                <p className="px-3 py-4 text-center text-[11px] text-white/30">Nenhum resultado</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ── Multi-select dropdown for projects ── */
+function MultiSelectProjects({
+  value,
+  onChange,
+  options,
+  placeholder,
+  icon: Icon,
+  mineSet,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  mineSet?: Set<string>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  const isAll = value.length === 0;
+
+  const filtered = search.trim()
+    ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  const sortedOptions = mineSet
+    ? [...filtered].sort((a, b) => {
+        const aM = mineSet.has(a.value) ? 0 : 1;
+        const bM = mineSet.has(b.value) ? 0 : 1;
+        return aM - bM || a.label.localeCompare(b.label);
+      })
+    : filtered;
+
+  const toggleOption = (v: string) => {
+    if (value.includes(v)) {
+      onChange(value.filter((x) => x !== v));
+    } else {
+      onChange([...value, v]);
+    }
+  };
+
+  const displayLabel = isAll
+    ? placeholder
+    : value.length === 1
+      ? options.find((o) => o.value === value[0])?.label ?? placeholder
+      : `${value.length} projetos`;
+
+  const renderOption = (o: { value: string; label: string }, showDot?: boolean) => {
+    const isSelected = value.includes(o.value);
+    return (
+      <button
+        key={o.value}
+        onClick={(e) => { e.preventDefault(); toggleOption(o.value); }}
+        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
+          isSelected
+            ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90"
+            : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+        }`}
+      >
+        <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition ${
+          isSelected
+            ? "border-[hsl(var(--task-purple))] bg-[hsl(var(--task-purple))]"
+            : "border-white/20 bg-transparent"
+        }`}>
+          {isSelected && (
+            <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          )}
+        </span>
+        {showDot && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--task-purple))]" />}
+        <span className="truncate">{o.label}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex h-9 w-full min-w-0 sm:min-w-[170px] sm:w-auto items-center gap-2 rounded-xl border px-3 text-[12px] font-semibold transition-all ${
+          !isAll
+            ? "border-[hsl(var(--task-purple)/0.4)] bg-[hsl(var(--task-purple)/0.1)] text-white/80"
+            : "border-white/[0.08] bg-[hsl(var(--task-surface))] text-white/50"
+        } hover:border-white/[0.15]`}
+      >
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0 opacity-50" />}
+        <span className="flex-1 truncate text-left">{displayLabel}</span>
+        {!isAll && (
+          <span className="rounded-full bg-[hsl(var(--task-purple))] px-1.5 py-0.5 text-[10px] font-bold text-white">{value.length}</span>
+        )}
+        <ChevronDown className={`h-3 w-3 shrink-0 opacity-40 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full z-[200] mt-1 min-w-[240px] rounded-2xl border border-white/[0.08] shadow-xl shadow-black/50 overflow-hidden flex flex-col"
+            style={{ background: "hsl(260 30% 12%)", maxHeight: "300px" }}
+          >
+            {options.length > 5 && (
+              <div className="shrink-0 px-1.5 pt-1.5 pb-1 border-b border-white/[0.06]" style={{ background: "hsl(260 30% 12%)" }}>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-white/30" />
+                  <input
+                    ref={inputRef}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar..."
+                    className="h-8 w-full rounded-full border border-white/[0.08] bg-white/[0.04] pl-7 pr-3 text-[11px] text-white/70 outline-none focus:border-[hsl(var(--task-purple)/0.4)] placeholder:text-white/25"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="overflow-y-auto flex-1 p-1.5">
+              {/* Select all / clear */}
+              <button
+                onClick={() => { onChange([]); setSearch(""); }}
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition ${
+                  isAll ? "bg-[hsl(var(--task-purple)/0.15)] text-white/90" : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+                }`}
+              >
+                {placeholder}
+              </button>
+
+              {mineSet && sortedOptions.length > 0 && (
+                <>
+                  {sortedOptions.some(o => mineSet.has(o.value)) && (
+                    <div className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-widest text-[hsl(var(--task-purple)/0.6)]">Projetos que faço parte</div>
+                  )}
+                  {sortedOptions.filter(o => mineSet.has(o.value)).map((o) => renderOption(o, true))}
+                  {sortedOptions.some(o => !mineSet.has(o.value)) && (
+                    <div className="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-white/20">Outros</div>
+                  )}
+                  {sortedOptions.filter(o => !mineSet.has(o.value)).map((o) => renderOption(o))}
+                </>
+              )}
+
+              {!mineSet && sortedOptions.map((o) => renderOption(o))}
 
               {sortedOptions.length === 0 && search.trim() && (
                 <p className="px-3 py-4 text-center text-[11px] text-white/30">Nenhum resultado</p>
@@ -247,7 +412,7 @@ export function TaskFilters({
     (status !== "all" ? 1 : 0) +
     (period !== "all" ? 1 : 0) +
     (consultant !== "all" && consultant ? 1 : 0) +
-    (project !== "all" && project ? 1 : 0);
+    (project.length > 0 ? 1 : 0);
 
   return (
     <div className="space-y-2 flex flex-col items-center w-full">
@@ -341,10 +506,10 @@ export function TaskFilters({
                 />
               </div>
 
-              {/* Project dropdown — first */}
+              {/* Project dropdown — multi-select */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
-                <CustomSelect
+                <MultiSelectProjects
                   value={project}
                   onChange={setProject}
                   options={projectOptions.map(o => ({ value: o, label: o }))}
