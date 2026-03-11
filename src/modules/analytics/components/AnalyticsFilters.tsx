@@ -345,9 +345,9 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
               {projects.length > 1 && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
-                  <CustomSelect
-                    value={filters.projectId !== null ? String(filters.projectId) : ""}
-                    onChange={(v) => onChange({ ...filters, projectId: v ? Number(v) : null })}
+                  <MultiSelectProjects
+                    value={filters.projectIds.map(String)}
+                    onChange={(vals) => onChange({ ...filters, projectIds: vals.map(Number) })}
                     options={projects.map((p) => ({ value: String(p.id), label: p.name }))}
                     placeholder="Todos os projetos"
                     icon={FolderKanban}
