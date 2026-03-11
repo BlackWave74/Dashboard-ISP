@@ -208,7 +208,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
   const activeCount =
     (filters.period !== "180d" ? 1 : 0) +
     (filters.status !== "all" ? 1 : 0) +
-    (filters.projectId !== null ? 1 : 0) +
+    (filters.projectIds.length > 0 ? 1 : 0) +
     (filters.consultant ? 1 : 0);
 
   // Search filters project list inline
