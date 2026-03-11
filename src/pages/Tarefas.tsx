@@ -445,7 +445,7 @@ export default function TarefasPage() {
       if (projectNormalized === "projeto indefinido") return false;
 
       const matchesConsultant = consultant === "all" || task.consultant.toLowerCase() === consultant.toLowerCase();
-      const matchesProject = effectiveProjectFilter === "all" || task.project.toLowerCase().includes(String(effectiveProjectFilter).toLowerCase());
+      const matchesProject = effectiveProjectFilter.length === 0 || effectiveProjectFilter.some(p => task.project.toLowerCase().includes(p.toLowerCase()));
       const matchesStatus =
         status === "all"
           ? true
