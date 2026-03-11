@@ -224,14 +224,15 @@ export default function AnaliticasPage() {
   // Apply status + project filter to user's tasks for display components
   const filteredTasks = useMemo(() => {
     let result = userTasks;
-    if (filters.projectId !== null) {
-      result = result.filter((t) => Number(t.project_id) === filters.projectId);
+    if (filters.projectIds.length > 0) {
+      const idSet = new Set(filters.projectIds);
+      result = result.filter((t) => idSet.has(Number(t.project_id)));
     }
     if (filters.status !== "all") {
       result = result.filter((t) => classifyTask(t) === filters.status);
     }
     return result;
-  }, [userTasks, filters.status, filters.projectId]);
+  }, [userTasks, filters.status, filters.projectIds]);
 
   // Period-aware hours
   const periodHours = useMemo(() => {
