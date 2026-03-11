@@ -506,10 +506,10 @@ export function TaskFilters({
                 />
               </div>
 
-              {/* Project dropdown — first */}
+              {/* Project dropdown — multi-select */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Projeto</label>
-                <CustomSelect
+                <MultiSelectProjects
                   value={project}
                   onChange={setProject}
                   options={projectOptions.map(o => ({ value: o, label: o }))}
