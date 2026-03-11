@@ -74,7 +74,7 @@ export default function AnaliticasPage() {
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     period: savedFilters.period || "180d",
     status: savedFilters.status || "all",
-    projectId: savedFilters.projectId ?? null,
+    projectIds: Array.isArray(savedFilters.projectIds) ? savedFilters.projectIds : [],
     consultant: savedFilters.consultant || "",
   });
 
