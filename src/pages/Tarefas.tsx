@@ -194,7 +194,12 @@ export default function TarefasPage() {
   const [dateTo, setDateTo] = useState(savedFilters.dateTo || "");
   const [deadlineTo, setDeadlineTo] = useState(savedFilters.deadlineTo || "");
   const [consultant, setConsultant] = useState(savedFilters.consultant || "all");
-  const [project, setProject] = useState(savedFilters.project || "all");
+  const [project, setProject] = useState<string[]>(() => {
+    const saved = savedFilters.project;
+    if (Array.isArray(saved)) return saved as string[];
+    if (saved && saved !== "all") return [saved];
+    return [];
+  });
 
   // Auto-filter "só meu" when navigating from alert CTA
   useEffect(() => {
