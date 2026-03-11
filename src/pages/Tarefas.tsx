@@ -257,7 +257,7 @@ export default function TarefasPage() {
   }, []);
 
   const hasActiveFilters =
-    !!search || status !== "all" || deadline !== "all" || period !== "all" || consultant !== "all" || project !== "all" || !!dateFrom || !!dateTo || !!deadlineTo;
+    !!search || status !== "all" || deadline !== "all" || period !== "all" || consultant !== "all" || project.length > 0 || !!dateFrom || !!dateTo || !!deadlineTo;
 
   const resetFilters = useCallback(() => {
     setSearch(""); setDebouncedSearch(""); setStatus("all"); setDeadline("all");
