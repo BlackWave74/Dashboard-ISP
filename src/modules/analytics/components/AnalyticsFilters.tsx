@@ -213,7 +213,11 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
 
   // Search filters project list inline
   const handleSearchSelect = (projectId: number | null) => {
-    onChange({ ...filters, projectId });
+    if (projectId === null) {
+      onChange({ ...filters, projectIds: [] });
+    } else {
+      onChange({ ...filters, projectIds: [projectId] });
+    }
   };
 
   // Filter projects by search
