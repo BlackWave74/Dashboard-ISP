@@ -996,7 +996,7 @@ export default function TarefasPage() {
                   barProjectsOverride={projectHoursData}
                   loading={loading}
                   onPickConsultant={(name) => setConsultant(name)}
-                  onPickProject={(name) => setProject(name)}
+                  onPickProject={(name) => setProject([name])}
                 />
               </motion.div>
             )}
