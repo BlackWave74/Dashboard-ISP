@@ -129,7 +129,31 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
   );
 }
 
-export function TimeTrackingSection({ entries, totalSeconds }: TimeTrackingSectionProps) {
+/** Color legend explaining duration color coding */
+function DurationColorLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[hsl(var(--task-border)/0.5)] bg-[hsl(var(--task-bg)/0.5)] px-3 py-1.5 mb-4">
+      <div className="flex items-center gap-1">
+        <Info className="h-3 w-3 text-[hsl(var(--task-text-muted))]" />
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Cores:</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-emerald-400" />
+        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&lt; 1h (rápido)</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-[hsl(var(--task-yellow))]" />
+        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">1h–4h (moderado)</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-rose-400" />
+        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&gt; 4h (extenso)</span>
+      </div>
+    </div>
+  );
+}
+
+export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTrackingSectionProps) {
   const sorted = [...entries].sort((a, b) => {
     const da = a.date_start ? new Date(String(a.date_start)).getTime() : 0;
     const db = b.date_start ? new Date(String(b.date_start)).getTime() : 0;
