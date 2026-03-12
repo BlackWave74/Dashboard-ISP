@@ -55,16 +55,18 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
   if (!tasks.length) return null;
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
+    <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]" style={{ minWidth: 0 }}>
       {/* Header */}
-      <div className="hidden md:grid grid-cols-[minmax(0,1fr)_100px_120px_180px_minmax(200px,1.1fr)_140px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
-        <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
-          Tarefa
-        </div>
+      <div className="hidden md:grid lg:hidden grid-cols-[minmax(120px,1.2fr)_80px_90px_100px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+        <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">Tarefa</div>
+        {["Status", "Prazo", "Duração"].map((h) => (
+          <div key={h} className="px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">{h}</div>
+        ))}
+      </div>
+      <div className="hidden lg:grid grid-cols-[minmax(140px,1.2fr)_90px_110px_170px_minmax(160px,1fr)_120px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+        <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">Tarefa</div>
         {["Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
-          <div key={h} className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">
-            {h}
-          </div>
+          <div key={h} className="px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">{h}</div>
         ))}
       </div>
 
