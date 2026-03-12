@@ -600,7 +600,7 @@ export default function TarefasPage() {
   useEffect(() => { setPage(1); }, [debouncedSearch, status, deadline, period, dateFrom, dateTo, deadlineTo, consultant]);
 
   const totalHours = stats.totalSeconds / 3600;
-  const totalHoursLabel = totalHours >= 10 ? `${Math.round(totalHours)}` : totalHours >= 1 ? totalHours.toFixed(1) : totalHours > 0 ? `${Math.round(totalHours * 60)}m` : "0";
+  const totalHoursLabel = formatSecondsHuman(stats.totalSeconds);
   const pctDone = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
   const chartSlides = [
