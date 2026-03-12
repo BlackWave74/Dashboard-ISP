@@ -200,7 +200,25 @@ export default function AnaliticasPage() {
       return false;
     });
 
-    return filtered;
+    // Non-admin: show only projects where the logged user has linked tasks (faz parte)
+    if (userName) {
+      const me = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const myIds = new Set<number>();
+
+      filtered.forEach((t) => {
+        const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "")
+          .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        if (responsible && responsible === me) {
+          const pid = Number(t.project_id);
+          if (pid) myIds.add(pid);
+        }
+      });
+
+      if (myIds.size === 0) return [];
+      return filtered.filter((t) => myIds.has(Number(t.project_id)));
+    }
+
+    return [];
   }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
 
   const effectiveUser = isAdmin

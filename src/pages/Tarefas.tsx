@@ -425,7 +425,24 @@ export default function TarefasPage() {
       return false;
     });
 
-    return filtered;
+    // Non-admin: show only projects where the logged user has linked tasks (faz parte)
+    if (session?.name) {
+      const me = session.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const myIds = new Set<number>();
+
+      filtered.forEach((task) => {
+        const responsible = (task.consultant || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        if (responsible && responsible === me) {
+          const pid = Number(task.raw.project_id);
+          if (pid) myIds.add(pid);
+        }
+      });
+
+      if (myIds.size === 0) return [];
+      return filtered.filter((task) => myIds.has(Number(task.raw.project_id)));
+    }
+
+    return [];
   }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
