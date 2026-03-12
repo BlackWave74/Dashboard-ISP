@@ -271,10 +271,10 @@ function MultiSelectProjects({
       <button
         key={o.value}
         onClick={(e) => { e.preventDefault(); toggleOption(o.value); }}
-        className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${
+        className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-semibold transition mb-0.5 ${
           isSelected
-            ? "bg-[hsl(262_83%_58%/0.15)] text-white/90"
-            : "text-white/40 hover:bg-white/[0.05] hover:text-white/60"
+            ? "bg-[hsl(262_83%_58%/0.12)] border border-[hsl(262_83%_58%/0.25)] text-white/90"
+            : "border border-transparent text-white/40 hover:bg-white/[0.05] hover:text-white/60"
         }`}
       >
         <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition ${
