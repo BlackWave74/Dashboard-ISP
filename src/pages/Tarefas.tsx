@@ -1112,7 +1112,7 @@ export default function TarefasPage() {
             </div>
           ) : (
             <>
-              <TaskListTable tasks={paginatedTasks} timeEntriesByTaskId={timeEntriesByTaskId} />
+              <TaskListTable tasks={paginatedTasks} timeEntriesByTaskId={timeEntriesByTaskId} userNames={userNames} />
 
               {filteredTasks.length > pageSize && (
                 <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[hsl(var(--task-text-muted))]">
