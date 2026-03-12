@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload }: any) => {
       <p className="text-xs font-bold text-white/90 mb-1">{d.fullName ?? d.name}</p>
       {d.client && <p className="text-xs text-white/40">{d.client}</p>}
       <div className="flex gap-4 mt-2">
-        <span className="text-sm font-bold text-white">{d.hours}h</span>
+        <span className="text-sm font-bold text-white">{formatHoursHuman(d.hours)}</span>
         {d.tasks != null && <span className="text-xs text-white/40">{d.tasks} tarefas</span>}
       </div>
     </div>
