@@ -46,6 +46,8 @@ function MultiSelectDropdown({
   options,
   selected,
   onToggle,
+  onSelectAll,
+  onClearAll,
   renderOption,
   emptyText = "Nenhuma opção.",
   searchable = false,
@@ -55,6 +57,8 @@ function MultiSelectDropdown({
   options: { value: string | number; label: string }[];
   selected: (string | number)[];
   onToggle: (value: string | number) => void;
+  onSelectAll?: () => void;
+  onClearAll?: () => void;
   renderOption?: (opt: { value: string | number; label: string }, isSelected: boolean) => React.ReactNode;
   emptyText?: string;
   searchable?: boolean;
@@ -75,6 +79,8 @@ function MultiSelectDropdown({
     ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
     : options;
 
+  const allSelected = options.length > 0 && selected.length === options.length;
+
   return (
     <div className="space-y-1.5" ref={ref}>
       <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1.5">
@@ -90,7 +96,9 @@ function MultiSelectDropdown({
           <span className="truncate">
             {selected.length === 0
               ? "Selecionar..."
-              : `${selected.length} selecionado${selected.length > 1 ? "s" : ""}`}
+              : allSelected
+                ? "Todos selecionados"
+                : `${selected.length} selecionado${selected.length > 1 ? "s" : ""}`}
           </span>
           <ChevronDown className={`h-3.5 w-3.5 text-[hsl(var(--task-text-muted))] transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
@@ -104,8 +112,9 @@ function MultiSelectDropdown({
               transition={{ duration: 0.15 }}
               className="absolute z-[100] mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] shadow-xl shadow-black/30"
             >
-              {searchable && (
-                <div className="sticky top-0 border-b border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2">
+              {/* Search + Select All/Clear */}
+              <div className="sticky top-0 border-b border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2 space-y-1.5">
+                {searchable && (
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[hsl(var(--task-text-muted))]" />
                     <input
@@ -116,8 +125,30 @@ function MultiSelectDropdown({
                       autoFocus
                     />
                   </div>
-                </div>
-              )}
+                )}
+                {(onSelectAll || onClearAll) && options.length > 0 && (
+                  <div className="flex gap-1.5">
+                    {onSelectAll && !allSelected && (
+                      <button
+                        type="button"
+                        onClick={onSelectAll}
+                        className="flex-1 rounded-md border border-[hsl(var(--task-purple)/0.3)] bg-[hsl(var(--task-purple)/0.08)] px-2 py-1 text-[10px] font-semibold text-[hsl(var(--task-purple))] transition hover:bg-[hsl(var(--task-purple)/0.15)]"
+                      >
+                        ✓ Selecionar Todos
+                      </button>
+                    )}
+                    {onClearAll && selected.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={onClearAll}
+                        className="flex-1 rounded-md border border-rose-500/20 bg-rose-500/8 px-2 py-1 text-[10px] font-semibold text-rose-400 transition hover:bg-rose-500/15"
+                      >
+                        ✕ Limpar Todos
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
               {filtered.length === 0 && (
                 <p className="px-3 py-4 text-center text-[11px] text-[hsl(var(--task-text-muted))]">{emptyText}</p>
               )}
