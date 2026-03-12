@@ -50,6 +50,41 @@ function DurationBar({ seconds }: { seconds?: number }) {
   );
 }
 
+/** Collapsible section for description etc. */
+function CollapsibleSection({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[hsl(var(--task-surface-hover))] transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">{title}</span>
+        </div>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <ChevronDown className="h-3.5 w-3.5 text-[hsl(var(--task-text-muted))]" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-3">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function TaskListTable({ tasks, timeEntriesByTaskId, userNames }: TaskListTableProps) {
   const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
@@ -205,14 +240,13 @@ export function TaskListTable({ tasks, timeEntriesByTaskId, userNames }: TaskLis
                         <TimeTrackingSection entries={entries} totalSeconds={task.durationSeconds} userNames={userNames} />
                       )}
 
-                      {/* Description */}
-                      <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-3">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <FileText className="h-3 w-3 text-[hsl(var(--task-yellow))]" />
-                          <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Descrição</span>
-                        </div>
+                      {/* Description - collapsible */}
+                      <CollapsibleSection
+                        icon={<FileText className="h-3 w-3 text-[hsl(var(--task-yellow))]" />}
+                        title="Descrição"
+                      >
                         <FormattedDescription text={task.description} />
-                      </div>
+                      </CollapsibleSection>
                     </div>
                   </motion.div>
                 )}

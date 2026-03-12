@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { Timer, Play, User, Clock, BarChart3, CircleDot, Info } from "lucide-react";
-import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
+import { Timer, User, Clock, BarChart3, CircleDot, Info, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 import { formatDurationHHMM, durationColorClass, getElapsedEffectiveDate } from "@/modules/tasks/utils";
 
@@ -11,12 +11,10 @@ type TimeTrackingSectionProps = {
   userNames?: Record<string, string>;
 };
 
-const NO_DATE_LABEL = "Não registrado";
-
-const formatDateTime = (raw?: string | Date | null): string => {
-  if (!raw) return NO_DATE_LABEL;
+const formatDateTime = (raw?: string | Date | null): string | null => {
+  if (!raw) return null;
   const d = new Date(String(raw));
-  if (Number.isNaN(d.getTime())) return NO_DATE_LABEL;
+  if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -32,15 +30,24 @@ const WEEKDAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const userColor = (userId?: string | number | null): string => {
   if (!userId) return "hsl(var(--task-purple))";
   const colors = [
-    "hsl(160 84% 39%)",   // emerald
+    "hsl(160 84% 39%)",
     "hsl(var(--task-purple))",
     "hsl(var(--task-yellow))",
-    "hsl(210 80% 55%)",   // blue
-    "hsl(330 70% 55%)",   // pink
-    "hsl(25 90% 55%)",    // orange
+    "hsl(210 80% 55%)",
+    "hsl(330 70% 55%)",
+    "hsl(25 90% 55%)",
   ];
   const hash = String(userId).split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return colors[hash % colors.length];
+};
+
+/** Get first + last name from a full name */
+const getDisplayName = (fullName: string | null): string | null => {
+  if (!fullName) return null;
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return null;
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1]}`;
 };
 
 /** Mini daily activity sparkline for the last 7 days */
@@ -83,7 +90,7 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="rounded-xl border border-[hsl(var(--task-border))] bg-gradient-to-br from-[hsl(var(--task-surface))] to-[hsl(var(--task-bg))] p-4 mb-4"
+      className="rounded-xl border border-[hsl(var(--task-border))] bg-gradient-to-br from-[hsl(var(--task-surface))] to-[hsl(var(--task-bg))] p-4 mb-3"
     >
       <div className="flex items-center gap-2 mb-3">
         <div className="flex items-center justify-center h-5 w-5 rounded-md bg-[hsl(var(--task-purple)/0.15)]">
@@ -129,31 +136,9 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
   );
 }
 
-/** Color legend explaining duration color coding */
-function DurationColorLegend() {
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[hsl(var(--task-border)/0.5)] bg-[hsl(var(--task-bg)/0.5)] px-3 py-1.5 mb-4">
-      <div className="flex items-center gap-1">
-        <Info className="h-3 w-3 text-[hsl(var(--task-text-muted))]" />
-        <span className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Cores:</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="h-2 w-2 rounded-full bg-emerald-400" />
-        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&lt; 1h (rápido)</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="h-2 w-2 rounded-full bg-[hsl(var(--task-yellow))]" />
-        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">1h–4h (moderado)</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="h-2 w-2 rounded-full bg-rose-400" />
-        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&gt; 4h (extenso)</span>
-      </div>
-    </div>
-  );
-}
-
 export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTrackingSectionProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   const sorted = [...entries].sort((a, b) => {
     const da = a.date_start ? new Date(String(a.date_start)).getTime() : 0;
     const db = b.date_start ? new Date(String(b.date_start)).getTime() : 0;
@@ -164,21 +149,27 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
   const totalColor = durationColorClass(totalSeconds);
 
   return (
-    <div className="space-y-0">
-      <DurationColorLegend />
-      <DailyActivityBars entries={entries} />
-
+    <div className="space-y-0 mb-4">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="rounded-xl border border-[hsl(var(--task-border))] bg-gradient-to-br from-[hsl(var(--task-surface))] to-[hsl(var(--task-bg))] p-4 mb-4"
+        className="rounded-xl border border-[hsl(var(--task-border))] bg-gradient-to-br from-[hsl(var(--task-surface))] to-[hsl(var(--task-bg))] overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
+        {/* Clickable Header */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between p-4 hover:bg-[hsl(var(--task-surface-hover))] transition-colors cursor-pointer"
+        >
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center h-5 w-5 rounded-md bg-[hsl(var(--task-purple)/0.15)]">
-              <Timer className="h-3 w-3 text-[hsl(var(--task-purple))]" />
+              <motion.div
+                animate={{ rotate: isOpen ? 360 : 0 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              >
+                <Timer className="h-3 w-3 text-[hsl(var(--task-purple))]" />
+              </motion.div>
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">
               Rastreamento de Tempo
@@ -199,109 +190,164 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
             {totalSeconds != null && totalSeconds > 0 && (
               <motion.div
                 initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 className={`flex items-center gap-1.5 rounded-lg ${totalColor.bg} px-2.5 py-1 border ${totalColor.border}`}
                 style={{ boxShadow: `0 0 12px ${totalColor.accent}33` }}
               >
-                <Clock className={`h-3.5 w-3.5 ${totalColor.text}`} />
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Clock className={`h-3.5 w-3.5 ${totalColor.text}`} />
+                </motion.div>
                 <span className={`text-[11px] font-bold font-mono ${totalColor.text}`}>
                   {formatDurationHHMM(totalSeconds)}
                 </span>
               </motion.div>
             )}
+            <motion.div
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-4 w-4 text-[hsl(var(--task-text-muted))]" />
+            </motion.div>
           </div>
-        </div>
+        </button>
 
-        {/* Time entries list */}
-        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
-          {sorted.map((entry, i) => {
-            const seconds = typeof entry.seconds === "number" ? entry.seconds : Number(entry.seconds ?? 0);
-            const entryDuration = formatDurationHHMM(seconds);
-            const entryColor = durationColorClass(seconds);
-            const avatarColor = userColor(entry.user_id);
-
-            return (
-              <motion.div
-                key={entry.task_id ? `${entry.task_id}-${i}` : i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
-                className="group flex items-center gap-3 rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2.5 border border-[hsl(var(--task-border)/0.3)] hover:border-[hsl(var(--task-border))] transition-colors"
-              >
-                {/* Timeline dot */}
-                <div className="flex flex-col items-center gap-0.5">
-                  <CircleDot className="h-3.5 w-3.5 text-emerald-400" />
-                  {i < sorted.length - 1 && (
-                    <div className="w-[1px] h-2 bg-[hsl(var(--task-border)/0.3)]" />
-                  )}
+        {/* Collapsible Content */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 pb-4 space-y-3">
+                {/* Color legend inside the card */}
+                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[hsl(var(--task-border)/0.3)] bg-[hsl(var(--task-bg)/0.5)] px-3 py-1.5">
+                  <div className="flex items-center gap-1">
+                    <Info className="h-3 w-3 text-[hsl(var(--task-text-muted))]" />
+                    <span className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Cores:</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&lt; 1h (rápido)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-[hsl(var(--task-yellow))]" />
+                    <span className="text-[10px] text-[hsl(var(--task-text-muted))]">1h–4h (moderado)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-rose-400" />
+                    <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&gt; 4h (extenso)</span>
+                  </div>
                 </div>
 
-                {/* Date info */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-medium text-[hsl(var(--task-text))]">
-                      {formatDateTime(entry.date_start)}
-                    </span>
-                    {entry.date_stop && (
-                      <>
-                        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">→</span>
-                        <span className="text-[11px] text-[hsl(var(--task-text-muted))]">
-                          {formatDateTime(entry.date_stop as string | null)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  {typeof entry.comment_text === "string" && entry.comment_text.trim() && (
-                    <p className="text-[10px] text-[hsl(var(--task-text-muted))] truncate mt-0.5 italic max-w-[300px]">
-                      {String(entry.comment_text)}
-                    </p>
-                  )}
+                {/* Daily activity bars */}
+                <DailyActivityBars entries={entries} />
+
+                {/* Time entries list */}
+                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1 scrollbar-thin">
+                  {sorted.map((entry, i) => {
+                    const seconds = typeof entry.seconds === "number" ? entry.seconds : Number(entry.seconds ?? 0);
+                    const entryDuration = formatDurationHHMM(seconds);
+                    const entryColor = durationColorClass(seconds);
+                    const avatarColor = userColor(entry.user_id);
+                    const startDate = formatDateTime(entry.date_start);
+                    const stopDate = formatDateTime(entry.date_stop as string | null);
+                    const hasAnyDate = startDate || stopDate;
+                    const rawName = userNames?.[String(entry.user_id)] || null;
+                    const displayName = getDisplayName(rawName);
+
+                    return (
+                      <motion.div
+                        key={entry.task_id ? `${entry.task_id}-${i}` : i}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
+                        className="group flex items-center gap-3 rounded-lg bg-[hsl(var(--task-bg))] px-3 py-2.5 border border-[hsl(var(--task-border)/0.3)] hover:border-[hsl(var(--task-border))] transition-colors"
+                      >
+                        {/* Timeline dot */}
+                        <div className="flex flex-col items-center gap-0.5">
+                          <CircleDot className="h-3.5 w-3.5 text-emerald-400" />
+                          {i < sorted.length - 1 && (
+                            <div className="w-[1px] h-2 bg-[hsl(var(--task-border)/0.3)]" />
+                          )}
+                        </div>
+
+                        {/* Main content: date + user name */}
+                        <div className="min-w-0 flex-1">
+                          {hasAnyDate ? (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {startDate && (
+                                <span className="text-[11px] font-medium text-[hsl(var(--task-text))]">
+                                  {startDate}
+                                </span>
+                              )}
+                              {startDate && stopDate && (
+                                <span className="text-[10px] text-[hsl(var(--task-text-muted))]">→</span>
+                              )}
+                              {stopDate && (
+                                <span className="text-[11px] text-[hsl(var(--task-text-muted))]">
+                                  {stopDate}
+                                </span>
+                              )}
+                            </div>
+                          ) : displayName ? (
+                            <span className="text-[11px] font-medium text-[hsl(var(--task-text))]">
+                              {displayName}
+                            </span>
+                          ) : null}
+                          {typeof entry.comment_text === "string" && entry.comment_text.trim() && (
+                            <p className="text-[10px] text-[hsl(var(--task-text-muted))] truncate mt-0.5 italic max-w-[300px]">
+                              {String(entry.comment_text)}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* User badge */}
+                        {entry.user_id && (() => {
+                          return (
+                            <div
+                              className="flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-bold"
+                              style={{
+                                backgroundColor: `${avatarColor}22`,
+                                color: avatarColor,
+                                border: `1px solid ${avatarColor}44`,
+                              }}
+                              title={rawName || `Usuário #${entry.user_id}`}
+                            >
+                              <User className="h-3 w-3" />
+                              {displayName && (
+                                <span className="text-[10px] font-medium max-w-[120px] truncate">
+                                  {displayName}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Duration badge */}
+                        {entryDuration ? (
+                          <div className={`flex items-center gap-1 rounded-md ${entryColor.bg} px-2 py-0.5 border ${entryColor.border}`}>
+                            <span className={`text-[11px] font-bold font-mono whitespace-nowrap ${entryColor.text}`}>
+                              {entryDuration}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-[hsl(var(--task-text-muted))] italic">Sem tempo</span>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
-
-                {/* User avatar */}
-                {entry.user_id && (() => {
-                  const displayName = userNames?.[String(entry.user_id)] || null;
-                  const initials = displayName
-                    ? displayName.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("")
-                    : null;
-                  return (
-                    <div
-                      className="flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-bold"
-                      style={{
-                        backgroundColor: `${avatarColor}22`,
-                        color: avatarColor,
-                        border: `1px solid ${avatarColor}44`,
-                      }}
-                      title={displayName || `ID: ${entry.user_id}`}
-                    >
-                      {initials ? (
-                        <span className="text-[10px]">{initials}</span>
-                      ) : (
-                        <User className="h-3 w-3" />
-                      )}
-                      {displayName && (
-                        <span className="text-[10px] font-medium max-w-[80px] truncate hidden sm:inline">
-                          {displayName.split(" ")[0]}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Duration badge */}
-                {entryDuration ? (
-                  <div className={`flex items-center gap-1 rounded-md ${entryColor.bg} px-2 py-0.5 border ${entryColor.border}`}>
-                    <span className={`text-[11px] font-bold font-mono whitespace-nowrap ${entryColor.text}`}>
-                      {entryDuration}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-[10px] text-[hsl(var(--task-text-muted))] italic">Sem registro</span>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );
