@@ -387,33 +387,6 @@ export async function exportTasksPDF({
   yPos += 2;
 
   if (stats) {
-    // KPI cards
-    const cards = [
-      { label: "Total", value: String(stats.total), color: [80, 85, 140] },
-      { label: "Concluído", value: String(stats.done), color: [34, 197, 94] },
-      { label: "Em Andamento", value: String(stats.pending), color: [100, 116, 139] },
-      { label: "Atrasado", value: String(stats.overdue), color: [239, 68, 68] },
-    ];
-    if (stats.totalHours) {
-      cards.push({ label: "Horas Totais", value: stats.totalHours, color: [139, 92, 246] });
-    }
-
-    const cardW = (pageW - 28 - (cards.length - 1) * 5) / cards.length;
-    cards.forEach((card, i) => {
-      const x = 14 + i * (cardW + 5);
-      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
-      doc.roundedRect(x, yPos, cardW, 18, 2.5, 2.5, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(card.value, x + cardW / 2, yPos + 9, { align: "center" });
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(230, 230, 255);
-      doc.text(card.label, x + cardW / 2, yPos + 15, { align: "center" });
-    });
-    yPos += 24;
-
     const hasAnyTask = stats.done > 0 || stats.pending > 0 || stats.overdue > 0;
 
     if (hasAnyTask) {
