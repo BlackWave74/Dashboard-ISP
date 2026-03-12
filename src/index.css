@@ -214,6 +214,16 @@ html, body {
   -webkit-text-fill-color: hsl(var(--login-text)) !important;
   border: 1px solid hsl(var(--login-card-border));
 }
+
+/* Global dark autofill override for all dark-themed inputs */
+.task-card input:-webkit-autofill,
+.task-card input:-webkit-autofill:hover,
+.task-card input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px hsl(var(--task-bg)) inset !important;
+  -webkit-text-fill-color: hsl(var(--task-text)) !important;
+  caret-color: hsl(var(--task-text));
+  transition: background-color 5000s ease-in-out 0s;
+}
 .login-field input:focus {
   border-color: hsl(var(--login-accent));
   box-shadow: 0 0 0 3px hsl(var(--login-accent) / 0.15);
