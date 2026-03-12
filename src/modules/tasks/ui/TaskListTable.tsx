@@ -10,6 +10,7 @@ import { TimeTrackingSection } from "./TimeTrackingSection";
 type TaskListTableProps = {
   tasks: TaskView[];
   timeEntriesByTaskId?: Record<string, ElapsedTimeRecord[]>;
+  userNames?: Record<string, string>;
 };
 
 const statusDot = (status: TaskView["statusKey"]) => {
