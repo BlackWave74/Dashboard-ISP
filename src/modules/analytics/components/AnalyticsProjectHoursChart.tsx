@@ -95,7 +95,7 @@ export default function AnalyticsProjectHoursChart({ projects, times = [] }: Pro
     >
       <div className="mb-4">
         <h3 className="text-lg font-bold text-white/90">Horas por Projeto</h3>
-        <p className="text-xs text-white/30 mt-0.5">Top projetos · atividade semanal: {Math.round(totalWeekHours)}h</p>
+        <p className="text-xs text-white/30 mt-0.5">Top projetos · atividade semanal: {formatHoursHuman(totalWeekHours)}</p>
       </div>
 
       {/* Weekly mini chart */}
