@@ -84,11 +84,11 @@ export const formatDurationHHMM = (seconds?: number) => {
   const remainingSeconds = safeSeconds % 60;
   const parts: string[] = [];
 
-  if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
-  if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
-  if (remainingSeconds > 0) parts.push(`${remainingSeconds} ${remainingSeconds === 1 ? "second" : "seconds"}`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${String(minutes).padStart(2, "0")}m`);
+  if (remainingSeconds > 0) parts.push(`${String(remainingSeconds).padStart(2, "0")}s`);
 
-  return parts.join(", ");
+  return parts.join(" ") || "0s";
 };
 
 export const normalizeTaskTitle = (value?: string) => {
