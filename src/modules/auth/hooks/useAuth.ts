@@ -140,19 +140,17 @@ export function useAuth() {
     [persistSession]
   );
 
+  // ── Initial session restore ──
   useEffect(() => {
     const saved = storage.get<AuthSession | null>(SESSION_KEY, null);
     const load = async () => {
       if (saved?.accessToken) {
         const expired = saved.expiresAt ? saved.expiresAt < Date.now() : false;
         if (expired && saved.refreshToken) {
-          // Token expired: full refresh rebuilds everything including project names
           const refreshed = await refreshSession(saved);
           if (refreshed) { setLoadingSession(false); return; }
         }
 
-        // Token still valid: sync to supabaseExt for Realtime, then
-        // re-fetch project access from DB in background
         setSession(saved);
         setLoadingSession(false);
         syncSupabaseSession(saved.accessToken!, saved.refreshToken);
@@ -163,14 +161,12 @@ export function useAuth() {
               headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${saved.accessToken}` },
             });
 
-            // If token is completely invalid (bad signature, revoked, etc.), try refresh
             if (!userRes.ok) {
               console.warn("[auth] Token invalid (status", userRes.status, "), attempting refresh…");
               if (saved.refreshToken) {
                 const refreshed = await refreshSession(saved);
                 if (refreshed) { setLoadingSession(false); return; }
               }
-              // Refresh also failed — clear session and force re-login
               console.warn("[auth] Refresh failed, clearing session");
               setSession(null);
               storage.remove(SESSION_KEY);
@@ -210,6 +206,32 @@ export function useAuth() {
     };
     void load();
   }, [refreshSession, persistSession]);
+
+  // ── Proactive token refresh timer ──
+  // Refreshes the JWT ~2 minutes before it expires so the user never sees
+  // "session expired" errors during normal usage.
+  useEffect(() => {
+    const REFRESH_MARGIN_MS = 2 * 60 * 1000; // refresh 2 min before expiry
+    const MIN_INTERVAL_MS = 30_000; // never poll faster than 30s
+
+    const tick = async () => {
+      const current = storage.get<AuthSession | null>(SESSION_KEY, null);
+      if (!current?.refreshToken || !current?.expiresAt) return;
+
+      const msUntilExpiry = current.expiresAt - Date.now();
+      if (msUntilExpiry <= REFRESH_MARGIN_MS) {
+        console.info("[auth] Proactive token refresh (expires in", Math.round(msUntilExpiry / 1000), "s)");
+        await refreshSession(current);
+      }
+    };
+
+    // Check every 60s whether we need to refresh
+    const id = setInterval(tick, Math.max(MIN_INTERVAL_MS, 60_000));
+    // Also run immediately in case we loaded with a nearly-expired token
+    void tick();
+
+    return () => clearInterval(id);
+  }, [refreshSession]);
 
   const login = useCallback(
     async ({ email, password }: AuthPayload): Promise<AuthResult> => {
