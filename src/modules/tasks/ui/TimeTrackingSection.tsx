@@ -258,20 +258,35 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
                   )}
                 </div>
 
-                {/* User avatar - colored circle without fake name */}
-                {entry.user_id && (
-                  <div
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
-                    style={{
-                      backgroundColor: `${avatarColor}22`,
-                      color: avatarColor,
-                      border: `1px solid ${avatarColor}44`,
-                    }}
-                    title={`ID: ${entry.user_id}`}
-                  >
-                    <User className="h-3 w-3" />
-                  </div>
-                )}
+                {/* User avatar */}
+                {entry.user_id && (() => {
+                  const displayName = userNames?.[String(entry.user_id)] || null;
+                  const initials = displayName
+                    ? displayName.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("")
+                    : null;
+                  return (
+                    <div
+                      className="flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-bold"
+                      style={{
+                        backgroundColor: `${avatarColor}22`,
+                        color: avatarColor,
+                        border: `1px solid ${avatarColor}44`,
+                      }}
+                      title={displayName || `ID: ${entry.user_id}`}
+                    >
+                      {initials ? (
+                        <span className="text-[10px]">{initials}</span>
+                      ) : (
+                        <User className="h-3 w-3" />
+                      )}
+                      {displayName && (
+                        <span className="text-[10px] font-medium max-w-[80px] truncate hidden sm:inline">
+                          {displayName.split(" ")[0]}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Duration badge */}
                 {entryDuration ? (
