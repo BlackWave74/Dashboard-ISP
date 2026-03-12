@@ -503,7 +503,7 @@ export default function AnalyticsFilters({ filters, onChange, projects, consulta
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Período</label>
                 <CustomSelect
                   value={filters.period}
-                  onChange={(v) => onChange({ ...filters, period: v as AnalyticsFilterState["period"] })}
+                  onChange={(v) => onChange({ ...filters, period: (v || "all") as AnalyticsFilterState["period"] })}
                   options={PERIODS}
                   placeholder="Todos períodos"
                   icon={Calendar}

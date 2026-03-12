@@ -137,7 +137,7 @@ export default function AnaliticasPage() {
     defaultsAppliedRef.current = true;
   }, [userName, session?.role, session?.accessibleProjectIds]);
 
-  const periodDays = PERIOD_DAYS[filters.period];
+  const periodDays = PERIOD_DAYS[filters.period] ?? PERIOD_DAYS["all"];
 
   const { tasks: allTasks, loading: loadingTasks, error: errorTasks, reload: reloadTasks, lastUpdated, reloadCooldownMsLeft, reloadsRemainingThisMinute } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
   const { times, loading: loadingTimes, reload: reloadTimes, lastUpdated: lastUpdatedTimes } = useElapsedTimes({ accessToken, period: filters.period === "all" ? "180d" : filters.period });
