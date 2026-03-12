@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { FolderKanban, Clock, CheckCircle2, AlertTriangle, TrendingUp, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
+import { formatHoursHuman } from "@/modules/tasks/utils";
+import { motion } from "framer-motion";
 
 type Props = {
   clients: number;
