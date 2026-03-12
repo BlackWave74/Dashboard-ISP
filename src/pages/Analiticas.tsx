@@ -84,6 +84,34 @@ export default function AnaliticasPage() {
     storage.set(FILTERS_KEY, filters);
   }, [filters]);
 
+  // Default filters for non-admin users: pre-select their name as consultant
+  // and their accessible projects
+  const defaultsAppliedRef = useRef(false);
+  useEffect(() => {
+    if (defaultsAppliedRef.current) return;
+    if (!userName || !session?.role) return;
+    const role = session.role;
+    if (role === "admin" || role === "gerente" || role === "coordenador") return;
+
+    const saved = storage.get<Partial<AnalyticsFilterState>>(FILTERS_KEY, {});
+    const updates: Partial<AnalyticsFilterState> = {};
+
+    if (!saved.consultant) {
+      updates.consultant = userName;
+    }
+    if (!saved.projectIds || saved.projectIds.length === 0) {
+      const ids = session.accessibleProjectIds;
+      if (ids && ids.length > 0) {
+        updates.projectIds = ids;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setFilters((prev) => ({ ...prev, ...updates }));
+    }
+    defaultsAppliedRef.current = true;
+  }, [userName, session?.role, session?.accessibleProjectIds]);
+
   const periodDays = PERIOD_DAYS[filters.period];
 
   const { tasks: allTasks, loading: loadingTasks, error: errorTasks, reload: reloadTasks, lastUpdated, reloadCooldownMsLeft, reloadsRemainingThisMinute } = useTasks({ accessToken, period: filters.period === "all" ? "180d" : filters.period });

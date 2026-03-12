@@ -212,6 +212,23 @@ export default function TarefasPage() {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, [session?.name]);
+
+  // Default filters for non-admin users: pre-select their name as consultant
+  // and their accessible projects
+  const defaultsAppliedRef = useRef(false);
+  useEffect(() => {
+    if (defaultsAppliedRef.current) return;
+    if (!session?.name || !session?.role) return;
+    const role = session.role;
+    if (role === "admin" || role === "gerente" || role === "coordenador") return;
+
+    // Only apply defaults if no saved consultant filter
+    const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
+    if (!saved.consultant || saved.consultant === "all") {
+      setConsultant(session.name);
+    }
+    defaultsAppliedRef.current = true;
+  }, [session?.name, session?.role]);
   const [page, setPage] = useState(1);
   const [chartSlide, setChartSlide] = useState(0);
   const [showCharts, setShowCharts] = useState(true);
