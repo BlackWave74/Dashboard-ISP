@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { formatHoursHuman } from "@/modules/tasks/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import type { TooltipProps } from "recharts";
 import {
@@ -184,7 +185,7 @@ function ChartInfoOverlay({ title, description, tasks, dataType, show, onClose }
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>{name.charAt(0).toUpperCase()}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-semibold text-white/80 truncate">{name}</p>
-                        <span className="text-[10px] text-emerald-400">{data.hours.toFixed(1)}h</span>
+                        <span className="text-[10px] text-emerald-400">{formatHoursHuman(data.hours)}</span>
                       </div>
                       <span className="text-sm font-bold text-white/90">{data.total}</span>
                     </div>
@@ -266,7 +267,7 @@ export function TaskCharts({
     const p = (data?.payload as { count?: number; name?: string } | undefined) ?? {};
     const tasksCount = Number(p.count ?? 0);
     const projectName = String(p.name ?? "Projeto");
-    const hours = `${num.toFixed(num >= 10 ? 0 : 1)}h`;
+    const hours = formatHoursHuman(num);
     return [`${hours} (${tasksCount} tarefas)`, projectName];
   };
 
@@ -281,7 +282,7 @@ export function TaskCharts({
 
   const formatBarLabel: NonNullable<React.ComponentProps<typeof LabelList>["formatter"]> = (value) => {
     const num = typeof value === "number" ? value : Number(value ?? 0);
-    return `${num.toFixed(num >= 10 ? 0 : 1)}h`;
+    return formatHoursHuman(num);
   };
 
   const lineTooltipFormatter: TooltipProps<number, string>["formatter"] = (value) => {
@@ -380,7 +381,7 @@ export function TaskCharts({
                     ))}
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 20% 14%)" horizontal={false} />
-                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: number) => `${v.toFixed(v >= 10 ? 0 : 1)}h`} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10 }} tickFormatter={(v: number) => formatHoursHuman(v)} />
                   <YAxis dataKey="name" type="category" hide />
                   <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#e2e8f0" }} formatter={formatBarTooltip} labelFormatter={() => ""} cursor={{ fill: "hsl(228 20% 10%)" }} />
                   <Bar dataKey="hours" radius={[0, 6, 6, 0]} barSize={18} minPointSize={12} isAnimationActive animationDuration={1200} animationEasing="ease-out" className="cursor-pointer" onClick={(data: { name?: string; payload?: { name?: string } }) => { const name = String(data?.name ?? data?.payload?.name ?? ""); if (name) onPickProject?.(name); }}>

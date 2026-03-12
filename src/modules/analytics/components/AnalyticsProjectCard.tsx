@@ -134,9 +134,9 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5 text-white/25 shrink-0" />
             <span className="text-xs text-white/35 flex-1">Horas utilizadas</span>
-            <span className="text-sm font-bold text-white/80">{Math.round(project.hoursUsed)}h</span>
+            <span className="text-sm font-bold text-white/80">{project.hoursUsed >= 1 ? `${Math.round(project.hoursUsed)}h` : `${Math.round(project.hoursUsed * 60)}min`}</span>
             {hasContracted && (
-              <span className="text-xs text-white/30">/ {project.hoursContracted}h</span>
+              <span className="text-xs text-white/30">/ {project.hoursContracted >= 1 ? `${project.hoursContracted}h` : `${Math.round(project.hoursContracted * 60)}min`}</span>
             )}
           </div>
 
@@ -156,8 +156,8 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
                 <span className={`font-semibold ${hoursRemaining !== null && hoursRemaining < 0 ? "text-red-400" : "text-white/40"}`}>
                   {hoursRemaining !== null
                     ? hoursRemaining >= 0
-                      ? `${Math.round(hoursRemaining)}h restantes`
-                      : `${Math.abs(Math.round(hoursRemaining))}h excedidas`
+                      ? `${hoursRemaining >= 1 ? Math.round(hoursRemaining) + "h" : Math.round(hoursRemaining * 60) + "min"} restantes`
+                      : `${Math.abs(hoursRemaining) >= 1 ? Math.abs(Math.round(hoursRemaining)) + "h" : Math.abs(Math.round(hoursRemaining * 60)) + "min"} excedidas`
                     : ""}
                 </span>
               </div>

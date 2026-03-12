@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { motion } from "framer-motion";
-import { getElapsedEffectiveDate } from "@/modules/tasks/utils";
+import { getElapsedEffectiveDate, formatHoursHuman } from "@/modules/tasks/utils";
 import type { ProjectAnalytics } from "../types";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 
@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload }: any) => {
       <p className="text-xs font-bold text-white/90 mb-1">{d.fullName ?? d.name}</p>
       {d.client && <p className="text-xs text-white/40">{d.client}</p>}
       <div className="flex gap-4 mt-2">
-        <span className="text-sm font-bold text-white">{d.hours}h</span>
+        <span className="text-sm font-bold text-white">{formatHoursHuman(d.hours)}</span>
         {d.tasks != null && <span className="text-xs text-white/40">{d.tasks} tarefas</span>}
       </div>
     </div>
@@ -95,7 +95,7 @@ export default function AnalyticsProjectHoursChart({ projects, times = [] }: Pro
     >
       <div className="mb-4">
         <h3 className="text-lg font-bold text-white/90">Horas por Projeto</h3>
-        <p className="text-xs text-white/30 mt-0.5">Top projetos · atividade semanal: {Math.round(totalWeekHours)}h</p>
+        <p className="text-xs text-white/30 mt-0.5">Top projetos · atividade semanal: {formatHoursHuman(totalWeekHours)}</p>
       </div>
 
       {/* Weekly mini chart */}
@@ -159,7 +159,7 @@ export default function AnalyticsProjectHoursChart({ projects, times = [] }: Pro
                 {data.map((_, i) => (
                   <Cell key={i} fill={barColors[i % barColors.length]} />
                 ))}
-                <LabelList dataKey="hours" position="right" formatter={(v: number) => `${v}h`} style={{ fill: "hsl(270 10% 55%)", fontSize: 11, fontWeight: 600 }} />
+                <LabelList dataKey="hours" position="right" formatter={(v: number) => formatHoursHuman(v)} style={{ fill: "hsl(270 10% 55%)", fontSize: 11, fontWeight: 600 }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
