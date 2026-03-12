@@ -156,8 +156,8 @@ export default function AnalyticsProjectCard({ project, onToggleFavorite, onClic
                 <span className={`font-semibold ${hoursRemaining !== null && hoursRemaining < 0 ? "text-red-400" : "text-white/40"}`}>
                   {hoursRemaining !== null
                     ? hoursRemaining >= 0
-                      ? `${Math.round(hoursRemaining)}h restantes`
-                      : `${Math.abs(Math.round(hoursRemaining))}h excedidas`
+                      ? `${hoursRemaining >= 1 ? Math.round(hoursRemaining) + "h" : Math.round(hoursRemaining * 60) + "min"} restantes`
+                      : `${Math.abs(hoursRemaining) >= 1 ? Math.abs(Math.round(hoursRemaining)) + "h" : Math.abs(Math.round(hoursRemaining * 60)) + "min"} excedidas`
                     : ""}
                 </span>
               </div>
