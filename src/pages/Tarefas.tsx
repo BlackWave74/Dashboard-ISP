@@ -216,6 +216,7 @@ export default function TarefasPage() {
   // Default filters for non-admin users: pre-select their name as consultant
   // and their accessible projects
   const defaultsAppliedRef = useRef(false);
+  const projectDefaultsAppliedRef = useRef(false);
   useEffect(() => {
     if (defaultsAppliedRef.current) return;
     if (!session?.name || !session?.role) return;
