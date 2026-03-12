@@ -84,8 +84,7 @@ export default function AnaliticasPage() {
     storage.set(FILTERS_KEY, filters);
   }, [filters]);
 
-  // Default filters for non-admin users: pre-select their name as consultant
-  // and their accessible projects
+  // Default filters for non-admin users: pre-select own consultant, allowed projects and period "all"
   const defaultsAppliedRef = useRef(false);
   useEffect(() => {
     if (defaultsAppliedRef.current) return;
@@ -96,17 +95,28 @@ export default function AnaliticasPage() {
     const saved = storage.get<Partial<AnalyticsFilterState>>(FILTERS_KEY, {});
     const updates: Partial<AnalyticsFilterState> = {};
 
-    if (!saved.consultant) {
+    // Non-admin should always start with own consultant selected
+    if (saved.consultant !== userName) {
       updates.consultant = userName;
     }
-    if (!saved.projectIds || saved.projectIds.length === 0) {
-      const ids = session.accessibleProjectIds;
-      if (ids && ids.length > 0) {
-        updates.projectIds = ids;
+
+    const allowedIds = (session.accessibleProjectIds ?? []).map(Number).filter((id) => Number.isFinite(id));
+    const allowedSet = new Set<number>(allowedIds);
+    const savedProjectIds = Array.isArray(saved.projectIds)
+      ? saved.projectIds.map(Number).filter((id) => Number.isFinite(id))
+      : [];
+
+    if (allowedIds.length > 0) {
+      const validSavedIds = savedProjectIds.filter((id) => allowedSet.has(id));
+      if (validSavedIds.length === 0 || validSavedIds.length !== savedProjectIds.length) {
+        updates.projectIds = validSavedIds.length > 0 ? validSavedIds : allowedIds;
       }
+    } else if (savedProjectIds.length > 0) {
+      updates.projectIds = [];
     }
-    // Default period to "all" for non-admin
-    if (!saved.period) {
+
+    // Non-admin should open with "Tudo"
+    if (saved.period !== "all") {
       updates.period = "all";
     }
 
@@ -175,10 +185,12 @@ export default function AnaliticasPage() {
 
     const filtered = allTasks.filter((t) => {
       const pid = Number(t.project_id);
-      if (allowedIds && pid && allowedIds.has(pid)) return true;
+      if (allowedIds && pid) {
+        return allowedIds.has(pid);
+      }
 
-      // Fallback: company name matching
-      if (hasCompanyName && pid) {
+      // Fallback by company name ONLY when explicit project IDs are not available
+      if (!hasExplicitIds && hasCompanyName && pid) {
         const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const projectName = norm(String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? ""));
         const needle = norm(companyName!);
@@ -188,8 +200,26 @@ export default function AnaliticasPage() {
       return false;
     });
 
-    return filtered;
-  }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
+    // Non-admin: show only projects where the logged user has linked tasks (faz parte)
+    if (userName) {
+      const me = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const myIds = new Set<number>();
+
+      filtered.forEach((t) => {
+        const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "")
+          .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        if (responsible && responsible === me) {
+          const pid = Number(t.project_id);
+          if (pid) myIds.add(pid);
+        }
+      });
+
+      if (myIds.size === 0) return [];
+      return filtered.filter((t) => myIds.has(Number(t.project_id)));
+    }
+
+    return [];
+  }, [allTasks, isAdmin, accessibleProjectIds, companyName, userName]);
 
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)
@@ -313,6 +343,33 @@ export default function AnaliticasPage() {
     });
     return ids;
   }, [allTasks, accessFilteredTasks, isAdmin, userName]);
+
+  // Enforce non-admin filter state to own projects/name and period "all"
+  useEffect(() => {
+    if (isAdmin || !userName) return;
+
+    const mine = Array.from(myProjectIds);
+    setFilters((prev) => {
+      const prevIds = prev.projectIds.map(Number).filter((id) => Number.isFinite(id));
+      const validPrev = prevIds.filter((id) => myProjectIds.has(id));
+      const nextIds = mine.length === 0 ? [] : (validPrev.length > 0 ? validPrev : mine);
+
+      const sameIds =
+        prevIds.length === nextIds.length &&
+        prevIds.every((id, index) => id === nextIds[index]);
+
+      if (sameIds && prev.consultant === userName && prev.period === "all") {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        consultant: userName,
+        period: "all",
+        projectIds: nextIds,
+      };
+    });
+  }, [isAdmin, myProjectIds, userName]);
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);

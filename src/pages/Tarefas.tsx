@@ -223,13 +223,13 @@ export default function TarefasPage() {
     const role = session.role;
     if (role === "admin" || role === "gerente" || role === "coordenador") return;
 
-    // Only apply defaults if no saved consultant filter
+    // Non-admin should always start with own consultant selected
     const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
-    if (!saved.consultant || saved.consultant === "all") {
+    if (saved.consultant !== session.name) {
       setConsultant(session.name);
     }
-    // Default period to "all" for non-admin
-    if (!saved.period) {
+    // Non-admin should open with "Tudo"
+    if (saved.period !== "all") {
       setPeriod("all");
     }
     defaultsAppliedRef.current = true;
@@ -408,10 +408,12 @@ export default function TarefasPage() {
     const filtered = normalizedTasks.filter((task) => {
       // Check by exact project ID match
       const pid = Number(task.raw.project_id);
-      if (allowedIds && pid && allowedIds.has(pid)) return true;
+      if (allowedIds && pid) {
+        return allowedIds.has(pid);
+      }
 
-      // Fallback: company name matching for tasks without explicit project_id mapping
-      if (hasCompanyName && pid) {
+      // Fallback by company name ONLY when explicit project IDs are not available
+      if (!hasExplicitIds && hasCompanyName && pid) {
         const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const projectName = norm(task.project || "");
         const needle = norm(companyName!);
@@ -423,8 +425,25 @@ export default function TarefasPage() {
       return false;
     });
 
-    return filtered;
-  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
+    // Non-admin: show only projects where the logged user has linked tasks (faz parte)
+    if (session?.name) {
+      const me = session.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const myIds = new Set<number>();
+
+      filtered.forEach((task) => {
+        const responsible = (task.consultant || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        if (responsible && responsible === me) {
+          const pid = Number(task.raw.project_id);
+          if (pid) myIds.add(pid);
+        }
+      });
+
+      if (myIds.size === 0) return [];
+      return filtered.filter((task) => myIds.has(Number(task.raw.project_id)));
+    }
+
+    return [];
+  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName, session?.name]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
   const scopedTasks = projectFilteredTasks;
@@ -450,40 +469,42 @@ export default function TarefasPage() {
     return names;
   }, [normalizedTasks, session?.name]);
 
-  // Default project filter for non-admin: pre-select ALL accessible projects (not just "mine")
-  // so the user sees everything they have access to, with "mine" highlighted in the dropdown
+  // Default project filter for non-admin: pre-select only projects where user "faz parte"
   useEffect(() => {
     if (projectDefaultsAppliedRef.current) return;
     if (!session?.role) return;
     const role = session.role;
     if (role === "admin" || role === "gerente" || role === "coordenador") return;
+    if (normalizedTasks.length === 0) return;
 
     const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
     const savedProject = saved.project;
-    const hasSavedProject = Array.isArray(savedProject) ? savedProject.length > 0 : (savedProject && savedProject !== "all");
-    if (hasSavedProject) {
+    const savedProjects = Array.isArray(savedProject)
+      ? savedProject.filter(Boolean)
+      : savedProject && savedProject !== "all"
+      ? [savedProject]
+      : [];
+
+    const allowedNames = myProjectNames;
+
+    if (savedProjects.length > 0) {
+      const validSaved = savedProjects.filter((name) => allowedNames.has(name));
+      if (validSaved.length !== savedProjects.length) {
+        setProject(validSaved.length > 0 ? validSaved : Array.from(allowedNames));
+      }
       projectDefaultsAppliedRef.current = true;
       return;
     }
 
-    // Use accessible project IDs to find all project names the user can see
-    const accessIds = session?.accessibleProjectIds;
-    if (accessIds && accessIds.length > 0) {
-      const idSet = new Set(accessIds);
-      const names = new Set<string>();
-      normalizedTasks.forEach((t) => {
-        const pid = Number(t.raw?.project_id);
-        if (pid && idSet.has(pid)) {
-          const name = (t.project || "").trim();
-          if (name && name.toLowerCase() !== "projeto indefinido") names.add(name);
-        }
-      });
-      if (names.size > 0) {
-        setProject(Array.from(names));
-        projectDefaultsAppliedRef.current = true;
-      }
+    if (allowedNames.size > 0) {
+      setProject(Array.from(allowedNames));
+      projectDefaultsAppliedRef.current = true;
+      return;
     }
-  }, [session?.role, session?.accessibleProjectIds, normalizedTasks]);
+
+    setProject([]);
+    projectDefaultsAppliedRef.current = true;
+  }, [session?.role, normalizedTasks, myProjectNames]);
 
   const searchTerm = debouncedSearch.trim().toLowerCase();
 
