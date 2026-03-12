@@ -267,7 +267,7 @@ export function TaskCharts({
     const p = (data?.payload as { count?: number; name?: string } | undefined) ?? {};
     const tasksCount = Number(p.count ?? 0);
     const projectName = String(p.name ?? "Projeto");
-    const hours = `${num.toFixed(num >= 10 ? 0 : 1)}h`;
+    const hours = formatHoursHuman(num);
     return [`${hours} (${tasksCount} tarefas)`, projectName];
   };
 
