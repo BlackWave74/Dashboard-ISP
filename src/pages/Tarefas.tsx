@@ -304,6 +304,19 @@ export default function TarefasPage() {
     return map;
   }, [times]);
 
+  // Build user_id → name map from tasks (responsible_id → responsible_name)
+  const userNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    tasks.forEach((task) => {
+      const uid = task.responsible_id ?? task.user_id;
+      const name = String(task.responsible_name ?? task.consultant ?? task.owner ?? task.responsavel ?? "").trim();
+      if (uid && name && name !== "Sem consultor") {
+        map[String(uid)] = name;
+      }
+    });
+    return map;
+  }, [tasks]);
+
   // Build a project_id → name lookup from tasks that have the join data
   // This prevents phantom projects when some tasks fall back to group_name
   const projectNameById = useMemo(() => {
@@ -1099,7 +1112,7 @@ export default function TarefasPage() {
             </div>
           ) : (
             <>
-              <TaskListTable tasks={paginatedTasks} timeEntriesByTaskId={timeEntriesByTaskId} />
+              <TaskListTable tasks={paginatedTasks} timeEntriesByTaskId={timeEntriesByTaskId} userNames={userNames} />
 
               {filteredTasks.length > pageSize && (
                 <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[hsl(var(--task-text-muted))]">

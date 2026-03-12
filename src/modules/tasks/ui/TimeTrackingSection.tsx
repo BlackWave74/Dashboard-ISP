@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Timer, Play, User, Clock, BarChart3, CircleDot } from "lucide-react";
+import { Timer, Play, User, Clock, BarChart3, CircleDot, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 import { formatDurationHHMM, durationColorClass, getElapsedEffectiveDate } from "@/modules/tasks/utils";
@@ -7,12 +7,16 @@ import { formatDurationHHMM, durationColorClass, getElapsedEffectiveDate } from 
 type TimeTrackingSectionProps = {
   entries: ElapsedTimeRecord[];
   totalSeconds?: number;
+  /** Map of user_id → display name (from tasks responsible_id/responsible_name) */
+  userNames?: Record<string, string>;
 };
 
+const NO_DATE_LABEL = "Não registrado";
+
 const formatDateTime = (raw?: string | Date | null): string => {
-  if (!raw) return "—";
+  if (!raw) return NO_DATE_LABEL;
   const d = new Date(String(raw));
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return NO_DATE_LABEL;
   return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -125,7 +129,31 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
   );
 }
 
-export function TimeTrackingSection({ entries, totalSeconds }: TimeTrackingSectionProps) {
+/** Color legend explaining duration color coding */
+function DurationColorLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[hsl(var(--task-border)/0.5)] bg-[hsl(var(--task-bg)/0.5)] px-3 py-1.5 mb-4">
+      <div className="flex items-center gap-1">
+        <Info className="h-3 w-3 text-[hsl(var(--task-text-muted))]" />
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Cores:</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-emerald-400" />
+        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&lt; 1h (rápido)</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-[hsl(var(--task-yellow))]" />
+        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">1h–4h (moderado)</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-rose-400" />
+        <span className="text-[10px] text-[hsl(var(--task-text-muted))]">&gt; 4h (extenso)</span>
+      </div>
+    </div>
+  );
+}
+
+export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTrackingSectionProps) {
   const sorted = [...entries].sort((a, b) => {
     const da = a.date_start ? new Date(String(a.date_start)).getTime() : 0;
     const db = b.date_start ? new Date(String(b.date_start)).getTime() : 0;
@@ -137,6 +165,7 @@ export function TimeTrackingSection({ entries, totalSeconds }: TimeTrackingSecti
 
   return (
     <div className="space-y-0">
+      <DurationColorLegend />
       <DailyActivityBars entries={entries} />
 
       <motion.div
@@ -229,20 +258,35 @@ export function TimeTrackingSection({ entries, totalSeconds }: TimeTrackingSecti
                   )}
                 </div>
 
-                {/* User avatar - colored circle without fake name */}
-                {entry.user_id && (
-                  <div
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
-                    style={{
-                      backgroundColor: `${avatarColor}22`,
-                      color: avatarColor,
-                      border: `1px solid ${avatarColor}44`,
-                    }}
-                    title={`ID: ${entry.user_id}`}
-                  >
-                    <User className="h-3 w-3" />
-                  </div>
-                )}
+                {/* User avatar */}
+                {entry.user_id && (() => {
+                  const displayName = userNames?.[String(entry.user_id)] || null;
+                  const initials = displayName
+                    ? displayName.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("")
+                    : null;
+                  return (
+                    <div
+                      className="flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-bold"
+                      style={{
+                        backgroundColor: `${avatarColor}22`,
+                        color: avatarColor,
+                        border: `1px solid ${avatarColor}44`,
+                      }}
+                      title={displayName || `ID: ${entry.user_id}`}
+                    >
+                      {initials ? (
+                        <span className="text-[10px]">{initials}</span>
+                      ) : (
+                        <User className="h-3 w-3" />
+                      )}
+                      {displayName && (
+                        <span className="text-[10px] font-medium max-w-[80px] truncate hidden sm:inline">
+                          {displayName.split(" ")[0]}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Duration badge */}
                 {entryDuration ? (

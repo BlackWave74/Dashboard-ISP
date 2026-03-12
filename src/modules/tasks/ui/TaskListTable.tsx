@@ -10,6 +10,7 @@ import { TimeTrackingSection } from "./TimeTrackingSection";
 type TaskListTableProps = {
   tasks: TaskView[];
   timeEntriesByTaskId?: Record<string, ElapsedTimeRecord[]>;
+  userNames?: Record<string, string>;
 };
 
 const statusDot = (status: TaskView["statusKey"]) => {
@@ -49,7 +50,7 @@ function DurationBar({ seconds }: { seconds?: number }) {
   );
 }
 
-export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps) {
+export function TaskListTable({ tasks, timeEntriesByTaskId, userNames }: TaskListTableProps) {
   const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   if (!tasks.length) return null;
@@ -201,7 +202,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
 
                       {/* Time Tracking Section */}
                       {entries && entries.length > 0 && (
-                        <TimeTrackingSection entries={entries} totalSeconds={task.durationSeconds} />
+                        <TimeTrackingSection entries={entries} totalSeconds={task.durationSeconds} userNames={userNames} />
                       )}
 
                       {/* Description */}
