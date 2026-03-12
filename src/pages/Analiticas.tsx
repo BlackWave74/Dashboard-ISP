@@ -69,9 +69,20 @@ export default function AnaliticasPage() {
   const accessToken = session?.accessToken;
   const userName = session?.name;
 
-  // Filters state — restored from localStorage
+  // Filters state — restored from localStorage (clear if different user)
   const FILTERS_KEY = "analiticas:filters";
-  const savedFilters = useMemo(() => storage.get<Partial<AnalyticsFilterState>>(FILTERS_KEY, {}), []);
+  const IDENTITY_KEY = "analiticas:lastUser";
+  const savedFilters = useMemo(() => {
+    const lastUser = storage.get<string>(IDENTITY_KEY, "");
+    const currentUser = session?.email || "";
+    if (currentUser && lastUser && lastUser !== currentUser) {
+      storage.remove(FILTERS_KEY);
+      storage.set(IDENTITY_KEY, currentUser);
+      return {} as Partial<AnalyticsFilterState>;
+    }
+    if (currentUser) storage.set(IDENTITY_KEY, currentUser);
+    return storage.get<Partial<AnalyticsFilterState>>(FILTERS_KEY, {});
+  }, [session?.email]);
   const [filters, setFilters] = useState<AnalyticsFilterState>({
     period: savedFilters.period || "180d",
     status: savedFilters.status || "all",

@@ -184,9 +184,20 @@ export default function TarefasPage() {
   const isAdmin = session?.role === "admin" || session?.role === "gerente" || session?.role === "coordenador";
   const [nowTs] = useState(() => Date.now());
 
-  // Filter state — restored from localStorage
+  // Filter state — restored from localStorage (clear if different user)
   const FILTERS_KEY = "tarefas:filters";
-  const savedFilters = useMemo(() => storage.get<Record<string, string>>(FILTERS_KEY, {}), []);
+  const IDENTITY_KEY = "tarefas:lastUser";
+  const savedFilters = useMemo(() => {
+    const lastUser = storage.get<string>(IDENTITY_KEY, "");
+    const currentUser = session?.email || "";
+    if (currentUser && lastUser && lastUser !== currentUser) {
+      storage.remove(FILTERS_KEY);
+      storage.set(IDENTITY_KEY, currentUser);
+      return {} as Record<string, string>;
+    }
+    if (currentUser) storage.set(IDENTITY_KEY, currentUser);
+    return storage.get<Record<string, string>>(FILTERS_KEY, {});
+  }, [session?.email]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState(savedFilters.status || "all");
