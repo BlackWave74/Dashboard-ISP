@@ -1084,10 +1084,8 @@ export default function TarefasPage() {
                       <span className="text-[hsl(var(--task-text-muted))]">{task.consultant}</span>
                     </div>
                     {/* Expanded on hover */}
-                    <div className="hidden group-hover:block mt-2 pt-2 border-t border-[hsl(var(--task-border)/0.3)]">
-                      <p className="text-[10px] text-[hsl(var(--task-text-muted))] leading-relaxed">
-                        {task.description || "Sem descrição"}
-                      </p>
+                    <div className="hidden group-hover:block mt-2 pt-2 border-t border-[hsl(var(--task-border)/0.3)] max-h-28 overflow-y-auto custom-scrollbar">
+                      <FormattedDescription text={task.description || "Sem descrição"} />
                       {task.durationSeconds != null && task.durationSeconds > 0 && (
                         <p className="text-[9px] text-[hsl(var(--task-text-muted))] mt-1">
                           Tempo: <span className="font-bold text-[hsl(var(--task-text))]">{task.durationLabel}</span>
