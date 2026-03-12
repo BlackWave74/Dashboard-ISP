@@ -159,33 +159,46 @@ export function useAuth() {
 
         if (saved.accessToken && saved.email) {
           try {
-            // Get user ID from the current token
             const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
               headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${saved.accessToken}` },
             });
-            if (userRes.ok) {
-              const userData = await userRes.json();
-              const userId = userData?.id;
-              if (userId) {
-                const [accessibleProjects, clienteInfo, dbName] = await Promise.all([
-                  fetchAccessibleProjects(saved.accessToken, userId),
-                  fetchClienteInfo(saved.accessToken, userId),
-                  fetchUserName(saved.accessToken, userId),
-                ]);
-                const updated: AuthSession = {
-                  ...saved,
-                  name: dbName || saved.name,
-                  accessibleProjectIds: accessibleProjects?.ids ?? null,
-                  accessibleProjectNames: accessibleProjects?.names ?? null,
-                  company: clienteInfo.clienteName ?? saved.company ?? null,
-                  clienteId: clienteInfo.clienteId ?? saved.clienteId ?? null,
-                };
-                setSession(updated);
-                persistSession(updated);
+
+            // If token is completely invalid (bad signature, revoked, etc.), try refresh
+            if (!userRes.ok) {
+              console.warn("[auth] Token invalid (status", userRes.status, "), attempting refresh…");
+              if (saved.refreshToken) {
+                const refreshed = await refreshSession(saved);
+                if (refreshed) { setLoadingSession(false); return; }
               }
+              // Refresh also failed — clear session and force re-login
+              console.warn("[auth] Refresh failed, clearing session");
+              setSession(null);
+              storage.remove(SESSION_KEY);
+              setLoadingSession(false);
+              return;
+            }
+
+            const userData = await userRes.json();
+            const userId = userData?.id;
+            if (userId) {
+              const [accessibleProjects, clienteInfo, dbName] = await Promise.all([
+                fetchAccessibleProjects(saved.accessToken, userId),
+                fetchClienteInfo(saved.accessToken, userId),
+                fetchUserName(saved.accessToken, userId),
+              ]);
+              const updated: AuthSession = {
+                ...saved,
+                name: dbName || saved.name,
+                accessibleProjectIds: accessibleProjects?.ids ?? null,
+                accessibleProjectNames: accessibleProjects?.names ?? null,
+                company: clienteInfo.clienteName ?? saved.company ?? null,
+                clienteId: clienteInfo.clienteId ?? saved.clienteId ?? null,
+              };
+              setSession(updated);
+              persistSession(updated);
             }
           } catch {
-            // Background refresh failed silently — cached session is still used
+            // Network error — keep cached session
           }
         }
         return;
