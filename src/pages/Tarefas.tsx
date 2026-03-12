@@ -408,10 +408,12 @@ export default function TarefasPage() {
     const filtered = normalizedTasks.filter((task) => {
       // Check by exact project ID match
       const pid = Number(task.raw.project_id);
-      if (allowedIds && pid && allowedIds.has(pid)) return true;
+      if (allowedIds && pid) {
+        return allowedIds.has(pid);
+      }
 
-      // Fallback: company name matching for tasks without explicit project_id mapping
-      if (hasCompanyName && pid) {
+      // Fallback by company name ONLY when explicit project IDs are not available
+      if (!hasExplicitIds && hasCompanyName && pid) {
         const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const projectName = norm(task.project || "");
         const needle = norm(companyName!);
