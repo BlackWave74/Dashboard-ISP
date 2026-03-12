@@ -121,7 +121,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                 </div>
 
                 {/* Consultant - hidden on tablet, visible on lg+ */}
-                <div className="hidden lg:flex items-center justify-center gap-2 px-2 py-3">
+                <div className="hidden lg:flex items-center gap-2 px-2 py-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-[9px] font-bold text-[hsl(var(--task-purple))]">
                     {task.consultant ? task.consultant.charAt(0).toUpperCase() : "?"}
                   </div>
@@ -129,8 +129,8 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                 </div>
 
                 {/* Project - hidden on tablet, visible on lg+ */}
-                <div className="hidden lg:flex items-center justify-center px-2 py-3">
-                  <span className="text-[13px] text-white truncate whitespace-nowrap">{task.project}</span>
+                <div className="hidden lg:flex items-center px-2 py-3">
+                  <span className="text-[13px] text-white truncate">{task.project}</span>
                 </div>
 
                 {/* Duration - color coded with mini bar */}
