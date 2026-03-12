@@ -450,6 +450,21 @@ export default function AnalyticsProjectList({
             className="overflow-hidden"
           >
             <div className="space-y-4 border-t border-white/[0.05] px-5 py-4">
+              {!isAdmin ? (
+                /* ── Em construção para não-admins ── */
+                <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[hsl(262_83%_58%/0.2)] bg-[hsl(262_83%_58%/0.08)]">
+                    <Building2 className="h-8 w-8 text-[hsl(262_83%_65%/0.6)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-base font-bold text-white/70">🚧 Em construção</h4>
+                    <p className="text-sm text-white/40 max-w-md">
+                      Aguarde as próximas atualizações! Em breve esta seção exibirá as horas contratadas de cada projeto por cliente.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+              <>
               {/* Explicação para o usuário */}
               <div className="rounded-xl border border-[hsl(262_83%_58%/0.15)] bg-[hsl(262_83%_58%/0.05)] px-4 py-3">
                 <p className="text-[13px] leading-relaxed text-white/50">
@@ -728,6 +743,8 @@ export default function AnalyticsProjectList({
                     );
                   })}
                 </div>
+              )}
+              </>
               )}
             </div>
           </motion.div>
