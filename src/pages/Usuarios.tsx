@@ -1080,6 +1080,8 @@ export default function UsuariosPage() {
                         options={areaOptions}
                         selected={editAreas}
                         onToggle={(v) => toggleInList(v as string, editAreas, setEditAreas)}
+                        onSelectAll={() => setEditAreas(areaOptions.map(a => a.value as string))}
+                        onClearAll={() => setEditAreas([])}
                       />
                     </div>
 
@@ -1091,6 +1093,8 @@ export default function UsuariosPage() {
                         options={projectOptions}
                         selected={editProjects}
                         onToggle={(v) => toggleInList(v as number, editProjects, setEditProjects)}
+                        onSelectAll={() => setEditProjects(projectOptions.map(p => p.value as number))}
+                        onClearAll={() => setEditProjects([])}
                         emptyText="Nenhum projeto encontrado."
                         searchable
                       />
