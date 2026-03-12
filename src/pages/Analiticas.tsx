@@ -84,8 +84,7 @@ export default function AnaliticasPage() {
     storage.set(FILTERS_KEY, filters);
   }, [filters]);
 
-  // Default filters for non-admin users: pre-select their name as consultant
-  // and their accessible projects
+  // Default filters for non-admin users: pre-select own consultant, allowed projects and period "all"
   const defaultsAppliedRef = useRef(false);
   useEffect(() => {
     if (defaultsAppliedRef.current) return;
@@ -96,17 +95,28 @@ export default function AnaliticasPage() {
     const saved = storage.get<Partial<AnalyticsFilterState>>(FILTERS_KEY, {});
     const updates: Partial<AnalyticsFilterState> = {};
 
-    if (!saved.consultant) {
+    // Non-admin should always start with own consultant selected
+    if (saved.consultant !== userName) {
       updates.consultant = userName;
     }
-    if (!saved.projectIds || saved.projectIds.length === 0) {
-      const ids = session.accessibleProjectIds;
-      if (ids && ids.length > 0) {
-        updates.projectIds = ids;
+
+    const allowedIds = (session.accessibleProjectIds ?? []).map(Number).filter((id) => Number.isFinite(id));
+    const allowedSet = new Set<number>(allowedIds);
+    const savedProjectIds = Array.isArray(saved.projectIds)
+      ? saved.projectIds.map(Number).filter((id) => Number.isFinite(id))
+      : [];
+
+    if (allowedIds.length > 0) {
+      const validSavedIds = savedProjectIds.filter((id) => allowedSet.has(id));
+      if (validSavedIds.length === 0 || validSavedIds.length !== savedProjectIds.length) {
+        updates.projectIds = validSavedIds.length > 0 ? validSavedIds : allowedIds;
       }
+    } else if (savedProjectIds.length > 0) {
+      updates.projectIds = [];
     }
-    // Default period to "all" for non-admin
-    if (!saved.period) {
+
+    // Non-admin should open with "Tudo"
+    if (saved.period !== "all") {
       updates.period = "all";
     }
 

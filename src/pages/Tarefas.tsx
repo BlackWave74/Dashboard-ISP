@@ -223,13 +223,13 @@ export default function TarefasPage() {
     const role = session.role;
     if (role === "admin" || role === "gerente" || role === "coordenador") return;
 
-    // Only apply defaults if no saved consultant filter
+    // Non-admin should always start with own consultant selected
     const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
-    if (!saved.consultant || saved.consultant === "all") {
+    if (saved.consultant !== session.name) {
       setConsultant(session.name);
     }
-    // Default period to "all" for non-admin
-    if (!saved.period) {
+    // Non-admin should open with "Tudo"
+    if (saved.period !== "all") {
       setPeriod("all");
     }
     defaultsAppliedRef.current = true;
