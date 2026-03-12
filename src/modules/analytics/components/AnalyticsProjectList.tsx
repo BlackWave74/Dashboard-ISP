@@ -450,6 +450,16 @@ export default function AnalyticsProjectList({
             className="overflow-hidden"
           >
             <div className="space-y-4 border-t border-white/[0.05] px-5 py-4">
+              {/* Explicação para o usuário */}
+              <div className="rounded-xl border border-[hsl(262_83%_58%/0.15)] bg-[hsl(262_83%_58%/0.05)] px-4 py-3">
+                <p className="text-[13px] leading-relaxed text-white/50">
+                  <span className="font-semibold text-white/70">Como funciona:</span>{" "}
+                  Cada grupo representa um <span className="text-[hsl(262_83%_68%)] font-medium">cliente</span> com seus respectivos projetos.
+                  Clique em um cliente para expandir e ver os detalhes de cada projeto — tarefas concluídas, em andamento, atrasadas e horas trabalhadas.
+                  Use os filtros abaixo para encontrar rapidamente o que procura.
+                </p>
+              </div>
+
               {/* Filtros rápidos */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
@@ -491,6 +501,23 @@ export default function AnalyticsProjectList({
                     <X className="h-4 w-4" />
                   </button>
                 )}
+              </div>
+
+              {/* Legenda visual */}
+              <div className="flex flex-wrap items-center gap-4 rounded-lg border border-white/[0.05] bg-white/[0.02] px-4 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-white/25">Legenda:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(160 84% 39%)" }} />
+                  <span className="text-[11px] text-white/40">Saudável</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(43 97% 52%)" }} />
+                  <span className="text-[11px] text-white/40">Atenção</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(0 84% 60%)" }} />
+                  <span className="text-[11px] text-white/40">Crítico</span>
+                </div>
               </div>
 
               {/* Lista de clientes */}
