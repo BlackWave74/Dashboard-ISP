@@ -591,7 +591,7 @@ export default function TarefasPage() {
       map.set(name, cur);
     });
     return [...map.entries()]
-      .map(([name, { seconds, count }]) => ({ name, hours: seconds / 3600, count }))
+      .map(([name, { seconds, count }]) => ({ name, hours: seconds / 3600, hoursLabel: formatSecondsHuman(seconds), count }))
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 8);
   }, [filteredTasks]);
