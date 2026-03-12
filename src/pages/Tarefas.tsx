@@ -290,6 +290,18 @@ export default function TarefasPage() {
     return map;
   }, [times]);
 
+  // Time entries grouped by task_id for detailed tracking view
+  const timeEntriesByTaskId = useMemo(() => {
+    const map: Record<string, typeof times> = {};
+    times.forEach((entry) => {
+      if (entry.task_id === undefined || entry.task_id === null) return;
+      const key = String(entry.task_id);
+      if (!map[key]) map[key] = [];
+      map[key].push(entry);
+    });
+    return map;
+  }, [times]);
+
   // Build a project_id → name lookup from tasks that have the join data
   // This prevents phantom projects when some tasks fall back to group_name
   const projectNameById = useMemo(() => {
