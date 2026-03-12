@@ -54,7 +54,22 @@ const LazyPage = ({ children }: { children: React.ReactNode }) => (
   </ErrorBoundary>
 );
 
-const App = () => (
+// Lazy-loaded pages (code splitting) with recovery for chunk loading failures
+const IndexPage = lazyWithRecovery(() => import("./pages/Index"), "index");
+const TarefasPage = lazyWithRecovery(() => import("./pages/Tarefas"), "tarefas");
+const AnaliticasPage = lazyWithRecovery(() => import("./pages/Analiticas"), "analiticas");
+const UsuariosPage = lazyWithRecovery(() => import("./pages/Usuarios"), "usuarios");
+const ComodatoPage = lazyWithRecovery(() => import("./pages/Comodato"), "comodato");
+const IntegracoesPage = lazyWithRecovery(() => import("./pages/Integracoes"), "integracoes");
+const SuportePage = lazyWithRecovery(() => import("./pages/Suporte"), "suporte");
+const NotFound = lazyWithRecovery(() => import("./pages/NotFound"), "not-found");
+
+const CalendarioPage = lazyWithRecovery(() => import("./pages/Calendario"), "calendario");
+const GamificacaoPage = lazyWithRecovery(() => import("./pages/Gamificacao"), "gamificacao");
+const AdminDiagnosticoPage = lazyWithRecovery(() => import("./pages/AdminDiagnostico"), "admin-diagnostico");
+const FerramentasPage = lazyWithRecovery(() => import("./pages/Ferramentas"), "ferramentas");
+
+const queryClient = new QueryClient({
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
