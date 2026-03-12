@@ -185,7 +185,7 @@ function ChartInfoOverlay({ title, description, tasks, dataType, show, onClose }
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold" style={{ backgroundColor: `${COLORS[i % COLORS.length]}20`, color: COLORS[i % COLORS.length] }}>{name.charAt(0).toUpperCase()}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-semibold text-white/80 truncate">{name}</p>
-                        <span className="text-[10px] text-emerald-400">{data.hours.toFixed(1)}h</span>
+                        <span className="text-[10px] text-emerald-400">{formatHoursHuman(data.hours)}</span>
                       </div>
                       <span className="text-sm font-bold text-white/90">{data.total}</span>
                     </div>
