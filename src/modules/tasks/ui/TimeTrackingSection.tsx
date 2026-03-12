@@ -90,14 +90,14 @@ export function TimeTrackingSection({ entries, totalSeconds }: TimeTrackingSecti
                     <>
                       <span className="text-[10px] text-[hsl(var(--task-text-muted))]">→</span>
                       <span className="text-[11px] text-[hsl(var(--task-text-muted))]">
-                        {formatDateTime(entry.date_stop)}
+                    {formatDateTime(entry.date_stop as string | null)}
                       </span>
                     </>
                   )}
                 </div>
-                {entry.comment_text && entry.comment_text.trim() && (
+                {typeof entry.comment_text === "string" && entry.comment_text.trim() && (
                   <p className="text-[10px] text-[hsl(var(--task-text-muted))] truncate mt-0.5 italic">
-                    {entry.comment_text}
+                    {String(entry.comment_text)}
                   </p>
                 )}
               </div>
