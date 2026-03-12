@@ -41,13 +41,13 @@ const userColor = (userId?: string | number | null): string => {
   return colors[hash % colors.length];
 };
 
-/** Get first + last name from a full name */
+/** Get first name + second name (not last) from a full name */
 const getDisplayName = (fullName: string | null): string | null => {
   if (!fullName) return null;
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return null;
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[parts.length - 1]}`;
+  if (parts.length <= 2) return parts.join(" ");
+  return `${parts[0]} ${parts[1]}`;
 };
 
 /** Mini daily activity sparkline for the last 7 days */
