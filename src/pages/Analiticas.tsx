@@ -344,6 +344,33 @@ export default function AnaliticasPage() {
     return ids;
   }, [allTasks, accessFilteredTasks, isAdmin, userName]);
 
+  // Enforce non-admin filter state to own projects/name and period "all"
+  useEffect(() => {
+    if (isAdmin || !userName) return;
+
+    const mine = Array.from(myProjectIds);
+    setFilters((prev) => {
+      const prevIds = prev.projectIds.map(Number).filter((id) => Number.isFinite(id));
+      const validPrev = prevIds.filter((id) => myProjectIds.has(id));
+      const nextIds = mine.length === 0 ? [] : (validPrev.length > 0 ? validPrev : mine);
+
+      const sameIds =
+        prevIds.length === nextIds.length &&
+        prevIds.every((id, index) => id === nextIds[index]);
+
+      if (sameIds && prev.consultant === userName && prev.period === "all") {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        consultant: userName,
+        period: "all",
+        projectIds: nextIds,
+      };
+    });
+  }, [isAdmin, myProjectIds, userName]);
+
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
   const [hoursModalProject, setHoursModalProject] = useState<ProjectAnalytics | null>(null);
