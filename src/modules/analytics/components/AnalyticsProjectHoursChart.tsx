@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { motion } from "framer-motion";
-import { getElapsedEffectiveDate } from "@/modules/tasks/utils";
+import { getElapsedEffectiveDate, formatHoursHuman } from "@/modules/tasks/utils";
 import type { ProjectAnalytics } from "../types";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 
