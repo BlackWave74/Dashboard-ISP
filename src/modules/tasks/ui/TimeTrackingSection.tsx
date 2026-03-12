@@ -140,8 +140,8 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
   const [isOpen, setIsOpen] = useState(false);
 
   const sorted = [...entries].sort((a, b) => {
-    const da = a.date_start ? new Date(String(a.date_start)).getTime() : 0;
-    const db = b.date_start ? new Date(String(b.date_start)).getTime() : 0;
+    const da = getElapsedEffectiveDate(a)?.getTime() ?? 0;
+    const db = getElapsedEffectiveDate(b)?.getTime() ?? 0;
     return db - da;
   });
 
@@ -258,13 +258,14 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
                     const avatarColor = userColor(entry.user_id);
                     const startDate = formatDateTime(entry.date_start);
                     const stopDate = formatDateTime(entry.date_stop as string | null);
-                    const hasAnyDate = startDate || stopDate;
+                    const effectiveDate = formatDateTime(getElapsedEffectiveDate(entry));
+                    const hasRangeDate = startDate || stopDate;
                     const rawName = userNames?.[String(entry.user_id)] || null;
                     const displayName = getDisplayName(rawName);
 
                     return (
                       <motion.div
-                        key={entry.task_id ? `${entry.task_id}-${i}` : i}
+                        key={entry.id ?? (entry.task_id ? `${entry.task_id}-${i}` : i)}
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
@@ -280,7 +281,7 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
 
                         {/* Main content: date + user name */}
                         <div className="min-w-0 flex-1">
-                          {hasAnyDate ? (
+                          {hasRangeDate ? (
                             <div className="flex items-center gap-2 flex-wrap">
                               {startDate && (
                                 <span className="text-[11px] font-medium text-[hsl(var(--task-text))]">
@@ -296,11 +297,16 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
                                 </span>
                               )}
                             </div>
-                          ) : displayName ? (
+                          ) : effectiveDate ? (
                             <span className="text-[11px] font-medium text-[hsl(var(--task-text))]">
-                              {displayName}
+                              {effectiveDate}
                             </span>
-                          ) : null}
+                          ) : displayName ? null : null}
+                          {displayName && (
+                            <p className="text-[10px] text-[hsl(var(--task-text-muted))] mt-0.5 truncate">
+                              {displayName}
+                            </p>
+                          )}
                           {typeof entry.comment_text === "string" && entry.comment_text.trim() && (
                             <p className="text-[10px] text-[hsl(var(--task-text-muted))] truncate mt-0.5 italic max-w-[300px]">
                               {String(entry.comment_text)}
