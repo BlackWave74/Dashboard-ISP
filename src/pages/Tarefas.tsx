@@ -426,16 +426,45 @@ export default function TarefasPage() {
   const scopedTasks = projectFilteredTasks;
 
   // Compute user's project names for "mine first" sorting in filter dropdown
+  // "Projetos que faço parte" = projects where the user is the RESPONSIBLE (has tasks assigned)
+  // NOT just projects they have access to view
   const myProjectNames = useMemo(() => {
     const uName = session?.name;
     if (!uName) return new Set<string>();
 
-    // For non-admin: use explicit accessibleProjectIds to find project names
-    const role = session?.role;
-    const isAdminRole = role === "admin" || role === "gerente" || role === "coordenador";
-    const accessIds = session?.accessibleProjectIds;
+    const me = uName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (!me) return new Set<string>();
 
-    if (!isAdminRole && accessIds && accessIds.length > 0) {
+    const names = new Set<string>();
+    normalizedTasks.forEach((t) => {
+      const responsible = (t.consultant || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      if (responsible && responsible === me) {
+        const name = (t.project || "").trim();
+        if (name && name.toLowerCase() !== "projeto indefinido") names.add(name);
+      }
+    });
+    return names;
+  }, [normalizedTasks, session?.name]);
+
+  // Default project filter for non-admin: pre-select ALL accessible projects (not just "mine")
+  // so the user sees everything they have access to, with "mine" highlighted in the dropdown
+  useEffect(() => {
+    if (projectDefaultsAppliedRef.current) return;
+    if (!session?.role) return;
+    const role = session.role;
+    if (role === "admin" || role === "gerente" || role === "coordenador") return;
+
+    const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
+    const savedProject = saved.project;
+    const hasSavedProject = Array.isArray(savedProject) ? savedProject.length > 0 : (savedProject && savedProject !== "all");
+    if (hasSavedProject) {
+      projectDefaultsAppliedRef.current = true;
+      return;
+    }
+
+    // Use accessible project IDs to find all project names the user can see
+    const accessIds = session?.accessibleProjectIds;
+    if (accessIds && accessIds.length > 0) {
       const idSet = new Set(accessIds);
       const names = new Set<string>();
       normalizedTasks.forEach((t) => {
@@ -445,37 +474,12 @@ export default function TarefasPage() {
           if (name && name.toLowerCase() !== "projeto indefinido") names.add(name);
         }
       });
-      return names;
-    }
-
-    // For admin: match by responsible name (exact match)
-    const names = new Set<string>();
-    const me = uName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    normalizedTasks.forEach((t) => {
-      const responsible = (t.consultant || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      if (responsible && me && responsible === me) {
-        const name = (t.project || "").trim();
-        if (name && name.toLowerCase() !== "projeto indefinido") names.add(name);
+      if (names.size > 0) {
+        setProject(Array.from(names));
+        projectDefaultsAppliedRef.current = true;
       }
-    });
-    return names;
-  }, [normalizedTasks, session?.name, session?.role, session?.accessibleProjectIds]);
-
-  // Default project filter for non-admin: pre-select "my projects" once they're computed
-  useEffect(() => {
-    if (projectDefaultsAppliedRef.current) return;
-    if (!session?.role || !myProjectNames || myProjectNames.size === 0) return;
-    const role = session.role;
-    if (role === "admin" || role === "gerente" || role === "coordenador") return;
-
-    const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
-    const savedProject = saved.project;
-    const hasSavedProject = Array.isArray(savedProject) ? savedProject.length > 0 : (savedProject && savedProject !== "all");
-    if (!hasSavedProject) {
-      setProject(Array.from(myProjectNames));
     }
-    projectDefaultsAppliedRef.current = true;
-  }, [session?.role, myProjectNames]);
+  }, [session?.role, session?.accessibleProjectIds, normalizedTasks]);
 
   const searchTerm = debouncedSearch.trim().toLowerCase();
 

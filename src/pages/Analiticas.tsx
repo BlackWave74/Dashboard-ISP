@@ -288,30 +288,27 @@ export default function AnaliticasPage() {
 
   const activeProjects = useMemo(() => projects.filter((p) => p.isActive).length, [projects]);
 
+  // "Projetos que faço parte" = projects where the user is the RESPONSIBLE (has tasks assigned)
+  // NOT just projects they have access to view
   const myProjectIds = useMemo(() => {
     const ids = new Set<number>();
     if (!userName) return ids;
 
-    // For non-admin: use explicit project access from DB (accessibleProjectIds)
-    // instead of all tasks, which would incorrectly mark everything as "mine"
-    if (!isAdmin && accessibleProjectIds && accessibleProjectIds.length > 0) {
-      accessibleProjectIds.forEach((id) => ids.add(id));
-      return ids;
-    }
-
-    // For admin: match by responsible name (exact match, not substring)
     const me = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (!me) return ids;
+
+    // Search in the tasks the user can see for ones where THEY are the responsible
     const source = isAdmin ? allTasks : accessFilteredTasks;
     source.forEach((t) => {
-      const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
-      const a = responsible.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      if (a && me && a === me) {
+      const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "")
+        .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      if (responsible && responsible === me) {
         const pid = Number(t.project_id);
         if (pid) ids.add(pid);
       }
     });
     return ids;
-  }, [allTasks, accessFilteredTasks, isAdmin, userName, accessibleProjectIds]);
+  }, [allTasks, accessFilteredTasks, isAdmin, userName]);
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
