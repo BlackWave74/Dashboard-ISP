@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { TaskView, ElapsedTimeRecord } from "@/modules/tasks/types";
 import { STATUS_LABELS } from "@/modules/tasks/types";
-import { formatDurationHHMM } from "@/modules/tasks/utils";
+import { formatDurationHHMM, durationColorClass } from "@/modules/tasks/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Calendar, User, FolderKanban, Clock, FileText, Timer, Play } from "lucide-react";
+import { ChevronDown, Calendar, User, FolderKanban, Clock, FileText } from "lucide-react";
 import { FormattedDescription } from "./FormattedDescription";
 import { TimeTrackingSection } from "./TimeTrackingSection";
 
@@ -29,6 +29,25 @@ const statusPill = (status: TaskView["statusKey"]) => {
     default: return "bg-[hsl(var(--task-surface))] text-[hsl(var(--task-text-muted))] border-[hsl(var(--task-border))]";
   }
 };
+
+/** Mini bar showing duration intensity (max 8h as 100%) */
+function DurationBar({ seconds }: { seconds?: number }) {
+  if (!seconds || seconds <= 0) return null;
+  const hours = seconds / 3600;
+  const pct = Math.min(100, (hours / 8) * 100);
+  const color = durationColorClass(seconds);
+  return (
+    <div className="h-1 w-full rounded-full bg-[hsl(var(--task-border))] overflow-hidden mt-1">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${pct}%` }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="h-full rounded-full"
+        style={{ background: color.accent }}
+      />
+    </div>
+  );
+}
 
 export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps) {
   const [expandedId, setExpandedId] = useState<string | number | null>(null);
@@ -57,6 +76,8 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
           const isOverdue = task.statusKey === "overdue";
           const taskId = task.raw.id ?? task.raw.task_id;
           const entries = taskId && timeEntriesByTaskId ? timeEntriesByTaskId[String(taskId)] : undefined;
+          const durColor = durationColorClass(task.durationSeconds);
+          const durationText = formatDurationHHMM(task.durationSeconds);
 
           return (
             <div key={key}>
@@ -106,11 +127,21 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                   <span className="text-[13px] text-white truncate whitespace-nowrap">{task.project}</span>
                 </div>
 
-                {/* Duration */}
+                {/* Duration - color coded with mini bar */}
                 <div className="hidden md:flex items-center justify-start px-2 py-3">
-                  <span className="text-[13px] text-white whitespace-nowrap truncate font-mono">
-                    {formatDurationHHMM(task.durationSeconds)}
-                  </span>
+                  {durationText ? (
+                    <div className="min-w-[80px]">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className={`h-3 w-3 shrink-0 ${durColor.text}`} />
+                        <span className={`text-[13px] font-bold font-mono whitespace-nowrap ${durColor.text}`}>
+                          {durationText}
+                        </span>
+                      </div>
+                      <DurationBar seconds={task.durationSeconds} />
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-[hsl(var(--task-text-muted))] italic">—</span>
+                  )}
                 </div>
               </motion.div>
 
@@ -124,7 +155,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 py-4 bg-[hsl(var(--task-bg))] border-t border-[hsl(var(--task-border)/0.3)]">
+                    <div className="px-4 sm:px-6 py-4 bg-[hsl(var(--task-bg))] border-t border-[hsl(var(--task-border)/0.3)]">
                       {/* Meta info grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                         <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2.5">
@@ -151,12 +182,13 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                           </p>
                         </div>
                         {task.durationSeconds != null && task.durationSeconds > 0 && (
-                          <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-2.5">
+                          <div className={`rounded-lg border ${durColor.border} ${durColor.bg} p-2.5`}>
                             <div className="flex items-center gap-1.5 mb-1">
-                              <Clock className="h-3 w-3 text-[hsl(var(--task-text-muted))]" />
+                              <Clock className={`h-3 w-3 ${durColor.text}`} />
                               <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Tempo Total</span>
                             </div>
-                            <p className="text-xs font-semibold text-[hsl(var(--task-text))] font-mono">{formatDurationHHMM(task.durationSeconds)}</p>
+                            <p className={`text-xs font-bold font-mono ${durColor.text}`}>{formatDurationHHMM(task.durationSeconds)}</p>
+                            <DurationBar seconds={task.durationSeconds} />
                           </div>
                         )}
                       </div>

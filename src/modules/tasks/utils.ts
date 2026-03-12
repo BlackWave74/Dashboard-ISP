@@ -116,6 +116,18 @@ export const formatSecondsHuman = (seconds: number): string => {
   return formatHoursHuman(seconds / 3600);
 };
 
+/**
+ * Returns a color class based on duration range.
+ * Green: < 1h, Yellow: 1-4h, Red: > 4h
+ */
+export const durationColorClass = (seconds?: number): { text: string; bg: string; border: string; accent: string } => {
+  if (!seconds || seconds <= 0) return { text: "text-[hsl(var(--task-text-muted))]", bg: "bg-[hsl(var(--task-surface))]", border: "border-[hsl(var(--task-border))]", accent: "hsl(var(--task-text-muted))" };
+  const hours = seconds / 3600;
+  if (hours < 1) return { text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", accent: "hsl(160 84% 39%)" };
+  if (hours <= 4) return { text: "text-[hsl(var(--task-yellow))]", bg: "bg-[hsl(var(--task-yellow)/0.1)]", border: "border-[hsl(var(--task-yellow)/0.2)]", accent: "hsl(var(--task-yellow))" };
+  return { text: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20", accent: "hsl(0 84% 60%)" };
+};
+
 export const normalizeTaskTitle = (value?: string) => {
   if (!value) return "";
   const cleaned = value
