@@ -462,29 +462,43 @@ export default function TarefasPage() {
 
     const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
     const savedProject = saved.project;
-    const hasSavedProject = Array.isArray(savedProject) ? savedProject.length > 0 : (savedProject && savedProject !== "all");
-    if (hasSavedProject) {
-      projectDefaultsAppliedRef.current = true;
-      return;
-    }
+    const savedProjects = Array.isArray(savedProject)
+      ? savedProject.filter(Boolean)
+      : savedProject && savedProject !== "all"
+      ? [savedProject]
+      : [];
 
-    // Use accessible project IDs to find all project names the user can see
-    const accessIds = session?.accessibleProjectIds;
-    if (accessIds && accessIds.length > 0) {
+    // Build allowed project names from explicit accessible IDs
+    const accessIds = session?.accessibleProjectIds ?? [];
+    const allowedNames = new Set<string>();
+    if (accessIds.length > 0) {
       const idSet = new Set(accessIds);
-      const names = new Set<string>();
       normalizedTasks.forEach((t) => {
         const pid = Number(t.raw?.project_id);
         if (pid && idSet.has(pid)) {
           const name = (t.project || "").trim();
-          if (name && name.toLowerCase() !== "projeto indefinido") names.add(name);
+          if (name && name.toLowerCase() !== "projeto indefinido") allowedNames.add(name);
         }
       });
-      if (names.size > 0) {
-        setProject(Array.from(names));
-        projectDefaultsAppliedRef.current = true;
-      }
     }
+
+    if (savedProjects.length > 0) {
+      const validSaved = savedProjects.filter((name) => allowedNames.has(name));
+      if (validSaved.length !== savedProjects.length) {
+        setProject(validSaved.length > 0 ? validSaved : Array.from(allowedNames));
+      }
+      projectDefaultsAppliedRef.current = true;
+      return;
+    }
+
+    if (allowedNames.size > 0) {
+      setProject(Array.from(allowedNames));
+      projectDefaultsAppliedRef.current = true;
+      return;
+    }
+
+    setProject([]);
+    projectDefaultsAppliedRef.current = true;
   }, [session?.role, session?.accessibleProjectIds, normalizedTasks]);
 
   const searchTerm = debouncedSearch.trim().toLowerCase();

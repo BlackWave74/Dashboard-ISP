@@ -185,10 +185,12 @@ export default function AnaliticasPage() {
 
     const filtered = allTasks.filter((t) => {
       const pid = Number(t.project_id);
-      if (allowedIds && pid && allowedIds.has(pid)) return true;
+      if (allowedIds && pid) {
+        return allowedIds.has(pid);
+      }
 
-      // Fallback: company name matching
-      if (hasCompanyName && pid) {
+      // Fallback by company name ONLY when explicit project IDs are not available
+      if (!hasExplicitIds && hasCompanyName && pid) {
         const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const projectName = norm(String(t.projects?.name ?? t.project_name ?? t.project ?? t.projeto ?? ""));
         const needle = norm(companyName!);
