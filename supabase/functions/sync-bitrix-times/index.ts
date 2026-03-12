@@ -286,7 +286,7 @@ Deno.serve(async () => {
 
     const records = Array.from(byId.values())
       .map((item) => parseElapsed(item, validTaskIds))
-      .filter((item): item is Record<string, any> => item !== null);
+      .filter((item) => item !== null) as NonNullable<ReturnType<typeof parseElapsed>>[];
 
     const distinctTaskIds = new Set<number>();
     for (const item of rawElapsed) {
