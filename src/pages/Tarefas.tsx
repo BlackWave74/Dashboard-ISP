@@ -441,6 +441,22 @@ export default function TarefasPage() {
     return names;
   }, [normalizedTasks, session?.name]);
 
+  // Default project filter for non-admin: pre-select "my projects" once they're computed
+  useEffect(() => {
+    if (projectDefaultsAppliedRef.current) return;
+    if (!session?.role || !myProjectNames || myProjectNames.size === 0) return;
+    const role = session.role;
+    if (role === "admin" || role === "gerente" || role === "coordenador") return;
+
+    const saved = storage.get<Record<string, any>>(FILTERS_KEY, {});
+    const savedProject = saved.project;
+    const hasSavedProject = Array.isArray(savedProject) ? savedProject.length > 0 : (savedProject && savedProject !== "all");
+    if (!hasSavedProject) {
+      setProject(Array.from(myProjectNames));
+    }
+    projectDefaultsAppliedRef.current = true;
+  }, [session?.role, myProjectNames]);
+
   const searchTerm = debouncedSearch.trim().toLowerCase();
 
   const matchesSearchTerm = useCallback(
@@ -458,7 +474,7 @@ export default function TarefasPage() {
     return scopedTasks.filter((t) => matchesSearchTerm(t, searchTerm));
   }, [scopedTasks, searchTerm, matchesSearchTerm]);
 
-  // Filter options
+  // Filter options — projects with "<>" in the name go to the end
   const projectOptions = useMemo(() => {
     const set = new Set<string>();
     searchScopedTasks.forEach((task) => {
@@ -466,7 +482,12 @@ export default function TarefasPage() {
       if (!name || name.toLowerCase() === "projeto indefinido") return;
       set.add(name);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    return Array.from(set).sort((a, b) => {
+      const aHas = a.includes("<>");
+      const bHas = b.includes("<>");
+      if (aHas !== bHas) return aHas ? 1 : -1;
+      return a.localeCompare(b);
+    });
   }, [searchScopedTasks]);
 
   const consultantOptions = useMemo(() => {
