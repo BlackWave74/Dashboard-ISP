@@ -74,6 +74,15 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
     const now = new Date();
     const days: { label: string; seconds: number; isToday: boolean }[] = [];
 
+    // Debug: log effective dates of entries
+    if (entries.length > 0) {
+      console.log("[DailyActivityBars] entries count:", entries.length);
+      entries.slice(0, 3).forEach((e, i) => {
+        const eff = getElapsedEffectiveDate(e);
+        console.log(`[DailyActivityBars] entry[${i}] effective:`, eff?.toISOString(), "date_start:", e.date_start, "created_date:", e.created_date);
+      });
+    }
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
@@ -95,6 +104,8 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
         isToday: i === 0,
       });
     }
+
+    console.log("[DailyActivityBars] daily totals:", days.map(d => `${d.label}:${d.seconds}s`).join(", "));
     return days;
   }, [entries]);
 
