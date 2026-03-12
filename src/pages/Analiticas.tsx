@@ -290,25 +290,28 @@ export default function AnaliticasPage() {
 
   const myProjectIds = useMemo(() => {
     const ids = new Set<number>();
-    if (!isAdmin) {
-      accessFilteredTasks.forEach((t) => {
-        const pid = Number(t.project_id);
-        if (pid) ids.add(pid);
-      });
+    if (!userName) return ids;
+
+    // For non-admin: use explicit project access from DB (accessibleProjectIds)
+    // instead of all tasks, which would incorrectly mark everything as "mine"
+    if (!isAdmin && accessibleProjectIds && accessibleProjectIds.length > 0) {
+      accessibleProjectIds.forEach((id) => ids.add(id));
       return ids;
     }
-    if (!userName) return ids;
-    allTasks.forEach((t) => {
+
+    // For admin: match by responsible name (exact match, not substring)
+    const me = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const source = isAdmin ? allTasks : accessFilteredTasks;
+    source.forEach((t) => {
       const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
       const a = responsible.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      const b = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      if (a && b && (a.includes(b) || b.includes(a))) {
+      if (a && me && a === me) {
         const pid = Number(t.project_id);
         if (pid) ids.add(pid);
       }
     });
     return ids;
-  }, [allTasks, accessFilteredTasks, isAdmin, userName]);
+  }, [allTasks, accessFilteredTasks, isAdmin, userName, accessibleProjectIds]);
 
   const [selectedProject, setSelectedProject] = useState<ProjectAnalytics | null>(null);
   const [drawerProject, setDrawerProject] = useState<ProjectAnalytics | null>(null);
