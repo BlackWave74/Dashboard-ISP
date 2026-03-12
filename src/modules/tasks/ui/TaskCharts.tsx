@@ -282,7 +282,7 @@ export function TaskCharts({
 
   const formatBarLabel: NonNullable<React.ComponentProps<typeof LabelList>["formatter"]> = (value) => {
     const num = typeof value === "number" ? value : Number(value ?? 0);
-    return `${num.toFixed(num >= 10 ? 0 : 1)}h`;
+    return formatHoursHuman(num);
   };
 
   const lineTooltipFormatter: TooltipProps<number, string>["formatter"] = (value) => {
