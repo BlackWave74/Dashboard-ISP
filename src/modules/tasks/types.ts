@@ -37,8 +37,11 @@ export type TaskRecord = {
 
 export type ElapsedTimeRecord = {
   task_id?: string | number;
+  bitrix_task_id_raw?: string | number | null;
   seconds?: number;
   user_id?: string | number | null;
+  date_start?: string | Date | null;
+  created_date?: string | Date | null;
   updated_at?: string | Date | null;
   inserted_at?: string | Date | null;
   [key: string]: unknown;

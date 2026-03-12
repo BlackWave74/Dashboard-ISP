@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { motion } from "framer-motion";
+import { getElapsedEffectiveDate } from "@/modules/tasks/utils";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 
 type Props = {
@@ -39,8 +40,8 @@ export default function AnalyticsWeeklyChart({ times, doneCount, totalTasks }: P
     const daily: number[] = [0, 0, 0, 0, 0, 0, 0];
 
     times.forEach((t) => {
-      const d = t.inserted_at ? new Date(String(t.inserted_at)) : null;
-      if (!d || Number.isNaN(d.getTime())) return;
+      const d = getElapsedEffectiveDate(t);
+      if (!d) return;
       if (d >= startOfWeek && d <= now) {
         daily[d.getDay()] += (t.seconds ?? 0) / 3600;
       }

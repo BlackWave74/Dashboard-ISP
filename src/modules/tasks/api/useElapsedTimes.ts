@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storage } from "@/modules/shared/storage";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import type { ElapsedTimeRecord } from "../types";
+import { getElapsedEffectiveDate } from "../utils";
 
 type UseElapsedTimesResult = {
   times: ElapsedTimeRecord[];
@@ -27,28 +28,6 @@ const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_TASKS_TIMEOUT_MS ?? "2500
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 10;
 
-const buildDateFilter = (period?: string, dateFrom?: string, dateTo?: string) => {
-  const now = new Date();
-  if (period && period !== "all" && period !== "custom") {
-    const days = period === "7d" ? 7 : period === "30d" ? 30 : period === "90d" ? 90 : 180;
-    const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    return `inserted_at=gte.${encodeURIComponent(from.toISOString())}`;
-  }
-  if (period === "custom") {
-    const parts: string[] = [];
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      if (!Number.isNaN(from.getTime())) parts.push(`inserted_at=gte.${encodeURIComponent(from.toISOString())}`);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo);
-      if (!Number.isNaN(to.getTime())) parts.push(`inserted_at=lte.${encodeURIComponent(to.toISOString())}`);
-    }
-    return parts.join("&");
-  }
-  return "";
-};
-
 const buildEndpoint = (period?: string, dateFrom?: string, dateTo?: string) => {
   const url = SUPABASE_URL;
   const key = SUPABASE_ANON_KEY;
@@ -63,23 +42,56 @@ const buildEndpoint = (period?: string, dateFrom?: string, dateTo?: string) => {
   }
 
   const base = url.replace(/\/$/, "");
-  const dateFilter = buildDateFilter(period, dateFrom, dateTo);
   const select = [
     "id",
     "task_id",
+    "bitrix_task_id_raw",
     "user_id",
     "comment_text",
     "date_start",
+    "created_date",
     "date_stop",
     "minutes",
     "seconds",
     "inserted_at",
     "updated_at",
   ].join(",");
-  const filterSuffix = dateFilter ? `&${dateFilter}` : "";
-  const endpoint = `${base}/rest/v1/elapsed_times?select=${encodeURIComponent(select)}${filterSuffix}`;
-  const latestEndpoint = `${base}/rest/v1/elapsed_times?select=updated_at,inserted_at&order=inserted_at.desc&limit=1${filterSuffix}`;
+  const endpoint = `${base}/rest/v1/elapsed_times?select=${encodeURIComponent(select)}`;
+  const latestEndpoint = `${base}/rest/v1/elapsed_times?select=updated_at,inserted_at,created_date,date_start&order=updated_at.desc&limit=1`;
   return { endpoint, latestEndpoint, key, error: null };
+};
+
+const filterByEffectivePeriod = (rows: ElapsedTimeRecord[], period?: string, dateFrom?: string, dateTo?: string) => {
+  if (period === "all") return rows;
+
+  let from: Date | null = null;
+  let to: Date | null = null;
+
+  if (period && period !== "all" && period !== "custom") {
+    const now = new Date();
+    const days = period === "7d" ? 7 : period === "30d" ? 30 : period === "90d" ? 90 : 180;
+    from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  } else if (period === "custom") {
+    if (dateFrom) {
+      const parsedFrom = new Date(dateFrom);
+      if (!Number.isNaN(parsedFrom.getTime())) from = parsedFrom;
+    }
+    if (dateTo) {
+      const parsedTo = new Date(dateTo);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        to = parsedTo;
+      }
+    }
+  }
+
+  return rows.filter((row) => {
+    const effective = getElapsedEffectiveDate(row);
+    if (!effective) return false;
+    if (from && effective < from) return false;
+    if (to && effective > to) return false;
+    return true;
+  });
 };
 
 const normalizeSeconds = (record: Partial<ElapsedTimeRecord> & { minutes?: number; seconds?: number }) => {
@@ -211,13 +223,17 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
             cache: "no-store",
           });
           if (latestResponse.ok) {
-            const latestRows = (await latestResponse.json()) as { updated_at?: string | null; inserted_at?: string | null }[];
+            const latestRows = (await latestResponse.json()) as {
+              updated_at?: string | null;
+              inserted_at?: string | null;
+              created_date?: string | null;
+              date_start?: string | null;
+            }[];
             const latestRow = latestRows?.[0] ?? null;
-            const latestUpdated = latestRow?.updated_at ?? null;
-            const latestInserted = latestRow?.inserted_at ?? null;
-            const parsedUpdated = latestUpdated ? Date.parse(String(latestUpdated)) : Number.NaN;
-            const parsedInserted = latestInserted ? Date.parse(String(latestInserted)) : Number.NaN;
-            const latestMs = [parsedUpdated, parsedInserted].filter(Number.isFinite).reduce(
+            const parsedUpdated = latestRow?.updated_at ? Date.parse(String(latestRow.updated_at)) : Number.NaN;
+            const effectiveDate = getElapsedEffectiveDate(latestRow ?? {});
+            const parsedEffective = effectiveDate ? effectiveDate.getTime() : Number.NaN;
+            const latestMs = [parsedUpdated, parsedEffective].filter(Number.isFinite).reduce(
               (acc, value) => Math.max(acc, value),
               Number.NaN
             );
@@ -281,14 +297,15 @@ export function useElapsedTimes(params: UseElapsedTimesParams = {}): UseElapsedT
           }
         }
 
+        data = filterByEffectivePeriod(data, period, dateFrom, dateTo);
         setTimes(data);
         const timestamp = Date.now();
         const latestUpdatedAtMs = data.reduce<number | null>((max, row) => {
           const rawUpdated = row?.updated_at ? String(row.updated_at) : null;
-          const rawInserted = row?.inserted_at ? String(row.inserted_at) : null;
           const parsedUpdated = rawUpdated ? Date.parse(rawUpdated) : Number.NaN;
-          const parsedInserted = rawInserted ? Date.parse(rawInserted) : Number.NaN;
-          const parsed = [parsedUpdated, parsedInserted].filter(Number.isFinite).reduce(
+          const effectiveDate = getElapsedEffectiveDate(row);
+          const parsedEffective = effectiveDate ? effectiveDate.getTime() : Number.NaN;
+          const parsed = [parsedUpdated, parsedEffective].filter(Number.isFinite).reduce(
             (acc, value) => Math.max(acc, value),
             Number.NaN
           );

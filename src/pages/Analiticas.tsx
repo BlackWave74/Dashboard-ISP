@@ -6,6 +6,7 @@ import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAnalyticsData } from "@/modules/analytics/hooks/useAnalyticsData";
 import { classifyTask } from "@/modules/analytics/hooks/useAnalyticsData";
+import { getElapsedEffectiveDate } from "@/modules/tasks/utils";
 import { RefreshCw, FileDown } from "lucide-react";
 import { motion } from "framer-motion";
 import PageSkeleton from "@/components/ui/PageSkeleton";
@@ -242,12 +243,9 @@ export default function AnaliticasPage() {
 
     let totalSecs = 0;
     userTimes.forEach((t) => {
-      const ts = t.inserted_at ?? t.updated_at;
-      if (ts) {
-        const d = new Date(String(ts)).getTime();
-        if (!Number.isNaN(d) && d >= cutoffMs) {
-          totalSecs += (t.seconds ?? 0);
-        }
+      const effectiveDate = getElapsedEffectiveDate(t);
+      if (effectiveDate) {
+        if (effectiveDate.getTime() >= cutoffMs) totalSecs += (t.seconds ?? 0);
       } else {
         totalSecs += (t.seconds ?? 0);
       }

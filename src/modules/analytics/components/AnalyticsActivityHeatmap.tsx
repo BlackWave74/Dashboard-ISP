@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { dateToLocalIso, todayLocalIso, formatTimestampPtBr } from "@/modules/tasks/utils";
+import { dateToLocalIso, todayLocalIso, formatTimestampPtBr, getElapsedEffectiveDate } from "@/modules/tasks/utils";
 import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
@@ -36,10 +36,8 @@ export default function AnalyticsActivityHeatmap({ times }: Props) {
     // Build day → hours map
     const dayMap = new Map<string, number>();
     times.forEach((t) => {
-      const ts = t.inserted_at ?? t.updated_at;
-      if (!ts) return;
-      const d = new Date(String(ts));
-      if (Number.isNaN(d.getTime())) return;
+      const d = getElapsedEffectiveDate(t);
+      if (!d) return;
       const key = dateToLocalIso(d);
       dayMap.set(key, (dayMap.get(key) ?? 0) + (t.seconds ?? 0) / 3600);
     });

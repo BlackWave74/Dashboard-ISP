@@ -16,6 +16,7 @@ import { useElapsedTimes } from "@/modules/tasks/api/useElapsedTimes";
 import { useProjectHours } from "@/modules/tasks/api/useProjectHours";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import type { TaskRecord } from "@/modules/tasks/types";
+import { getElapsedEffectiveDate } from "@/modules/tasks/utils";
 import {
   AreaChart,
   Area,
@@ -271,7 +272,14 @@ function AnalyticsTab({
   loading,
 }: {
   tasks: TaskRecord[];
-  times: { seconds?: number; task_id?: string | number; inserted_at?: string | Date | null }[];
+  times: {
+    seconds?: number;
+    task_id?: string | number;
+    inserted_at?: string | Date | null;
+    updated_at?: string | Date | null;
+    date_start?: string | Date | null;
+    created_date?: string | Date | null;
+  }[];
   projectHours: { projectName: string; clientName: string; hours: number }[];
   loading: boolean;
 }) {
@@ -288,8 +296,8 @@ function AnalyticsTab({
   const monthlyData = useMemo(() => {
     const months: Record<string, number> = {};
     times.forEach((t) => {
-      const d = t.inserted_at ? new Date(String(t.inserted_at)) : null;
-      if (!d || Number.isNaN(d.getTime())) return;
+      const d = getElapsedEffectiveDate(t);
+      if (!d) return;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const hours = (t.seconds ?? 0) / 3600;
       months[key] = (months[key] ?? 0) + hours;

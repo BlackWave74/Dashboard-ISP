@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { motion } from "framer-motion";
+import { getElapsedEffectiveDate } from "@/modules/tasks/utils";
 import type { ProjectAnalytics } from "../types";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 
@@ -65,8 +66,8 @@ export default function AnalyticsProjectHoursChart({ projects, times = [] }: Pro
 
     const daily: number[] = [0, 0, 0, 0, 0, 0, 0];
     times.forEach((t) => {
-      const d = t.inserted_at ? new Date(String(t.inserted_at)) : null;
-      if (!d || Number.isNaN(d.getTime())) return;
+      const d = getElapsedEffectiveDate(t);
+      if (!d) return;
       if (d >= startOfWeek && d <= now) {
         daily[d.getDay()] += (t.seconds ?? 0) / 3600;
       }

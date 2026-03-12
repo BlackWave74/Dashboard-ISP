@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useEffect } from "react";
-import { dateToLocalIso, formatIsoToPtBr } from "@/modules/tasks/utils";
+import { dateToLocalIso, formatIsoToPtBr, getElapsedEffectiveDate } from "@/modules/tasks/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import {
   AreaChart,
@@ -61,8 +61,8 @@ function AnalyticsPerformanceChartInner({ times }: Props) {
 
     const daily: Record<string, number> = {};
     times.forEach((t) => {
-      const d = t.inserted_at ? new Date(String(t.inserted_at)) : null;
-      if (!d || Number.isNaN(d.getTime())) return;
+      const d = getElapsedEffectiveDate(t);
+      if (!d) return;
       if (cutoff && d < cutoff) return;
       const key = dateToLocalIso(d);
       daily[key] = (daily[key] ?? 0) + (t.seconds ?? 0) / 3600;

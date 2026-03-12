@@ -57,19 +57,38 @@ export const parseDateValue = (value?: unknown): Date | null => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
+export const getElapsedEffectiveDate = (value: {
+  date_start?: unknown;
+  created_date?: unknown;
+  inserted_at?: unknown;
+  updated_at?: unknown;
+}) =>
+  parseDateValue(value.date_start) ||
+  parseDateValue(value.created_date) ||
+  parseDateValue(value.inserted_at) ||
+  parseDateValue(value.updated_at);
+
 export const formatDatePtBR = (value: Date | null) => {
   if (!value) return "Sem prazo";
   return value.toLocaleDateString("pt-BR");
 };
 
 export const formatDurationHHMM = (seconds?: number) => {
-  if (seconds === undefined || seconds === null || Number.isNaN(seconds)) return "Sem registro";
-  const totalMinutes = Math.floor(seconds / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  const hh = String(hours).padStart(2, "0");
-  const mm = String(mins).padStart(2, "0");
-  return `${hh}:${mm}`;
+  if (seconds === undefined || seconds === null || Number.isNaN(seconds)) return "";
+
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  if (safeSeconds === 0) return "";
+
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remainingSeconds = safeSeconds % 60;
+  const parts: string[] = [];
+
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+  if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+  if (remainingSeconds > 0) parts.push(`${remainingSeconds} ${remainingSeconds === 1 ? "second" : "seconds"}`);
+
+  return parts.join(", ");
 };
 
 export const normalizeTaskTitle = (value?: string) => {
