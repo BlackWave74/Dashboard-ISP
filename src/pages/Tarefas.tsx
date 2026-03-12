@@ -443,7 +443,7 @@ export default function TarefasPage() {
     }
 
     return [];
-  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName]);
+  }, [normalizedTasks, isAdmin, accessibleProjectIds, companyName, session?.name]);
 
   // Scope by company (kept for backward compat, now uses projectFilteredTasks)
   const scopedTasks = projectFilteredTasks;
