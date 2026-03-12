@@ -70,7 +70,7 @@ const buildSession = async (
   const metaObj = metadata as Record<string, unknown>;
   const clientName = metaObj?.["client_name"] as string | undefined;
   const expiresIn = Number(data?.expires_in ?? 0);
-  const expiresAt = Date.now() + expiresIn * 1000 - 60_000;
+  const expiresAt = Date.now() + expiresIn * 1000;
 
   const [role, allowedAreas, accessibleProjects, clienteInfo, dbName] = await Promise.all([
     fetchUserRole(data?.access_token, user?.id, metaObj),
