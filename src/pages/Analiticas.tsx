@@ -219,7 +219,7 @@ export default function AnaliticasPage() {
     }
 
     return [];
-  }, [allTasks, isAdmin, accessibleProjectIds, companyName]);
+  }, [allTasks, isAdmin, accessibleProjectIds, companyName, userName]);
 
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)
