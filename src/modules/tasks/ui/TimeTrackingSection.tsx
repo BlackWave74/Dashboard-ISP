@@ -11,10 +11,12 @@ type TimeTrackingSectionProps = {
   userNames?: Record<string, string>;
 };
 
+const NO_DATE_LABEL = "Não registrado";
+
 const formatDateTime = (raw?: string | Date | null): string => {
-  if (!raw) return "—";
+  if (!raw) return NO_DATE_LABEL;
   const d = new Date(String(raw));
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return NO_DATE_LABEL;
   return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
