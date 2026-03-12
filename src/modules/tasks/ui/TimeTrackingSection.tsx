@@ -301,12 +301,7 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
                             <span className="text-[11px] font-medium text-[hsl(var(--task-text))]">
                               {effectiveDate}
                             </span>
-                          ) : displayName ? null : null}
-                          {displayName && (
-                            <p className="text-[10px] text-[hsl(var(--task-text-muted))] mt-0.5 truncate">
-                              {displayName}
-                            </p>
-                          )}
+                          ) : null}
                           {typeof entry.comment_text === "string" && entry.comment_text.trim() && (
                             <p className="text-[10px] text-[hsl(var(--task-text-muted))] truncate mt-0.5 italic max-w-[300px]">
                               {String(entry.comment_text)}
