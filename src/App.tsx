@@ -11,31 +11,40 @@ import PageSkeleton from "@/components/ui/PageSkeleton";
 import LoginPage from "./pages/Login";
 import DashboardLayout from "./components/DashboardLayout";
 
-// Lazy-loaded pages (code splitting)
-const IndexPage = lazy(() => import("./pages/Index"));
-const TarefasPage = lazy(() => import("./pages/Tarefas"));
-const AnaliticasPage = lazy(() => import("./pages/Analiticas"));
-const UsuariosPage = lazy(() => import("./pages/Usuarios"));
-const ComodatoPage = lazy(() => import("./pages/Comodato"));
-const IntegracoesPage = lazy(() => import("./pages/Integracoes"));
-const SuportePage = lazy(() => import("./pages/Suporte"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+type LazyFactory<T = unknown> = () => Promise<{ default: React.ComponentType<T> }>;
 
-const CalendarioPage = lazy(() => import("./pages/Calendario"));
-const GamificacaoPage = lazy(() => import("./pages/Gamificacao"));
-const AdminDiagnosticoPage = lazy(() => import("./pages/AdminDiagnostico"));
-const FerramentasPage = lazy(() => import("./pages/Ferramentas"));
+const isChunkLoadError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk/i.test(message);
+};
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 2 * 60 * 1000, // 2 minutes
-      gcTime: 10 * 60 * 1000,   // 10 minutes
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const lazyWithRecovery = <T,>(factory: LazyFactory<T>, key: string) =>
+  lazy(async () => {
+    try {
+      const mod = await factory();
+      sessionStorage.removeItem(`lazy-reload:${key}`);
+      return mod;
+    } catch (firstError) {
+      // Small retry for transient network glitches
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      try {
+        const mod = await factory();
+        sessionStorage.removeItem(`lazy-reload:${key}`);
+        return mod;
+      } catch (error) {
+        // One-time hard reload for stale chunk references after deployments
+        if (isChunkLoadError(error)) {
+          const reloadKey = `lazy-reload:${key}`;
+          if (!sessionStorage.getItem(reloadKey)) {
+            sessionStorage.setItem(reloadKey, "1");
+            window.location.reload();
+            return new Promise<never>(() => undefined);
+          }
+        }
+        throw error;
+      }
+    }
+  });
 
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
   <ErrorBoundary>
