@@ -305,8 +305,10 @@ export default function TarefasPage() {
   }, [times]);
 
   // Build user_id → name map from tasks (responsible_id → responsible_name)
+  // and also from time entries cross-referenced with task consultants
   const userNames = useMemo(() => {
     const map: Record<string, string> = {};
+    // Method 1: Direct from task responsible_id → responsible_name
     tasks.forEach((task) => {
       const uid = task.responsible_id ?? task.user_id;
       const name = String(task.responsible_name ?? task.consultant ?? task.owner ?? task.responsavel ?? "").trim();
@@ -314,8 +316,29 @@ export default function TarefasPage() {
         map[String(uid)] = name;
       }
     });
+    // Method 2: Cross-reference time entries with tasks
+    // If a task has only one unique user_id in its entries, that user is the task's consultant
+    if (Object.keys(map).length === 0) {
+      const taskConsultantMap = new Map<string, string>();
+      tasks.forEach((task) => {
+        const tid = String(task.task_id ?? task.id ?? "");
+        const name = String(task.responsible_name ?? task.consultant ?? task.owner ?? task.responsavel ?? "").trim();
+        if (tid && name && name !== "Sem consultor") {
+          taskConsultantMap.set(tid, name);
+        }
+      });
+      Object.entries(timeEntriesByTaskId).forEach(([taskId, entries]) => {
+        const consultantName = taskConsultantMap.get(taskId);
+        if (!consultantName) return;
+        const uniqueUserIds = new Set(entries.map(e => String(e.user_id ?? "")).filter(Boolean));
+        if (uniqueUserIds.size === 1) {
+          const userId = [...uniqueUserIds][0];
+          if (!map[userId]) map[userId] = consultantName;
+        }
+      });
+    }
     return map;
-  }, [tasks]);
+  }, [tasks, timeEntriesByTaskId]);
 
   // Build a project_id → name lookup from tasks that have the join data
   // This prevents phantom projects when some tasks fall back to group_name
