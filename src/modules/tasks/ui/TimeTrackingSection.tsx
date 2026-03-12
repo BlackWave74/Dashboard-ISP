@@ -165,6 +165,7 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
 
   return (
     <div className="space-y-0">
+      <DurationColorLegend />
       <DailyActivityBars entries={entries} />
 
       <motion.div
