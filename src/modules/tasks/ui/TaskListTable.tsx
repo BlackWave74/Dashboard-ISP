@@ -65,9 +65,13 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
       </div>
       <div className="hidden lg:grid grid-cols-[minmax(140px,1.2fr)_90px_110px_170px_minmax(160px,1fr)_120px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
         <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">Tarefa</div>
-        {["Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
+        {["Status", "Prazo"].map((h) => (
           <div key={h} className="px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">{h}</div>
         ))}
+        {["Responsável", "Projeto"].map((h) => (
+          <div key={h} className="px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-left">{h}</div>
+        ))}
+        <div className="px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">Duração</div>
       </div>
 
       {/* Rows */}
@@ -117,7 +121,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                 </div>
 
                 {/* Consultant - hidden on tablet, visible on lg+ */}
-                <div className="hidden lg:flex items-center justify-center gap-2 px-2 py-3">
+                <div className="hidden lg:flex items-center gap-2 px-2 py-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-[9px] font-bold text-[hsl(var(--task-purple))]">
                     {task.consultant ? task.consultant.charAt(0).toUpperCase() : "?"}
                   </div>
@@ -125,8 +129,8 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                 </div>
 
                 {/* Project - hidden on tablet, visible on lg+ */}
-                <div className="hidden lg:flex items-center justify-center px-2 py-3">
-                  <span className="text-[13px] text-white truncate whitespace-nowrap">{task.project}</span>
+                <div className="hidden lg:flex items-center px-2 py-3">
+                  <span className="text-[13px] text-white truncate">{task.project}</span>
                 </div>
 
                 {/* Duration - color coded with mini bar */}
