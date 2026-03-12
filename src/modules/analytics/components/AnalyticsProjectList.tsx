@@ -503,6 +503,23 @@ export default function AnalyticsProjectList({
                 )}
               </div>
 
+              {/* Legenda visual */}
+              <div className="flex flex-wrap items-center gap-4 rounded-lg border border-white/[0.05] bg-white/[0.02] px-4 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-white/25">Legenda:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(160 84% 39%)" }} />
+                  <span className="text-[11px] text-white/40">Saudável</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(43 97% 52%)" }} />
+                  <span className="text-[11px] text-white/40">Atenção</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(0 84% 60%)" }} />
+                  <span className="text-[11px] text-white/40">Crítico</span>
+                </div>
+              </div>
+
               {/* Lista de clientes */}
               {groupedFiltered.size === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
