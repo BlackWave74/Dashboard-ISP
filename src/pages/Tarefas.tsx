@@ -47,6 +47,7 @@ import {
 import { STATUS_LABELS } from "@/modules/tasks/types";
 import { exportTasksPDF } from "@/lib/exportPdf";
 import ExportPDFModal, { type PDFExportSelection, type TaskIntegrityInfo } from "@/modules/analytics/components/ExportPDFModal";
+import { FormattedDescription } from "@/modules/tasks/ui/FormattedDescription";
 
 /* ─── Helpers (business logic preserved) ─── */
 
