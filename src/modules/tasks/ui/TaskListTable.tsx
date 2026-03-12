@@ -202,7 +202,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId, userNames }: TaskLis
 
                       {/* Time Tracking Section */}
                       {entries && entries.length > 0 && (
-                        <TimeTrackingSection entries={entries} totalSeconds={task.durationSeconds} />
+                        <TimeTrackingSection entries={entries} totalSeconds={task.durationSeconds} userNames={userNames} />
                       )}
 
                       {/* Description */}
