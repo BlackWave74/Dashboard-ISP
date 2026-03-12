@@ -37,6 +37,8 @@ import {
   deadlineColor,
   formatDatePtBR,
   formatDurationHHMM,
+  formatHoursHuman,
+  formatSecondsHuman,
   isDeadlineSoon,
   parseDateValue,
   normalizeTaskTitle,
