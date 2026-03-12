@@ -439,7 +439,7 @@ export default function TarefasPage() {
       const idSet = new Set(accessIds);
       const names = new Set<string>();
       normalizedTasks.forEach((t) => {
-        const pid = Number(t.projectId);
+        const pid = Number(t.raw?.project_id);
         if (pid && idSet.has(pid)) {
           const name = (t.project || "").trim();
           if (name && name.toLowerCase() !== "projeto indefinido") names.add(name);
