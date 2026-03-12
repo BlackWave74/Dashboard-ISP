@@ -450,6 +450,16 @@ export default function AnalyticsProjectList({
             className="overflow-hidden"
           >
             <div className="space-y-4 border-t border-white/[0.05] px-5 py-4">
+              {/* Explicação para o usuário */}
+              <div className="rounded-xl border border-[hsl(262_83%_58%/0.15)] bg-[hsl(262_83%_58%/0.05)] px-4 py-3">
+                <p className="text-[13px] leading-relaxed text-white/50">
+                  <span className="font-semibold text-white/70">Como funciona:</span>{" "}
+                  Cada grupo representa um <span className="text-[hsl(262_83%_68%)] font-medium">cliente</span> com seus respectivos projetos.
+                  Clique em um cliente para expandir e ver os detalhes de cada projeto — tarefas concluídas, em andamento, atrasadas e horas trabalhadas.
+                  Use os filtros abaixo para encontrar rapidamente o que procura.
+                </p>
+              </div>
+
               {/* Filtros rápidos */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
