@@ -590,7 +590,7 @@ export async function exportTasksPDF({
     drawPageHeader(doc, logo, pageW, dynamicTitle);
 
     const tableBody = tasks.map((t) => [
-      t.title, t.project, t.consultant, t.statusLabel, t.deadlineLabel, t.durationLabel,
+      sanitizeText(t.title), sanitizeText(t.project), sanitizeText(t.consultant), t.statusLabel, t.deadlineLabel, t.durationLabel,
     ]);
 
     autoTable(doc, {
