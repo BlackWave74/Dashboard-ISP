@@ -140,7 +140,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                       <DurationBar seconds={task.durationSeconds} />
                     </div>
                   ) : (
-                    <span className="text-[11px] text-[hsl(var(--task-text-muted))] italic">—</span>
+                    <span className="text-[11px] text-[hsl(var(--task-text-muted))] italic">Sem registro</span>
                   )}
                 </div>
               </motion.div>
