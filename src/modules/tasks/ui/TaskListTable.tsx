@@ -205,14 +205,13 @@ export function TaskListTable({ tasks, timeEntriesByTaskId, userNames }: TaskLis
                         <TimeTrackingSection entries={entries} totalSeconds={task.durationSeconds} userNames={userNames} />
                       )}
 
-                      {/* Description */}
-                      <div className="rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))] p-3">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <FileText className="h-3 w-3 text-[hsl(var(--task-yellow))]" />
-                          <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--task-text-muted))]">Descrição</span>
-                        </div>
+                      {/* Description - collapsible */}
+                      <CollapsibleSection
+                        icon={<FileText className="h-3 w-3 text-[hsl(var(--task-yellow))]" />}
+                        title="Descrição"
+                      >
                         <FormattedDescription text={task.description} />
-                      </div>
+                      </CollapsibleSection>
                     </div>
                   </motion.div>
                 )}
