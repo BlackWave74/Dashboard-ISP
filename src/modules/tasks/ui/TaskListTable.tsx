@@ -101,21 +101,21 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                 </div>
 
                 {/* Status */}
-                <div className="hidden md:flex items-center justify-start px-2 py-3">
+                <div className="hidden md:flex items-center justify-center px-3 py-3">
                   <span className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[9px] font-bold whitespace-nowrap ${statusPill(task.statusKey)}`}>
                     {STATUS_LABELS[task.statusKey]?.label ?? "—"}
                   </span>
                 </div>
 
                 {/* Deadline */}
-                <div className="hidden md:flex items-center justify-start px-2 py-3">
+                <div className="hidden md:flex items-center justify-center px-3 py-3">
                   <span className={`text-[13px] ${task.statusKey === "overdue" ? "text-rose-400 font-bold" : task.deadlineIsSoon ? "text-[hsl(var(--task-yellow))]" : "text-[hsl(var(--task-text-muted))]"}`}>
                     {task.deadlineLabel}
                   </span>
                 </div>
 
                 {/* Consultant */}
-                <div className="hidden md:flex items-center justify-start gap-2 px-2 py-3">
+                <div className="hidden md:flex items-center justify-center gap-2 px-3 py-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--task-purple)/0.15)] text-[9px] font-bold text-[hsl(var(--task-purple))]">
                     {task.consultant ? task.consultant.charAt(0).toUpperCase() : "?"}
                   </div>
@@ -123,12 +123,12 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                 </div>
 
                 {/* Project */}
-                <div className="hidden md:flex items-center justify-start px-2 py-3">
+                <div className="hidden md:flex items-center justify-center px-3 py-3">
                   <span className="text-[13px] text-white truncate whitespace-nowrap">{task.project}</span>
                 </div>
 
                 {/* Duration - color coded with mini bar */}
-                <div className="hidden md:flex items-center justify-start px-2 py-3">
+                <div className="hidden md:flex items-center justify-center px-3 py-3">
                   {durationText ? (
                     <div className="min-w-[80px]">
                       <div className="flex items-center gap-1.5">
