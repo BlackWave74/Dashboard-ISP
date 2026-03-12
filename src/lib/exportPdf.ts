@@ -543,7 +543,7 @@ export async function exportTasksPDF({
 
       // Table for this project
       const tableBody = projectTasks.map((t) => [
-        t.title, t.consultant, t.statusLabel, t.deadlineLabel, t.durationLabel,
+        sanitizeText(t.title), sanitizeText(t.consultant), t.statusLabel, t.deadlineLabel, t.durationLabel,
       ]);
 
       autoTable(doc, {
