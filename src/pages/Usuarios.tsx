@@ -686,19 +686,16 @@ export default function UsuariosPage() {
                       </div>
                     </div>
 
-                    {/* Row 3: Cliente dropdown */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
-                          <Building2 className="h-3 w-3" /> Cliente
-                        </label>
-                        <select value={createForm.cliente_id ?? ""} onChange={e => setCreateForm(p => ({ ...p, cliente_id: e.target.value ? Number(e.target.value) : null }))}
-                          className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] [&>option]:bg-[hsl(260_35%_8%)] [&>option]:text-[hsl(var(--task-text))]">
-                          <option value="">Nenhum cliente</option>
-                          {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                        </select>
-                      </div>
-                      <div /> {/* spacer */}
+                    {/* Row 3: Cliente */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--task-text-muted))] font-semibold flex items-center gap-1">
+                        <Building2 className="h-3 w-3" /> Cliente
+                      </label>
+                      <select value={createForm.cliente_id ?? ""} onChange={e => setCreateForm(p => ({ ...p, cliente_id: e.target.value ? Number(e.target.value) : null }))}
+                        className="h-9 w-full rounded-lg border border-[hsl(var(--task-border))] bg-[hsl(var(--task-bg))] px-3 text-xs text-[hsl(var(--task-text))] outline-none focus:border-[hsl(var(--task-purple)/0.5)] [&>option]:bg-[hsl(260_35%_8%)] [&>option]:text-[hsl(var(--task-text))]">
+                        <option value="">Nenhum cliente</option>
+                        {clienteOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </select>
                     </div>
 
                     {/* Row 4: Areas & Projects dropdowns */}
@@ -709,6 +706,8 @@ export default function UsuariosPage() {
                         options={areaOptions}
                         selected={createAreas}
                         onToggle={(v) => toggleInList(v as string, createAreas, setCreateAreas)}
+                        onSelectAll={() => setCreateAreas(areaOptions.map(a => a.value as string))}
+                        onClearAll={() => setCreateAreas([])}
                       />
                       <MultiSelectDropdown
                         label="Projetos Acessíveis"
@@ -716,6 +715,8 @@ export default function UsuariosPage() {
                         options={projectOptions}
                         selected={createProjects}
                         onToggle={(v) => toggleInList(v as number, createProjects, setCreateProjects)}
+                        onSelectAll={() => setCreateProjects(projectOptions.map(p => p.value as number))}
+                        onClearAll={() => setCreateProjects([])}
                         emptyText="Nenhum projeto encontrado."
                         searchable
                       />
