@@ -50,7 +50,7 @@ function DurationBar({ seconds }: { seconds?: number }) {
   );
 }
 
-export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps) {
+export function TaskListTable({ tasks, timeEntriesByTaskId, userNames }: TaskListTableProps) {
   const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   if (!tasks.length) return null;
