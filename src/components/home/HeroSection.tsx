@@ -74,6 +74,14 @@ function AnimatedSubtitle() {
       });
     };
 
+    // Fallback for browsers/environments without IntersectionObserver
+    if (typeof window !== "undefined" && !("IntersectionObserver" in window)) {
+      runCycle();
+      const loop = setInterval(runCycle, 15000);
+      timers.push(loop as unknown as ReturnType<typeof setTimeout>);
+      return () => { timers.forEach(clearTimeout); };
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !started.current) {

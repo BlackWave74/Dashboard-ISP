@@ -32,7 +32,17 @@ export default class ErrorBoundary extends Component<Props, State> {
     console.error("[ErrorBoundary] Component:", info.componentStack);
   }
 
+  private isChunkLoadError(error: Error | null) {
+    if (!error) return false;
+    const message = error.message ?? "";
+    return /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk/i.test(message);
+  }
+
   handleRetry = () => {
+    if (this.isChunkLoadError(this.state.error)) {
+      window.location.reload();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   };
 
