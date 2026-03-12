@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,7 +11,7 @@ import PageSkeleton from "@/components/ui/PageSkeleton";
 import LoginPage from "./pages/Login";
 import DashboardLayout from "./components/DashboardLayout";
 
-type LazyFactory<T = unknown> = () => Promise<{ default: React.ComponentType<T> }>;
+type LazyFactory<T = unknown> = () => Promise<{ default: ComponentType<T> }>;
 
 const isChunkLoadError = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error ?? "");
@@ -24,7 +24,7 @@ const lazyWithRecovery = <T,>(factory: LazyFactory<T>, key: string) =>
       const mod = await factory();
       sessionStorage.removeItem(`lazy-reload:${key}`);
       return mod;
-    } catch (firstError) {
+    } catch {
       // Small retry for transient network glitches
       await new Promise((resolve) => setTimeout(resolve, 350));
       try {
@@ -46,15 +46,7 @@ const lazyWithRecovery = <T,>(factory: LazyFactory<T>, key: string) =>
     }
   });
 
-const LazyPage = ({ children }: { children: React.ReactNode }) => (
-  <ErrorBoundary>
-    <Suspense fallback={<PageSkeleton />}>
-      {children}
-    </Suspense>
-  </ErrorBoundary>
-);
-
-// Lazy-loaded pages (code splitting) with recovery for chunk loading failures
+// Lazy-loaded pages (code splitting) with recovery
 const IndexPage = lazyWithRecovery(() => import("./pages/Index"), "index");
 const TarefasPage = lazyWithRecovery(() => import("./pages/Tarefas"), "tarefas");
 const AnaliticasPage = lazyWithRecovery(() => import("./pages/Analiticas"), "analiticas");
@@ -70,6 +62,23 @@ const AdminDiagnosticoPage = lazyWithRecovery(() => import("./pages/AdminDiagnos
 const FerramentasPage = lazyWithRecovery(() => import("./pages/Ferramentas"), "ferramentas");
 
 const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const LazyPage = ({ children }: { children: ReactNode }) => (
+  <ErrorBoundary>
+    <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
+  </ErrorBoundary>
+);
+
+const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
