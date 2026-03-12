@@ -247,7 +247,12 @@ export default function AnaliticasPage() {
     });
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        const aHas = a.name.includes("<>");
+        const bHas = b.name.includes("<>");
+        if (aHas !== bHas) return aHas ? 1 : -1;
+        return a.name.localeCompare(b.name);
+      });
   }, [allTasks, accessFilteredTasks, isAdmin, projectNameById]);
 
   // Apply status + project filter to user's tasks for display components
