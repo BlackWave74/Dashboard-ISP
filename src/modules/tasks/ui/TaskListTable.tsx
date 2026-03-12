@@ -95,7 +95,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                   <span className={`h-2 w-2 shrink-0 rounded-full ${statusDot(task.statusKey)}`} />
                   <div className="min-w-0 flex-1">
                     <span className="text-[13px] font-semibold text-[hsl(var(--task-text))] truncate block">{task.title}</span>
-                    <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate block md:hidden">
+                    <span className="text-[10px] text-[hsl(var(--task-text-muted))] truncate block lg:hidden">
                       {task.project} • {task.consultant}
                     </span>
                   </div>
