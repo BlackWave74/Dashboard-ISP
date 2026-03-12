@@ -23,8 +23,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     >
       <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">{label}</p>
       <p className="text-lg font-bold text-white">
-        {payload[0].value}
-        <span className="text-xs text-white/50 ml-1">horas</span>
+        {formatHoursHuman(payload[0].value)}
       </p>
     </div>
   );
