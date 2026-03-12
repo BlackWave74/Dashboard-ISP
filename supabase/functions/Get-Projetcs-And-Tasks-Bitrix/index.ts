@@ -80,7 +80,7 @@ async function fetchExistingTasksMap(supabase: any, taskIds: number[]) {
     const slice = taskIds.slice(offset, offset + 500);
     const { data, error } = await supabase
       .from('tasks')
-      .select('task_id,title,description,status,deadline,closed_date,group_id,group_name,responsible_id,responsible_name,project_id')
+      .select('task_id,title,description,status,deadline,closed_date,group_id,group_name,responsible_id,responsible_name,project_id,last_seen_in_bitrix_at,missing_from_bitrix_since')
       .in('task_id', slice);
 
     if (error) throw new Error(`Erro ao carregar tarefas existentes: ${error.message}`);
@@ -109,7 +109,56 @@ function mergeTaskRecord(incoming: any, existing?: any) {
     responsible_name: keepBest(incoming.responsible_name, existing.responsible_name),
     updated_at: incoming.updated_at,
     project_id: keepBest(incoming.project_id, existing.project_id),
+    last_seen_in_bitrix_at: keepBest(incoming.last_seen_in_bitrix_at, existing.last_seen_in_bitrix_at),
+    missing_from_bitrix_since: keepBest(incoming.missing_from_bitrix_since, existing.missing_from_bitrix_since),
   };
+}
+
+async function fetchAllDbTaskIds(supabase: any) {
+  const taskIds: number[] = [];
+  let from = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('task_id')
+      .range(from, to);
+
+    if (error) throw new Error(`Erro ao carregar IDs de tarefas do banco: ${error.message}`);
+
+    const rows = (data ?? []) as Array<{ task_id?: number | string | null }>;
+    for (const row of rows) {
+      const taskId = toInt(row.task_id);
+      if (taskId) taskIds.push(taskId);
+    }
+
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return taskIds;
+}
+
+async function markMissingTasks(supabase: any, seenTaskIds: Set<number>, syncStartedAtIso: string) {
+  const dbTaskIds = await fetchAllDbTaskIds(supabase);
+  const missingTaskIds = dbTaskIds.filter((taskId) => !seenTaskIds.has(taskId));
+
+  for (let offset = 0; offset < missingTaskIds.length; offset += 500) {
+    const slice = missingTaskIds.slice(offset, offset + 500);
+    const { error } = await supabase
+      .from('tasks')
+      .update({ missing_from_bitrix_since: syncStartedAtIso })
+      .in('task_id', slice)
+      .is('missing_from_bitrix_since', null);
+
+    if (error) {
+      throw new Error(`Erro ao marcar tarefas ausentes no Bitrix: ${error.message}`);
+    }
+  }
+
+  return missingTaskIds.length;
 }
 
 Deno.serve(async (req) => {
@@ -123,6 +172,7 @@ Deno.serve(async (req) => {
     }
 
     console.log("--- INICIANDO SINCRONIZAÇÃO (V9 - ALL PROJECTS + ARCHIVED) ---");
+    const syncStartedAtIso = new Date().toISOString();
 
     // Cache para validar chaves estrangeiras
     const validProjectIds = new Set<number>();
@@ -252,6 +302,8 @@ Deno.serve(async (req) => {
     let startTasks = 0;
     let hasMoreTasks = true;
     const canonicalTasks = new Map<number, any>();
+    const seenTaskIds = new Set<number>();
+    let hadTaskWriteErrors = false;
 
     while (hasMoreTasks) {
       const taskUrl = new URL('tasks.task.list.json', BITRIX_BASE_URL);
@@ -319,12 +371,15 @@ Deno.serve(async (req) => {
             responsible_id: toInt(rawRespId),
             responsible_name: nonEmptyString(responsibleName),
             updated_at: new Date().toISOString(),
-            project_id: projectId // NULL se não existir na tabela projects
+            project_id: projectId, // NULL se não existir na tabela projects
+            last_seen_in_bitrix_at: syncStartedAtIso,
+            missing_from_bitrix_since: null,
           };
         })
         .filter((t: any) => t !== null)
         .forEach((task: any) => {
           pageTaskIds.push(task.task_id);
+          seenTaskIds.add(task.task_id);
           const existingInPage = pageCanonical.get(task.task_id);
           pageCanonical.set(task.task_id, mergeTaskRecord(task, existingInPage));
         });
@@ -344,6 +399,7 @@ Deno.serve(async (req) => {
             .upsert(tasksToUpsert, { onConflict: 'task_id' });
 
           if (taskError) {
+             hadTaskWriteErrors = true;
              console.error(`Erro Upsert Tasks (Lote ${startTasks}): ${taskError.message}`);
           }
       }
@@ -357,8 +413,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    const missingTasksMarked = hadTaskWriteErrors
+      ? 0
+      : await markMissingTasks(supabase, seenTaskIds, syncStartedAtIso);
+
     return new Response(
-      JSON.stringify({ success: true, projects: totalProjects, tasks: canonicalTasks.size }),
+      JSON.stringify({
+        success: true,
+        projects: totalProjects,
+        tasks: canonicalTasks.size,
+        missing_tasks_marked: missingTasksMarked,
+        missing_marking_skipped_due_to_errors: hadTaskWriteErrors,
+      }),
       { headers: { "Content-Type": "application/json" } },
     );
 

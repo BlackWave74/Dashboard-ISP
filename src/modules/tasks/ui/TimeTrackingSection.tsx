@@ -24,6 +24,24 @@ const formatDateTime = (raw?: string | Date | null): string | null => {
   });
 };
 
+const getEntryStartDate = (entry: ElapsedTimeRecord): Date | null =>
+  getElapsedEffectiveDate(entry);
+
+const getEntryStopDate = (entry: ElapsedTimeRecord): Date | null => {
+  const explicitStop = entry.date_stop ? new Date(String(entry.date_stop)) : null;
+  if (explicitStop && !Number.isNaN(explicitStop.getTime())) {
+    return explicitStop;
+  }
+
+  const start = getEntryStartDate(entry);
+  const seconds = typeof entry.seconds === "number" ? entry.seconds : Number(entry.seconds ?? 0);
+  if (!start || !Number.isFinite(seconds) || seconds <= 0) {
+    return null;
+  }
+
+  return new Date(start.getTime() + seconds * 1000);
+};
+
 const WEEKDAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 /** Generates a consistent color from user_id for avatar */
@@ -140,8 +158,8 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
   const [isOpen, setIsOpen] = useState(false);
 
   const sorted = [...entries].sort((a, b) => {
-    const da = getElapsedEffectiveDate(a)?.getTime() ?? 0;
-    const db = getElapsedEffectiveDate(b)?.getTime() ?? 0;
+    const da = getEntryStartDate(a)?.getTime() ?? 0;
+    const db = getEntryStartDate(b)?.getTime() ?? 0;
     return db - da;
   });
 
@@ -256,8 +274,8 @@ export function TimeTrackingSection({ entries, totalSeconds, userNames }: TimeTr
                     const entryDuration = formatDurationHHMM(seconds);
                     const entryColor = durationColorClass(seconds);
                     const avatarColor = userColor(entry.user_id);
-                    const startDate = formatDateTime(entry.date_start);
-                    const stopDate = formatDateTime(entry.date_stop as string | null);
+                    const startDate = formatDateTime(getEntryStartDate(entry));
+                    const stopDate = formatDateTime(getEntryStopDate(entry));
                     const effectiveDate = formatDateTime(getElapsedEffectiveDate(entry));
                     const hasRangeDate = startDate || stopDate;
                     const rawName = userNames?.[String(entry.user_id)] || null;

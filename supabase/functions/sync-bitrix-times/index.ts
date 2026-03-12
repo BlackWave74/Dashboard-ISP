@@ -161,16 +161,19 @@ async function fetchAllElapsedTimes(): Promise<any[]> {
   return allItems;
 }
 
-function parseElapsed(raw: Record<string, any>, validTaskIds: Set<number>) {
+function parseElapsed(raw: Record<string, any>, validTaskIds: Set<number>, detectedAt: string) {
   const id = toInt(getField(raw, 'id', 'ID'));
   if (!id) return null;
 
   const rawTaskId = toInt(getField(raw, 'taskId', 'TASK_ID', 'task_id'));
+  const hasLinkedTask = !!(rawTaskId && validTaskIds.has(rawTaskId));
 
   return {
     id,
     bitrix_task_id_raw: rawTaskId,
-    task_id: rawTaskId && validTaskIds.has(rawTaskId) ? rawTaskId : null,
+    task_id: hasLinkedTask ? rawTaskId : null,
+    orphan_reason: rawTaskId && !hasLinkedTask ? 'missing_task_in_local_snapshot' : null,
+    orphan_detected_at: rawTaskId && !hasLinkedTask ? detectedAt : null,
     user_id: toInt(getField(raw, 'userId', 'USER_ID', 'user_id')),
     comment_text: String(getField(raw, 'commentText', 'COMMENT_TEXT', 'comment_text') ?? ''),
     date_start: toIso(getField(raw, 'dateStart', 'DATE_START', 'date_start')),
@@ -259,6 +262,7 @@ function json(data: unknown, status = 200) {
 
 Deno.serve(async () => {
   const startedAt = Date.now();
+  const syncStartedAtIso = new Date().toISOString();
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -285,7 +289,7 @@ Deno.serve(async () => {
     }
 
     const records = Array.from(byId.values())
-      .map((item) => parseElapsed(item, validTaskIds))
+      .map((item) => parseElapsed(item, validTaskIds, syncStartedAtIso))
       .filter((item) => item !== null) as NonNullable<ReturnType<typeof parseElapsed>>[];
 
     const distinctTaskIds = new Set<number>();
@@ -310,6 +314,7 @@ Deno.serve(async () => {
       distinct_task_ids_found: distinctTaskIds.size,
       db_task_whitelist_count: validTaskIds.size,
       orphan_task_ids_are_saved_as_null: true,
+      orphan_rows_detected: records.filter((record) => record.orphan_reason !== null).length,
       errors_count: errors.length,
       errors_sample: errors.slice(0, 10),
       duration_seconds: durationSeconds,
