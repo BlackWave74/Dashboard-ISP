@@ -29,6 +29,24 @@ type ExportOptions = {
  * SHARED HELPERS
  * ═══════════════════════════════════════════════ */
 
+/** Sanitize text for jsPDF (Helvetica only supports Latin-1 / WinAnsi).
+ *  Strips characters outside that range so they don't render as garbled glyphs. */
+function sanitizeText(text: string): string {
+  if (!text) return text;
+  // Replace common Unicode artifacts with readable equivalents
+  return text
+    .replace(/[\u0080-\u009F]/g, "") // C1 control chars
+    .replace(/[\uFFFD]/g, "?")       // replacement char
+    // Keep only printable Latin-1 + common punctuation
+    .replace(/[^\x20-\x7E\xA0-\xFF\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/g, "")
+    // Normalize dashes and quotes to ASCII equivalents
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2026/g, "...")
+    .trim();
+}
+
 function ensureSpace(doc: jsPDF, currentY: number, neededHeight: number, margin = 14): number {
   const pageH = doc.internal.pageSize.getHeight();
   const available = pageH - margin - currentY;
@@ -525,7 +543,7 @@ export async function exportTasksPDF({
 
       // Table for this project
       const tableBody = projectTasks.map((t) => [
-        t.title, t.consultant, t.statusLabel, t.deadlineLabel, t.durationLabel,
+        sanitizeText(t.title), sanitizeText(t.consultant), t.statusLabel, t.deadlineLabel, t.durationLabel,
       ]);
 
       autoTable(doc, {
@@ -572,7 +590,7 @@ export async function exportTasksPDF({
     drawPageHeader(doc, logo, pageW, dynamicTitle);
 
     const tableBody = tasks.map((t) => [
-      t.title, t.project, t.consultant, t.statusLabel, t.deadlineLabel, t.durationLabel,
+      sanitizeText(t.title), sanitizeText(t.project), sanitizeText(t.consultant), t.statusLabel, t.deadlineLabel, t.durationLabel,
     ]);
 
     autoTable(doc, {
