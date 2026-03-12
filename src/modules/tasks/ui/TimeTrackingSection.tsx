@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Timer, Play, User, Clock, BarChart3, CircleDot } from "lucide-react";
+import { Timer, Play, User, Clock, BarChart3, CircleDot, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import type { ElapsedTimeRecord } from "@/modules/tasks/types";
 import { formatDurationHHMM, durationColorClass, getElapsedEffectiveDate } from "@/modules/tasks/utils";
@@ -7,6 +7,8 @@ import { formatDurationHHMM, durationColorClass, getElapsedEffectiveDate } from 
 type TimeTrackingSectionProps = {
   entries: ElapsedTimeRecord[];
   totalSeconds?: number;
+  /** Map of user_id → display name (from tasks responsible_id/responsible_name) */
+  userNames?: Record<string, string>;
 };
 
 const formatDateTime = (raw?: string | Date | null): string => {
