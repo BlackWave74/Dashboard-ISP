@@ -105,6 +105,10 @@ export default function AnaliticasPage() {
         updates.projectIds = ids;
       }
     }
+    // Default period to "all" for non-admin
+    if (!saved.period) {
+      updates.period = "all";
+    }
 
     if (Object.keys(updates).length > 0) {
       setFilters((prev) => ({ ...prev, ...updates }));

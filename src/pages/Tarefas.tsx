@@ -228,6 +228,10 @@ export default function TarefasPage() {
     if (!saved.consultant || saved.consultant === "all") {
       setConsultant(session.name);
     }
+    // Default period to "all" for non-admin
+    if (!saved.period) {
+      setPeriod("all");
+    }
     defaultsAppliedRef.current = true;
   }, [session?.name, session?.role]);
   const [page, setPage] = useState(1);
