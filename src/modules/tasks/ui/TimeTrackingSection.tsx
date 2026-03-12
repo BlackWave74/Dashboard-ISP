@@ -74,26 +74,19 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
     const now = new Date();
     const days: { label: string; seconds: number; isToday: boolean }[] = [];
 
-    // Debug: log effective dates of entries
-    if (entries.length > 0) {
-      console.log("[DailyActivityBars] entries count:", entries.length);
-      entries.slice(0, 3).forEach((e, i) => {
-        const eff = getElapsedEffectiveDate(e);
-        console.log(`[DailyActivityBars] entry[${i}] effective:`, eff?.toISOString(), "date_start:", e.date_start, "created_date:", e.created_date);
-      });
-    }
-
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+      // Use local date string (YYYY-MM-DD) for comparison to avoid timezone mismatches
+      const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
       let totalSec = 0;
       entries.forEach((entry) => {
         const effective = getElapsedEffectiveDate(entry);
         if (!effective) return;
-        if (effective >= dayStart && effective <= dayEnd) {
+        // Compare using local date string to avoid UTC vs local mismatch
+        const entryKey = `${effective.getFullYear()}-${String(effective.getMonth() + 1).padStart(2, "0")}-${String(effective.getDate()).padStart(2, "0")}`;
+        if (entryKey === dayKey) {
           totalSec += typeof entry.seconds === "number" ? entry.seconds : Number(entry.seconds ?? 0);
         }
       });
@@ -104,8 +97,6 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
         isToday: i === 0,
       });
     }
-
-    console.log("[DailyActivityBars] daily totals:", days.map(d => `${d.label}:${d.seconds}s`).join(", "));
     return days;
   }, [entries]);
 
