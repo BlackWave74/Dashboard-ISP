@@ -57,12 +57,12 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
   return (
     <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--task-border))] bg-[hsl(var(--task-surface))]">
       {/* Header */}
-      <div className="hidden md:grid grid-cols-[minmax(0,0.95fr)_96px_112px_176px_minmax(220px,1.15fr)_190px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
+      <div className="hidden md:grid grid-cols-[minmax(0,1fr)_100px_120px_180px_minmax(200px,1.1fr)_140px] bg-[hsl(var(--task-bg))] border-b border-[hsl(var(--task-border))]">
         <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
           Tarefa
         </div>
         {["Status", "Prazo", "Responsável", "Projeto", "Duração"].map((h) => (
-          <div key={h} className="px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-left">
+          <div key={h} className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white text-center">
             {h}
           </div>
         ))}
