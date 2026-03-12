@@ -45,7 +45,6 @@ const buildEndpoint = (period?: string, dateFrom?: string, dateTo?: string) => {
   const select = [
     "id",
     "task_id",
-    "bitrix_task_id_raw",
     "user_id",
     "comment_text",
     "date_start",
