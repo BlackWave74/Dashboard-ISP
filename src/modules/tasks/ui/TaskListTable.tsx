@@ -86,7 +86,7 @@ export function TaskListTable({ tasks, timeEntriesByTaskId }: TaskListTableProps
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.025, duration: 0.2 }}
                 onClick={() => setExpandedId(isExpanded ? null : key)}
-                className={`group grid grid-cols-1 md:grid-cols-[minmax(0,0.95fr)_96px_112px_176px_minmax(220px,1.15fr)_190px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
+                className={`group grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_100px_120px_180px_minmax(200px,1.1fr)_140px] bg-transparent transition-colors cursor-pointer hover:bg-[hsl(var(--task-surface-hover))] ${isOverdue ? "task-shake" : ""}`}
               >
                 {/* Task name */}
                 <div className="flex items-center gap-3 px-4 py-3.5">
