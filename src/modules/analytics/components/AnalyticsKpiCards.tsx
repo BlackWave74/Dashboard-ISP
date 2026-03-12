@@ -28,8 +28,8 @@ function AnalyticsKpiCardsInner({ clients, activeProjects, totalHours, totalTask
     },
     {
       label: "Horas Alocadas",
-      value: `${Math.round(totalHours).toLocaleString("pt-BR")}h`,
-      sub: activeProjects > 0 ? `~${Math.round(totalHours / activeProjects)}h por projeto` : "Sem registro de horas",
+      value: formatHoursHuman(totalHours),
+      sub: activeProjects > 0 ? `~${formatHoursHuman(totalHours / activeProjects)} por projeto` : "Sem registro de horas",
       icon: Clock,
       accent: "hsl(200 80% 55%)",
     },

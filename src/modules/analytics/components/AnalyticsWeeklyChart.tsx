@@ -73,7 +73,7 @@ export default function AnalyticsWeeklyChart({ times, doneCount, totalTasks }: P
           <p className="text-xs text-white/30 mt-0.5">Acompanhe quantas horas foram investidas em cada dia — ideal para balancear a carga de trabalho</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-black text-white/90">{Math.round(totalWeekHours)}h</p>
+          <p className="text-2xl font-black text-white/90">{formatHoursHuman(totalWeekHours)}</p>
           <p className="text-[10px] text-white/30">esta semana</p>
         </div>
       </div>

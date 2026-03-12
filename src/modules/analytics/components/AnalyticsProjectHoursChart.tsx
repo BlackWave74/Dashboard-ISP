@@ -159,7 +159,7 @@ export default function AnalyticsProjectHoursChart({ projects, times = [] }: Pro
                 {data.map((_, i) => (
                   <Cell key={i} fill={barColors[i % barColors.length]} />
                 ))}
-                <LabelList dataKey="hours" position="right" formatter={(v: number) => `${v}h`} style={{ fill: "hsl(270 10% 55%)", fontSize: 11, fontWeight: 600 }} />
+                <LabelList dataKey="hours" position="right" formatter={(v: number) => formatHoursHuman(v)} style={{ fill: "hsl(270 10% 55%)", fontSize: 11, fontWeight: 600 }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

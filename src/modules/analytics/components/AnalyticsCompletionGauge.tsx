@@ -23,7 +23,7 @@ export default function AnalyticsCompletionGauge({ done, total, activeProjects, 
   const stats = [
     { label: "Concluídas", value: done.toLocaleString("pt-BR") },
     { label: "Projetos", value: activeProjects.toLocaleString("pt-BR") },
-    { label: "Horas", value: `${Math.round(totalHours)}` },
+    { label: "Horas", value: totalHours >= 1 ? `${Math.round(totalHours)}h` : totalHours > 0 ? `${Math.round(totalHours * 60)}min` : "0min" },
   ];
 
   return (
