@@ -91,6 +91,31 @@ export const formatDurationHHMM = (seconds?: number) => {
   return parts.join(" ") || "0s";
 };
 
+/**
+ * Formats a decimal hours value into a human-readable string.
+ * Examples: 0.5 → "30min", 1.33 → "1h 20min", 2 → "2h", 0.016 → "1min"
+ * Designed to be unambiguous for non-technical users.
+ */
+export const formatHoursHuman = (hours: number): string => {
+  if (!hours || !Number.isFinite(hours) || hours <= 0) return "0min";
+  const totalMinutes = Math.round(hours * 60);
+  if (totalMinutes < 1) return "<1min";
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${String(m).padStart(2, "0")}min`;
+};
+
+/**
+ * Formats seconds into a human-readable label for KPI cards and summaries.
+ * Examples: 3600 → "1h", 5400 → "1h 30min", 2400 → "40min"
+ */
+export const formatSecondsHuman = (seconds: number): string => {
+  if (!seconds || !Number.isFinite(seconds) || seconds <= 0) return "0min";
+  return formatHoursHuman(seconds / 3600);
+};
+
 export const normalizeTaskTitle = (value?: string) => {
   if (!value) return "";
   const cleaned = value
