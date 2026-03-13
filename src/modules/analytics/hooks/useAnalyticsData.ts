@@ -8,7 +8,7 @@ export function classifyTask(task: TaskRecord): "done" | "overdue" | "pending" {
   const status = String(task.status ?? task.situacao ?? "").toLowerCase();
   if (["5", "done", "concluida", "concluído", "finalizada", "completed"].some((s) => status.includes(s)))
     return "done";
-  const deadline = task.deadline ?? task.due_date ?? task.dueDate;
+  const deadline = task.deadline ?? task.due_date ?? task.dueDate ?? task.data;
   if (deadline) {
     const d = new Date(String(deadline));
     if (!Number.isNaN(d.getTime()) && d < new Date()) return "overdue";
@@ -72,10 +72,6 @@ export function useAnalyticsData(
       const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
       return isResponsibleMatch(responsible, userName);
     });
-    if (filtered.length === 0 && allTasks.length > 0) {
-      // No matching tasks for this user — fall back to showing all
-      return { tasks: allTasks, isFiltered: false };
-    }
     return { tasks: filtered, isFiltered: true };
   }, [allTasks, userName]);
 
@@ -111,9 +107,7 @@ export function useAnalyticsData(
   // Filter project hours to only user's projects
   const filteredProjectHours = useMemo(() => {
     if (!userName || !isFiltered) return projectHours;
-    const filtered = projectHours.filter((ph) => userProjectIds.has(ph.projectId));
-    if (filtered.length === 0 && projectHours.length > 0) return projectHours;
-    return filtered;
+    return projectHours.filter((ph) => userProjectIds.has(ph.projectId));
   }, [projectHours, userProjectIds, userName, isFiltered]);
 
   const tasksByProject = useMemo(() => {
