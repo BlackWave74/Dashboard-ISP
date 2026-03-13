@@ -1,11 +1,7 @@
 import { Menu } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 
-type Props = {
-  notificationBell?: React.ReactNode;
-};
-
-export default function MobileHeader({ notificationBell }: Props) {
+export default function MobileHeader() {
   const { isMobile, toggleSidebar } = useSidebar();
 
   if (!isMobile) return null;
@@ -33,9 +29,7 @@ export default function MobileHeader({ notificationBell }: Props) {
         className="h-7 w-auto object-contain"
       />
 
-      <div className="flex items-center">
-        {notificationBell}
-      </div>
+      <div className="w-10" />
     </header>
   );
 }

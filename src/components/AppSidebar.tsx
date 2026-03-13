@@ -236,7 +236,6 @@ export function AppSidebar() {
         )}
         {!isMobile && (
           <div className={`flex ${collapsed ? "flex-col" : "flex-row"} items-center gap-1`}>
-            {notificationBell}
             <ToggleButton />
           </div>
         )}
