@@ -8,8 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTasks } from "@/modules/tasks/api/useTasks";
 import SyncIndicator from "@/components/SyncIndicator";
 import { useTrackPresence } from "@/hooks/useUserPresence";
-import { useNotifications } from "@/hooks/useNotifications";
-import NotificationBell from "@/components/NotificationBell";
 import AssistantReminder from "@/components/AssistantReminder";
 import { useTaskStatusAlerts } from "@/hooks/useTaskStatusAlerts";
 import MobileHeader from "@/components/MobileHeader";
@@ -180,8 +178,6 @@ function DashboardInner() {
   const userId = session?.email || "";
   const { alert: statusAlert, dismissAlert } = useTaskStatusAlerts(statusAlertData, !loading, userId, session?.role);
 
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications(notifTasks, session?.name, session?.role, userId);
 
   if (loadingSession) {
     return (
@@ -206,14 +202,6 @@ function DashboardInner() {
     ? SIDEBAR_WIDTH_ICON
     : SIDEBAR_WIDTH;
 
-  const notificationBellEl = (
-    <NotificationBell
-      notifications={notifications}
-      unreadCount={unreadCount}
-      onMarkAsRead={markAsRead}
-      onMarkAllAsRead={markAllAsRead}
-    />
-  );
 
   return (
     <div
@@ -251,7 +239,7 @@ function DashboardInner() {
               flexDirection: "column",
             }}
           >
-            <AppSidebar notificationBell={notificationBellEl} />
+            <AppSidebar />
           </div>
         </div>
       )}
@@ -259,7 +247,7 @@ function DashboardInner() {
       {/* Main content column */}
       <main style={{ minWidth: 0, overflowX: "hidden", gridColumn: isMobile ? "1 / -1" : undefined }}>
         {/* Mobile top bar with hamburger — notification bell lives HERE on mobile (single instance) */}
-        <MobileHeader notificationBell={notificationBellEl} />
+        <MobileHeader />
 
         {/* Mobile sidebar (Sheet overlay) — NO notification bell here to avoid duplication */}
         {isMobile && <AppSidebar />}
