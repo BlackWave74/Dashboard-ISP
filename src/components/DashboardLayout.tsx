@@ -203,14 +203,6 @@ function DashboardInner() {
     ? SIDEBAR_WIDTH_ICON
     : SIDEBAR_WIDTH;
 
-  const notificationBellEl = (
-    <NotificationBell
-      notifications={notifications}
-      unreadCount={unreadCount}
-      onMarkAsRead={markAsRead}
-      onMarkAllAsRead={markAllAsRead}
-    />
-  );
 
   return (
     <div
