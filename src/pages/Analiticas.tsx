@@ -234,7 +234,7 @@ export default function AnaliticasPage() {
 
   const effectiveUser = isAdmin
     ? (filters.consultant || undefined)
-    : undefined;
+    : userName;
 
   const {
     projects,

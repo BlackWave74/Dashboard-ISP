@@ -8,7 +8,7 @@ export function classifyTask(task: TaskRecord): "done" | "overdue" | "pending" {
   const status = String(task.status ?? task.situacao ?? "").toLowerCase();
   if (["5", "done", "concluida", "concluído", "finalizada", "completed"].some((s) => status.includes(s)))
     return "done";
-  const deadline = task.deadline ?? task.due_date ?? task.dueDate;
+  const deadline = task.deadline ?? task.due_date ?? task.dueDate ?? task.data;
   if (deadline) {
     const d = new Date(String(deadline));
     if (!Number.isNaN(d.getTime()) && d < new Date()) return "overdue";
