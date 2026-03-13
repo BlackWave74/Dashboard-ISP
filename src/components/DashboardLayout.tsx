@@ -9,7 +9,6 @@ import { useTasks } from "@/modules/tasks/api/useTasks";
 import SyncIndicator from "@/components/SyncIndicator";
 import { useTrackPresence } from "@/hooks/useUserPresence";
 import AssistantReminder from "@/components/AssistantReminder";
-import AssistantReminder from "@/components/AssistantReminder";
 import { useTaskStatusAlerts } from "@/hooks/useTaskStatusAlerts";
 import MobileHeader from "@/components/MobileHeader";
 import {
