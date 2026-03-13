@@ -72,10 +72,6 @@ export function useAnalyticsData(
       const responsible = String(t.responsible_name ?? t.responsavel ?? t.consultant ?? t.owner ?? "");
       return isResponsibleMatch(responsible, userName);
     });
-    if (filtered.length === 0 && allTasks.length > 0) {
-      // No matching tasks for this user — fall back to showing all
-      return { tasks: allTasks, isFiltered: false };
-    }
     return { tasks: filtered, isFiltered: true };
   }, [allTasks, userName]);
 
