@@ -248,7 +248,7 @@ function DashboardInner() {
       {/* Main content column */}
       <main style={{ minWidth: 0, overflowX: "hidden", gridColumn: isMobile ? "1 / -1" : undefined }}>
         {/* Mobile top bar with hamburger — notification bell lives HERE on mobile (single instance) */}
-        <MobileHeader notificationBell={notificationBellEl} />
+        <MobileHeader />
 
         {/* Mobile sidebar (Sheet overlay) — NO notification bell here to avoid duplication */}
         {isMobile && <AppSidebar />}
