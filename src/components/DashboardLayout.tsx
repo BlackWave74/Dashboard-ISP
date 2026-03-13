@@ -112,7 +112,7 @@ function DashboardInner() {
 
   const { tasks, loading, reload } = useTasks({
     accessToken: session?.accessToken,
-    period: "30d",
+    period: "180d",
   });
 
   // Auto-refresh a cada 5 minutos
