@@ -355,28 +355,24 @@ export default function AnaliticasPage() {
     return ids;
   }, [allTasks, accessFilteredTasks, isAdmin, userName]);
 
-  // Enforce non-admin filter state to own projects/name and period "all"
+  // Apply non-admin defaults ONCE (on first load only)
+  const nonAdminDefaultsApplied = useRef(false);
   useEffect(() => {
-    if (isAdmin || !userName) return;
+    if (nonAdminDefaultsApplied.current) return;
+    if (isAdmin || !userName || myProjectIds.size === 0) return;
 
+    nonAdminDefaultsApplied.current = true;
     const mine = Array.from(myProjectIds);
     setFilters((prev) => {
+      // Only apply if no saved filters exist or consultant doesn't match
       const prevIds = prev.projectIds.map(Number).filter((id) => Number.isFinite(id));
       const validPrev = prevIds.filter((id) => myProjectIds.has(id));
-      const nextIds = mine.length === 0 ? [] : (validPrev.length > 0 ? validPrev : mine);
-
-      const sameIds =
-        prevIds.length === nextIds.length &&
-        prevIds.every((id, index) => id === nextIds[index]);
-
-      if (sameIds && prev.consultant === userName && prev.period === "all") {
-        return prev;
-      }
+      const nextIds = validPrev.length > 0 ? validPrev : mine;
 
       return {
         ...prev,
         consultant: userName,
-        period: "all",
+        period: prev.period || "all",
         projectIds: nextIds,
       };
     });
