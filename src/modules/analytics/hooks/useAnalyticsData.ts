@@ -107,9 +107,7 @@ export function useAnalyticsData(
   // Filter project hours to only user's projects
   const filteredProjectHours = useMemo(() => {
     if (!userName || !isFiltered) return projectHours;
-    const filtered = projectHours.filter((ph) => userProjectIds.has(ph.projectId));
-    if (filtered.length === 0 && projectHours.length > 0) return projectHours;
-    return filtered;
+    return projectHours.filter((ph) => userProjectIds.has(ph.projectId));
   }, [projectHours, userProjectIds, userName, isFiltered]);
 
   const tasksByProject = useMemo(() => {
