@@ -129,9 +129,9 @@ export default function HeroSection() {
   }, []);
 
   const miniStats = [
-    { icon: Zap, label: "Alta Performance", target: 99, suffix: ".9%" },
+    { icon: Zap, label: "Alta Performance", target: 100, suffix: "%" },
     { icon: TrendingUp, label: "Eficiência", target: 100, suffix: "%" },
-    { icon: Sparkles, label: "Satisfação", target: 49, suffix: "/5" },
+    { icon: Sparkles, label: "Satisfação", target: 100, suffix: "%" },
   ];
 
   return (

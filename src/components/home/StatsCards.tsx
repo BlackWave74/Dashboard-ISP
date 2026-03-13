@@ -29,7 +29,7 @@ const stats = [
     icon: ShieldCheck,
     title: "Resultados Confiáveis",
     desc: "Rastreabilidade e padrão para decisões mais seguras.",
-    value: "4.9/5",
+    value: "100%",
     color: "from-[hsl(234_89%_64%)] to-[hsl(260_80%_55%)]",
     glow: "hsl(234 89% 64% / 0.25)",
   },
