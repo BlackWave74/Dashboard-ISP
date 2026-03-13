@@ -240,7 +240,7 @@ function DashboardInner() {
               flexDirection: "column",
             }}
           >
-            <AppSidebar notificationBell={notificationBellEl} />
+            <AppSidebar />
           </div>
         </div>
       )}
