@@ -82,10 +82,13 @@ function DailyActivityBars({ entries }: { entries: ElapsedTimeRecord[] }) {
 
       let totalSec = 0;
       entries.forEach((entry) => {
+        // Try multiple date fields to find the effective date for this entry
         const effective = getElapsedEffectiveDate(entry);
-        if (!effective) return;
+        const stopDate = entry.date_stop ? new Date(String(entry.date_stop)) : null;
+        const entryDate = effective ?? (stopDate && !Number.isNaN(stopDate.getTime()) ? stopDate : null);
+        if (!entryDate) return;
         // Compare using local date string to avoid UTC vs local mismatch
-        const entryKey = `${effective.getFullYear()}-${String(effective.getMonth() + 1).padStart(2, "0")}-${String(effective.getDate()).padStart(2, "0")}`;
+        const entryKey = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, "0")}-${String(entryDate.getDate()).padStart(2, "0")}`;
         if (entryKey === dayKey) {
           totalSec += typeof entry.seconds === "number" ? entry.seconds : Number(entry.seconds ?? 0);
         }
