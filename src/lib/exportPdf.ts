@@ -626,6 +626,8 @@ export async function exportTasksPDF({
             data.cell.styles.textColor = [34, 160, 80]; data.cell.styles.fontStyle = "bold";
           } else if (val.includes("atras") || val === "overdue") {
             data.cell.styles.textColor = [220, 50, 50]; data.cell.styles.fontStyle = "bold";
+          } else if (val.includes("andamento") || val === "pending" || val.includes("em andamento")) {
+            data.cell.styles.textColor = [250, 204, 21]; data.cell.styles.fontStyle = "bold";
           }
         }
       },
