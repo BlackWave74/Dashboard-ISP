@@ -147,11 +147,7 @@ function ToggleButton() {
 
 type SectionKey = "gestao" | "automacao" | "admin";
 
-type AppSidebarProps = {
-  notificationBell?: React.ReactNode;
-};
-
-export function AppSidebar({ notificationBell }: AppSidebarProps) {
+export function AppSidebar() {
   const { session, logout, canAccess } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
