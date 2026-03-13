@@ -170,7 +170,7 @@ function DashboardInner() {
   const statusAlertData = useMemo(
     () =>
       notifTasks.map((t) => ({
-        id: t.title || "",
+        id: t.taskId || t.title || "",
         status: t.statusKey || "",
         title: t.title || "",
         project: t.project || "",
