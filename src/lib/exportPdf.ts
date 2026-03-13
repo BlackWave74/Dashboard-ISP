@@ -278,7 +278,7 @@ function drawCoverPage(
     const cards = [
       { label: "Total", value: String(stats.total), color: [80, 85, 140] as number[] },
       { label: "Concluídas", value: String(stats.done), color: [34, 197, 94] as number[] },
-      { label: "Em Andamento", value: String(stats.pending), color: [100, 116, 139] as number[] },
+      { label: "Em Andamento", value: String(stats.pending), color: [250, 204, 21] as number[] },
       { label: "Atrasadas", value: String(stats.overdue), color: [239, 68, 68] as number[] },
     ];
     if (stats.totalHours) {
@@ -576,6 +576,8 @@ export async function exportTasksPDF({
               data.cell.styles.textColor = [34, 160, 80]; data.cell.styles.fontStyle = "bold";
             } else if (val.includes("atras") || val === "overdue") {
               data.cell.styles.textColor = [220, 50, 50]; data.cell.styles.fontStyle = "bold";
+            } else if (val.includes("andamento") || val === "pending" || val.includes("em andamento")) {
+              data.cell.styles.textColor = [250, 204, 21]; data.cell.styles.fontStyle = "bold";
             }
           }
         },
@@ -624,6 +626,8 @@ export async function exportTasksPDF({
             data.cell.styles.textColor = [34, 160, 80]; data.cell.styles.fontStyle = "bold";
           } else if (val.includes("atras") || val === "overdue") {
             data.cell.styles.textColor = [220, 50, 50]; data.cell.styles.fontStyle = "bold";
+          } else if (val.includes("andamento") || val === "pending" || val.includes("em andamento")) {
+            data.cell.styles.textColor = [250, 204, 21]; data.cell.styles.fontStyle = "bold";
           }
         }
       },
