@@ -49,6 +49,7 @@ function toNotifTask(task: Record<string, any>) {
     parseDateValue(task.due_date) ??
     parseDateValue(task.dueDate) ??
     parseDateValue(task.deadline) ??
+    parseDateValue(task.data) ??
     null;
 
   const isDone = ["5", "done", "concluido", "concluído", "completed", "finalizado"].includes(statusRaw);
