@@ -35,6 +35,7 @@ const ROUTE_TO_AREA: Record<string, AccessArea> = {
 
 /** Lightweight task normalization for notification purposes only */
 function toNotifTask(task: Record<string, any>) {
+  const taskId = String(task.task_id ?? task.id ?? "");
   const title = normalizeTaskTitle(
     String(task.title ?? task.nome ?? task.name ?? "Tarefa")
   );
@@ -57,6 +58,7 @@ function toNotifTask(task: Record<string, any>) {
   const deadlineIsSoon = !isDone && !isOverdue && isDeadlineSoon(deadline, new Date());
 
   return {
+    taskId,
     title,
     project,
     consultant,
