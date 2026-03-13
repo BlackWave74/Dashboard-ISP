@@ -1035,11 +1035,11 @@ export default function TarefasPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="task-card flex flex-col max-h-[60vh] xl:max-h-[calc(100vh-340px)] min-h-[260px] overflow-hidden md:col-span-2 xl:col-span-1"
           >
-            <div className="flex items-center gap-2 mb-4 sticky top-0 z-10 bg-[hsl(var(--task-surface))] pb-2">
+            <div className="flex items-center justify-center gap-2 mb-4 sticky top-0 z-10 bg-[hsl(var(--task-surface))] pb-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--task-yellow)/0.15)]">
                 <Clock className="h-3.5 w-3.5 text-[hsl(var(--task-yellow))]" />
               </div>
-              <div>
+              <div className="text-center">
                 <p className="text-sm font-bold text-[hsl(var(--task-text))]">Prazos</p>
                 <p className="text-[10px] text-[hsl(var(--task-text-muted))]">Próximas entregas pendentes</p>
               </div>
